@@ -52,10 +52,6 @@ export const ptPT: TranslationSchema = {
   settings: {
     title: 'Definições',
     subtitle: 'Configurações gerais para os modelos de conversação.',
-    aiModel: 'Modelo de IA',
-    modelLabel: 'Modelo',
-    modelPlaceholder: 'ex: meta-llama/llama-3.3-70b-instruct:free',
-    modelHint: 'Modelo utilizado por ambos os conversadores.',
     language: 'Idioma',
     languageLabel: 'Idioma das Conversas',
     languageHint: 'Idioma utilizado pelos agentes no diálogo.',
@@ -63,9 +59,6 @@ export const ptPT: TranslationSchema = {
     generalRulesLabel: 'Regras Gerais para os Agentes',
     generalRulesPlaceholder: 'ex: Responde sempre em português e de forma concisa.',
     generalRulesHint: 'Regras adicionadas à descrição dos agentes ({current}/{max} caracteres).',
-    tokenProtection: 'Proteção de Tokens',
-    maxTokensLabel: 'Máximo de Tokens por resposta',
-    maxTokensHint: 'Restringe o tamanho de cada resposta individual.',
     restoreDefaults: 'Restaurar Predefinições'
   },
   confirmation: {

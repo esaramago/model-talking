@@ -52,10 +52,6 @@ export const de: TranslationSchema = {
   settings: {
     title: 'Einstellungen',
     subtitle: 'Allgemeine Konfigurationen für die Gesprächsmodelle.',
-    aiModel: 'KI-Modell',
-    modelLabel: 'Modell',
-    modelPlaceholder: 'z.B.: meta-llama/llama-3.3-70b-instruct:free',
-    modelHint: 'Modell, das von beiden Gesprächspartnern verwendet wird.',
     language: 'Sprache',
     languageLabel: 'Sprache der Gespräche',
     languageHint: 'Sprache, die von den Agenten im Dialog verwendet wird.',
@@ -63,9 +59,6 @@ export const de: TranslationSchema = {
     generalRulesLabel: 'Allgemeine Regeln für die Agenten',
     generalRulesPlaceholder: 'z.B.: Antworte immer auf Deutsch und halte dich kurz.',
     generalRulesHint: 'Regeln, die der Beschreibung der Agenten hinzugefügt werden ({current}/{max} Zeichen).',
-    tokenProtection: 'Token-Schutz',
-    maxTokensLabel: 'Maximale Tokens pro Antwort',
-    maxTokensHint: 'Begrenzt die Länge jeder einzelnen Antwort.',
     restoreDefaults: 'Standardeinstellungen wiederherstellen'
   },
   confirmation: {

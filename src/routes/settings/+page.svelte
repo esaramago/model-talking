@@ -9,9 +9,7 @@
   const user = $derived(page.data?.user ?? null)
   const isGuest = $derived(!user)
 
-  let model = $state(DEFAULT_SETTINGS.model)
   let language = $state(DEFAULT_SETTINGS.language)
-  let maxTokens = $state(DEFAULT_SETTINGS.maxTokens)
   let generalRules = $state(DEFAULT_SETTINGS.generalRules)
   let isHydrated = $state(false)
   let lastSyncedUserId = $state<string | null | undefined>(undefined)
@@ -20,9 +18,7 @@
 
   function applySettings(userId?: string | null, fallback?: any) {
     const loaded = loadSettings(userId, fallback)
-    model = userId ? loaded.model : DEFAULT_SETTINGS.model
     language = loaded.language
-    maxTokens = userId ? loaded.maxTokens : DEFAULT_SETTINGS.maxTokens
     generalRules = userId ? loaded.generalRules : DEFAULT_SETTINGS.generalRules
     i18n.setLanguage(loaded.language)
   }
@@ -43,17 +39,6 @@
       applySettings(currentUserId, userSettings)
     }
   })
-
-  function handleModelInput(e: Event) {
-    if (isGuest) return
-    model = (e.currentTarget as HTMLInputElement).value
-    if (!isHydrated) return
-    const current = loadSettings(user?.id, user?.settings)
-    saveSettings({
-      ...current,
-      model
-    }, user?.id)
-  }
 
   function handleLanguageChange(e: Event) {
     const target = e.target as HTMLElement & { value?: string }
@@ -84,21 +69,8 @@
     }, user?.id)
   }
 
-  function handleMaxTokensInput(e: Event) {
-    if (isGuest) return
-    maxTokens = Number((e.currentTarget as HTMLInputElement).value) || DEFAULT_SETTINGS.maxTokens
-    if (!isHydrated) return
-    const current = loadSettings(user?.id, user?.settings)
-    saveSettings({
-      ...current,
-      maxTokens
-    }, user?.id)
-  }
-
   function handleReset() {
-    model = DEFAULT_SETTINGS.model
     language = DEFAULT_SETTINGS.language
-    maxTokens = DEFAULT_SETTINGS.maxTokens
     generalRules = DEFAULT_SETTINGS.generalRules
     i18n.setLanguage(DEFAULT_SETTINGS.language)
     if (!isHydrated) return
@@ -113,20 +85,6 @@
     <h1 data-appearance="h2">{t('settings.title')}</h1>
     <p>{t('settings.subtitle')}</p>
   </Grid>
-
-  <wa-card>
-    <Grid direction="column" gap="s">
-      <h2 data-appearance="h4">{t('settings.aiModel')}</h2>
-      <wa-input
-        label={t('settings.modelLabel')}
-        value={model}
-        placeholder={t('settings.modelPlaceholder')}
-        hint={t('settings.modelHint')}
-        disabled={isGuest}
-        oninput={handleModelInput}
-      ></wa-input>
-    </Grid>
-  </wa-card>
 
   <wa-card>
     <Grid direction="column" gap="s">
@@ -158,23 +116,6 @@
         disabled={isGuest}
         oninput={handleGeneralRulesInput}
       ></wa-textarea>
-    </Grid>
-  </wa-card>
-
-  <wa-card>
-    <Grid direction="column" gap="s">
-      <h2 data-appearance="h4">{t('settings.tokenProtection')}</h2>
-      <wa-input
-        label={t('settings.maxTokensLabel')}
-        type="number"
-        min="50"
-        max="1000"
-        step="50"
-        value={String(maxTokens)}
-        hint={t('settings.maxTokensHint')}
-        disabled={isGuest}
-        oninput={handleMaxTokensInput}
-      ></wa-input>
     </Grid>
   </wa-card>
 

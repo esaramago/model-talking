@@ -52,10 +52,6 @@ export const tr: TranslationSchema = {
   settings: {
     title: 'Ayarlar',
     subtitle: 'Sohbet modelleri için genel yapılandırmalar.',
-    aiModel: 'Yapay Zeka Modeli',
-    modelLabel: 'Model',
-    modelPlaceholder: 'ör.: meta-llama/llama-3.3-70b-instruct:free',
-    modelHint: 'Her iki konuşmacı tarafından kullanılan model.',
     language: 'Dil',
     languageLabel: 'Sohbet Dili',
     languageHint: 'Diyalogda ajanlar tarafından kullanılan dil.',
@@ -63,9 +59,6 @@ export const tr: TranslationSchema = {
     generalRulesLabel: 'Ajanlar için Genel Kurallar',
     generalRulesPlaceholder: 'ör.: Her zaman Türkçe ve özlü bir şekilde yanıt ver.',
     generalRulesHint: 'Ajan açıklamalarına eklenen kurallar ({current}/{max} karakter).',
-    tokenProtection: 'Token Koruması',
-    maxTokensLabel: 'Yanıt başına maksimum token',
-    maxTokensHint: 'Her bir yanıtın uzunluğunu sınırlar.',
     restoreDefaults: 'Varsayılanları Geri Yükle'
   },
   confirmation: {

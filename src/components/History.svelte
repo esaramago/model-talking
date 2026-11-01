@@ -63,9 +63,9 @@
     {#if talks.length === 0}
       <p class="u-text-small">{t('sidebar.noConversations')}</p>
     {:else}
-      <ul>
+      <ul class="history-navigation">
         {#each talks as talk (talk.id)}
-          <Grid tag="li" justify="space-between" align="center" gap="xs">
+          <li>
             <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
             <a href="/talks/{talk.id}" onclick={handleItemClick}>{talk.title}</a>
             <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
@@ -74,7 +74,7 @@
               tabindex="0"
               variant="neutral"
               appearance="plain"
-              size="s"
+              size="xs"
               aria-label={t('sidebar.deleteConversation')}
               onclick={(e: MouseEvent) => {
                 e.stopPropagation()
@@ -83,7 +83,7 @@
             >
               <wa-icon name="times"></wa-icon>
             </wa-button>
-          </Grid>
+          </li>
         {/each}
       </ul>
     {/if}
@@ -110,3 +110,28 @@
     </p>
   </Grid>
 {/if}
+
+
+<style>
+.history-navigation {
+  font-size: var(--wa-font-size-xs);
+  @media (max-width: 960px) {
+    font-size: var(--wa-font-size-s);
+  }
+  > li {
+    display: flex;
+    align-items: center;
+    margin: 0;
+  }
+  a {
+    flex: 1;
+    padding: var(--wa-space-xs);
+    margin-inline: calc(var(--wa-space-xs) * -1);
+    text-decoration: none;
+    line-height: 1.3;
+    &:hover {
+      background-color: var(--wa-color-surface-raised);
+    }
+  }
+}
+</style>

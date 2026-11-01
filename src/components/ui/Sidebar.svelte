@@ -67,6 +67,7 @@ aside {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  gap: var(--wa-space-xl);
   width: 28rem;
   padding: var(--wa-space-m) var(--wa-space-s);
   background-color: var(--wa-color-surface-lowered);

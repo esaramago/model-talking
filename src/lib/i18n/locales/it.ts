@@ -52,10 +52,6 @@ export const it: TranslationSchema = {
   settings: {
     title: 'Impostazioni',
     subtitle: 'Configurazioni generali per i modelli di conversazione.',
-    aiModel: 'Modello IA',
-    modelLabel: 'Modello',
-    modelPlaceholder: 'es: meta-llama/llama-3.3-70b-instruct:free',
-    modelHint: 'Modello utilizzato da entrambi i conversatori.',
     language: 'Lingua',
     languageLabel: 'Lingua delle Conversazioni',
     languageHint: 'Lingua utilizzata dagli agenti nel dialogo.',
@@ -63,9 +59,6 @@ export const it: TranslationSchema = {
     generalRulesLabel: 'Regole Generali per gli Agenti',
     generalRulesPlaceholder: 'es: Rispondi sempre in italiano e in modo conciso.',
     generalRulesHint: 'Regole aggiunte alla descrizione degli agenti ({current}/{max} caratteri).',
-    tokenProtection: 'Protezione dei Token',
-    maxTokensLabel: 'Massimo di Token per risposta',
-    maxTokensHint: 'Limita la lunghezza di ogni singola risposta.',
     restoreDefaults: 'Ripristina predefiniti'
   },
   confirmation: {

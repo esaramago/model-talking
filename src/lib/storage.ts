@@ -10,23 +10,13 @@ export function getStorageKey(userId?: string | null): string {
 }
 
 export function sanitizeSettings(
-  settings: Partial<ChatSettings & { model1?: string; model2?: string }>
+  settings: Partial<ChatSettings>
 ): ChatSettings {
   return {
     initialTopic:
       typeof settings.initialTopic === 'string'
         ? settings.initialTopic.slice(0, 200)
         : DEFAULT_SETTINGS.initialTopic,
-    maxTokens:
-      typeof settings.maxTokens === 'number' && !Number.isNaN(settings.maxTokens)
-        ? settings.maxTokens
-        : DEFAULT_SETTINGS.maxTokens,
-    model:
-      typeof settings.model === 'string' && settings.model.trim()
-        ? settings.model
-        : typeof settings.model1 === 'string' && settings.model1.trim()
-          ? settings.model1
-          : DEFAULT_SETTINGS.model,
     agent1Name:
       typeof settings.agent1Name === 'string' && settings.agent1Name.trim()
         ? settings.agent1Name
@@ -94,8 +84,6 @@ export function loadSettings(
     }
     return {
       ...sanitized,
-      model: DEFAULT_SETTINGS.model,
-      maxTokens: DEFAULT_SETTINGS.maxTokens,
       generalRules: DEFAULT_SETTINGS.generalRules
     }
   }
@@ -113,8 +101,6 @@ export function loadSettings(
     }
     return {
       ...guestSettings,
-      model: DEFAULT_SETTINGS.model,
-      maxTokens: DEFAULT_SETTINGS.maxTokens,
       generalRules: DEFAULT_SETTINGS.generalRules
     }
   }
@@ -130,8 +116,6 @@ export function saveSettings(settings: ChatSettings, userId?: string | null): vo
   } else {
     guestSettings = {
       ...sanitized,
-      model: DEFAULT_SETTINGS.model,
-      maxTokens: DEFAULT_SETTINGS.maxTokens,
       generalRules: DEFAULT_SETTINGS.generalRules
     }
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {

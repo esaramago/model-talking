@@ -52,10 +52,6 @@ export const ru: TranslationSchema = {
   settings: {
     title: 'Настройки',
     subtitle: 'Общие параметры моделей диалога.',
-    aiModel: 'Модель ИИ',
-    modelLabel: 'Модель',
-    modelPlaceholder: 'напр.: meta-llama/llama-3.3-70b-instruct:free',
-    modelHint: 'Модель, используемая обоими собеседниками.',
     language: 'Язык',
     languageLabel: 'Язык диалогов',
     languageHint: 'Язык, используемый агентами в диалоге.',
@@ -63,9 +59,6 @@ export const ru: TranslationSchema = {
     generalRulesLabel: 'Общие правила для агентов',
     generalRulesPlaceholder: 'напр.: Всегда отвечай на русском языке и кратко.',
     generalRulesHint: 'Правила, добавляемые к описанию агентов ({current}/{max} символов).',
-    tokenProtection: 'Защита токенов',
-    maxTokensLabel: 'Максимум токенов на ответ',
-    maxTokensHint: 'Ограничивает длину каждого отдельного ответа.',
     restoreDefaults: 'Восстановить настройки по умолчанию'
   },
   confirmation: {

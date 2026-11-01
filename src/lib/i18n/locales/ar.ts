@@ -52,10 +52,6 @@ export const ar: TranslationSchema = {
   settings: {
     title: 'الإعدادات',
     subtitle: 'الإعدادات العامة لنماذج المحادثة.',
-    aiModel: 'نموذج الذكاء الاصطناعي',
-    modelLabel: 'النموذج',
-    modelPlaceholder: 'مثال: meta-llama/llama-3.3-70b-instruct:free',
-    modelHint: 'النموذج المستخدم من كلا المتحدثين.',
     language: 'اللغة',
     languageLabel: 'لغة المحادثات',
     languageHint: 'اللغة المستخدمة من قبل الوكلاء في الحوار.',
@@ -63,9 +59,6 @@ export const ar: TranslationSchema = {
     generalRulesLabel: 'القواعد العامة للوكلاء',
     generalRulesPlaceholder: 'مثال: أجب دائمًا باللغة العربية وبإيجاز.',
     generalRulesHint: 'قواعد مضافة إلى وصف الوكلاء ({current}/{max} حرفًا).',
-    tokenProtection: 'حماية التوكنات',
-    maxTokensLabel: 'الحد الأقصى للتوكنات في كل رد',
-    maxTokensHint: 'يحدد طول كل رد على حدة.',
     restoreDefaults: 'استعادة الإعدادات الافتراضية'
   },
   confirmation: {

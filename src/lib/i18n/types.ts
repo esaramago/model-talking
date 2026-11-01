@@ -52,10 +52,6 @@ export interface TranslationSchema {
   settings: {
     title: string
     subtitle: string
-    aiModel: string
-    modelLabel: string
-    modelPlaceholder: string
-    modelHint: string
     language: string
     languageLabel: string
     languageHint: string
@@ -63,9 +59,6 @@ export interface TranslationSchema {
     generalRulesLabel: string
     generalRulesPlaceholder: string
     generalRulesHint: string
-    tokenProtection: string
-    maxTokensLabel: string
-    maxTokensHint: string
     restoreDefaults: string
   }
   confirmation: {

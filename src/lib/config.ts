@@ -3,6 +3,10 @@ import type { ChatSettings, LanguageOption } from '@/types/chat'
 export const STORAGE_KEY_PREFIX = 'model_talks_settings'
 
 export const DEFAULT_MODEL = 'mistralai/mistral-nemo'
+export const MODEL = DEFAULT_MODEL
+
+export const DEFAULT_MAX_TOKENS = 200
+export const MAX_TOKENS = DEFAULT_MAX_TOKENS
 
 /**
  * Static base system prompt sent in every conversation to establish context
@@ -73,8 +77,6 @@ export const SUPPORTED_LANGUAGES: LanguageOption[] = [
 
 export const DEFAULT_SETTINGS: ChatSettings = {
   initialTopic: '',
-  maxTokens: 200,
-  model: DEFAULT_MODEL,
   agent1Name: '',
   agent2Name: '',
   systemPrompt1: '',

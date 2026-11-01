@@ -25,8 +25,6 @@ export interface LanguageOption {
 
 export interface ChatSettings {
   initialTopic: string
-  maxTokens: number
-  model: string
   agent1Name: string
   agent2Name: string
   systemPrompt1: string
