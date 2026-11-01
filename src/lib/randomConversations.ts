@@ -4,6 +4,7 @@ import type { ChatMessage } from '@/types/chat'
 export interface RandomConversationCharacter {
   name: string
   description: string
+  avatar?: string
   prompts: string[]
 }
 
@@ -12,6 +13,21 @@ export interface RandomConversation {
   title: string
   agent1: RandomConversationCharacter
   agent2: RandomConversationCharacter
+}
+
+export const AVAILABLE_PERSONAS = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
+
+export function getPersonaImageUrl(personaId: string | number): string {
+  return `/img/personas/${personaId}.svg`
+}
+
+export function getRandomPersonaPair(): [string, string] {
+  const pool = [...AVAILABLE_PERSONAS]
+  const idx1 = Math.floor(Math.random() * pool.length)
+  const persona1 = pool.splice(idx1, 1)[0]
+  const idx2 = Math.floor(Math.random() * pool.length)
+  const persona2 = pool[idx2]
+  return [getPersonaImageUrl(persona1), getPersonaImageUrl(persona2)]
 }
 
 export const RANDOM_CONVERSATIONS: RandomConversation[] = rawConversations as RandomConversation[]
@@ -28,7 +44,9 @@ export function getRandomConversation(excludeId?: string): RandomConversation {
 
 export function buildRandomChatMessages(
   conversation: RandomConversation,
-  model = 'random-mode'
+  model = 'random-mode',
+  agent1Avatar = '/img/personas/1.svg',
+  agent2Avatar = '/img/personas/2.svg'
 ): ChatMessage[] {
   const result: ChatMessage[] = []
   const maxTurns = 5
@@ -46,6 +64,7 @@ export function buildRandomChatMessages(
         promptTokens: 0,
         completionTokens: 0,
         totalTokens: 0,
+        avatar: agent1Avatar,
         timestamp: Date.now()
       })
     }
@@ -62,6 +81,7 @@ export function buildRandomChatMessages(
         promptTokens: 0,
         completionTokens: 0,
         totalTokens: 0,
+        avatar: agent2Avatar,
         timestamp: Date.now()
       })
     }

@@ -4,11 +4,15 @@
   let {
     agent1Name = $bindable('Agente 1'),
     agent2Name = $bindable('Agente 2'),
+    agent1Avatar = $bindable('/img/personas/1.svg'),
+    agent2Avatar = $bindable('/img/personas/2.svg'),
     systemPrompt1 = $bindable(),
     systemPrompt2 = $bindable()
   }: {
     agent1Name?: string
     agent2Name?: string
+    agent1Avatar?: string
+    agent2Avatar?: string
     systemPrompt1: string
     systemPrompt2: string
   } = $props()
@@ -18,7 +22,7 @@
       id: 'agent1',
       name: agent1Name,
       value: systemPrompt1,
-      persona: '1',
+      avatar: agent1Avatar,
       onNameInput: (e: Event) => {
         agent1Name = (e.currentTarget as HTMLInputElement).value
       },
@@ -33,8 +37,8 @@
     {
       id: 'agent2',
       name: agent2Name,
-      persona: '2',
       value: systemPrompt2,
+      avatar: agent2Avatar,
       onNameInput: (e: Event) => {
         agent2Name = (e.currentTarget as HTMLInputElement).value
       },
@@ -53,6 +57,7 @@
   {#each configs as config (config.id)}
     <wa-card>
       <Grid direction="column" gap="s">
+        <wa-avatar image={config.avatar}></wa-avatar>
         <wa-input
           label="Name"
           placeholder="Como me chamo?"

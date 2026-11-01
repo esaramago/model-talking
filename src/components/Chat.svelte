@@ -21,6 +21,7 @@
   import {
     getRandomConversation,
     buildRandomChatMessages,
+    getRandomPersonaPair,
     setActiveRandomTalk,
     getActiveRandomTalk
   } from '@/lib/randomConversations'
@@ -41,6 +42,8 @@
   let model = $state(DEFAULT_SETTINGS.model)
   let agent1Name = $state(DEFAULT_SETTINGS.agent1Name)
   let agent2Name = $state(DEFAULT_SETTINGS.agent2Name)
+  let agent1Avatar = $state('/img/personas/1.svg')
+  let agent2Avatar = $state('/img/personas/2.svg')
   let systemPrompt1 = $state(DEFAULT_SETTINGS.systemPrompt1)
   let systemPrompt2 = $state(DEFAULT_SETTINGS.systemPrompt2)
   let generalRules = $state(DEFAULT_SETTINGS.generalRules)
@@ -69,6 +72,10 @@
     currentTalkId = talk.id
     initialTopic = talk.initialTopic || ''
     messages = talk.messages || []
+    const firstLlm1 = messages.find((m) => m.speaker === 'llm1' && m.avatar)
+    if (firstLlm1?.avatar) agent1Avatar = firstLlm1.avatar
+    const firstLlm2 = messages.find((m) => m.speaker === 'llm2' && m.avatar)
+    if (firstLlm2?.avatar) agent2Avatar = firstLlm2.avatar
     if (talk.model) model = talk.model
     if (talk.agent1Name) agent1Name = talk.agent1Name
     if (talk.agent2Name) agent2Name = talk.agent2Name
@@ -132,6 +139,8 @@
       isRandomMode = false
       randomScriptMessages = null
       setActiveRandomTalk(null)
+      agent1Avatar = '/img/personas/1.svg'
+      agent2Avatar = '/img/personas/2.svg'
       const loaded = loadSettings(user?.id, user?.settings)
       initialTopic = loaded.initialTopic
       language = loaded.language
@@ -251,6 +260,7 @@
         promptTokens: pTokens,
         completionTokens: cTokens,
         totalTokens: tTokens,
+        avatar: targetSpeaker === 'llm1' ? agent1Avatar : agent2Avatar,
         timestamp: Date.now()
       }
 
@@ -345,6 +355,7 @@
       model,
       content: initialTopic.trim(),
       turn: 1,
+      avatar: agent1Avatar,
       timestamp: Date.now()
     }
 
@@ -457,13 +468,22 @@
     const conv = getRandomConversation(lastRandomId)
     lastRandomId = conv.id
 
+    const [randomAvatar1, randomAvatar2] = getRandomPersonaPair()
+    agent1Avatar = randomAvatar1
+    agent2Avatar = randomAvatar2
+
     agent1Name = conv.agent1.name
     systemPrompt1 = conv.agent1.description
     agent2Name = conv.agent2.name
     systemPrompt2 = conv.agent2.description
     initialTopic = conv.agent1.prompts[0]
 
-    const scriptMessages = buildRandomChatMessages(conv, model)
+    const scriptMessages = buildRandomChatMessages(
+      conv,
+      model,
+      agent1Avatar,
+      agent2Avatar
+    )
     randomScriptMessages = scriptMessages
     isRandomMode = true
 
@@ -583,12 +603,14 @@
     <Agents
       bind:agent1Name
       bind:agent2Name
+      bind:agent1Avatar
+      bind:agent2Avatar
       bind:systemPrompt1
       bind:systemPrompt2
     />
 
     <div class="chat-item">
-      <wa-avatar image="/img/personas/1.svg"></wa-avatar>
+      <wa-avatar image={agent1Avatar}></wa-avatar>
       <wa-textarea
         maxlength="200"
         value={initialTopic}

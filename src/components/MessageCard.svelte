@@ -4,12 +4,15 @@
 
   let { message }: { message: ChatMessage } = $props()
 
-  const reversed = message.speaker === 'llm1'
+  const reversed = $derived(message.speaker === 'llm1')
+  const avatar = $derived(
+    message.avatar || (message.speaker === 'llm1' ? '/img/personas/1.svg' : '/img/personas/2.svg')
+  )
 </script>
 
 <div class={["chat-item", reversed ? 'chat-item--reversed' : '']}>
   {#if !reversed}
-    <wa-avatar image="/img/personas/1.svg"></wa-avatar>
+    <wa-avatar image={avatar}></wa-avatar>
   {/if}
   <wa-card>
     <Grid direction="column" gap="s">
@@ -29,7 +32,7 @@
     </Grid>
   </wa-card>
   {#if reversed}
-    <wa-avatar image="/img/personas/2.svg"></wa-avatar>
+    <wa-avatar image={avatar}></wa-avatar>
   {/if}
 </div>
 

@@ -8,6 +8,7 @@ export interface ChatMessage {
   promptTokens?: number
   completionTokens?: number
   totalTokens?: number
+  avatar?: string
   timestamp: number
 }
 

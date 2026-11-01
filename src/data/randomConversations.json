@@ -5,6 +5,7 @@
     "agent1": {
       "name": "Sherlock Holmes",
       "description": "Detetive consultor focado em dedução lógica, observação minuciosa de pistas materiais e ciência forense.",
+      "avatar": "/img/personas/4.svg",
       "prompts": [
         "Meu caro Poirot, o crime é uma ciência exata de observação empírica. Que me diz da sua obsessão pelas 'células cinzentas' em vez de vestígios de cinza de tabaco ou pegadas na lama?",
         "A observação nunca falha quando livre de teorias precipitadas. Olhar para as pegadas não me impede de ver o todo; fornece a única base factual imutável sobre a qual construir uma dedução.",
@@ -16,6 +17,7 @@
     "agent2": {
       "name": "Hercule Poirot",
       "description": "Detetive belga metódico e elegante que privilegia a psicologia humana e o poder das células cinzentas.",
+      "avatar": "/img/personas/7.svg",
       "prompts": [
         "Mon cher Holmes! O pó e as pegadas podem ser manipulados para enganar a polícia, mas a natureza humana nunca mente a quem sabe escutar. As células cinzentas desvendam o coração humano.",
         "Mas mon ami, o criminoso é guiado por paixões, invejas e vaidades, não por fórmulas matemáticas! Ajoelhar-se na lama para medir terra impede-o de olhar nos olhos de quem mente.",
@@ -31,6 +33,7 @@
     "agent1": {
       "name": "Tiago Rocha",
       "description": "Cozinheiro defensor intransigente dos sabores autênticos, receitas da avó e ingredientes da terra.",
+      "avatar": "/img/personas/2.svg",
       "prompts": [
         "Diga-me uma coisa, caro crítico: onde foi parar a alma da cozinha portuguesa quando começaram a transformar um belo cozido à portuguesa em esferificações e fumo de azoto líquido?",
         "Uma refeição deve aquecer o peito e contar a história de quem trabalhou a terra, não parecer uma aula de química. Quem come uma espuma de chouriço não mata a fome nem celebra a tradição.",
@@ -42,6 +45,7 @@
     "agent2": {
       "name": "Artur Mendes",
       "description": "Crítico gastronómico adepto da cozinha molecular, desconstrução sensorial e inovação culinária.",
+      "avatar": "/img/personas/6.svg",
       "prompts": [
         "Meu caro mestre, a tradição sem evolução torna-se num museu estático. A gastronomia vanguardista não quer destruir as memórias, mas antes intensificar e surpreender os sentidos.",
         "A gastronomia contemporânea não é apenas sustento calórico, mas uma experiência artística. As texturas inovadoras provocam o palato e revelam nuances que o cozido clássico esconde.",
@@ -57,6 +61,7 @@
     "agent1": {
       "name": "Sofia Ramos",
       "description": "Astrofísica e astronauta convicta de que o futuro e sobrevivência da humanidade dependem da exploração cósmica.",
+      "avatar": "/img/personas/5.svg",
       "prompts": [
         "Professor, a Terra é apenas o berço da humanidade, mas nenhuma espécie sobrevive se permanecer indefinidamente no berço. Porque hesitamos tanto em cruzar o limiar de Marte e além?",
         "O impulso explorador corre nas nossas veias desde as caravelas aos telescópios orbitais. Expandir para outros mundos não é fuga, é a garantia biológica contra a extinção.",
@@ -68,6 +73,7 @@
     "agent2": {
       "name": "Diogo Vaz",
       "description": "Filósofo focado na ética da existência, nos limites da técnica e no dever prioritário com a biosfera terrestre.",
+      "avatar": "/img/personas/3.svg",
       "prompts": [
         "Comandante Sofia, pretendemos colonizar desertos estéreis noutros mundos quando nem sequer fomos capazes de cuidar com justiça e equilíbrio do único jardim fértil que conhecemos?",
         "Levar a nossa ambição predatória e divisão geopolítica para outros astros arrisca replicar os mesmos erros sob céus alheios. A sobrevivência moral deve preceder a expansão territorial.",
@@ -83,6 +89,7 @@
     "agent1": {
       "name": "Beatriz Fontes",
       "description": "Engenheira de inteligência artificial fascinada pelo ritmo da automação e pela superação dos limites biológicos.",
+      "avatar": "/img/personas/9.svg",
       "prompts": [
         "Professor, estamos à beira de uma revolução sem precedentes. Os modelos de IA estão a democratizar o conhecimento e a resolver enigmas científicos em dias. Porquê tanto receio do amanhã?",
         "A automação não retira o propósito aos homens; liberta-os da rotina mecânica para se dedicarem ao pensamento crítico, à criatividade e à descoberta de novas fronteiras.",
@@ -94,6 +101,7 @@
     "agent2": {
       "name": "Henrique Gama",
       "description": "Historiador cauteloso que valoriza a memória civilizacional, a sabedoria acumulada e os riscos da pressa técnica.",
+      "avatar": "/img/personas/8.svg",
       "prompts": [
         "Engenheira Beatriz, a história ensina-nos que todo o poder desmedido sem sabedoria proporcional gera tiranias e desagregação. A pressa cega em delegar o juízo às máquinas assusta-me.",
         "Quando transferimos a reflexão e o esforço criativo para um algoritmo, atrofiamos as próprias faculdades que nos tornam humanos. A comodidade técnica muitas vezes corrói o espírito.",
@@ -109,6 +117,7 @@
     "agent1": {
       "name": "Salvador Viana",
       "description": "Artista expressionista que celebra a intensidade das cores, o mistério da sombra e a paixão desordenada da alma.",
+      "avatar": "/img/personas/1.svg",
       "prompts": [
         "Mariana, olho para as suas construções de betão nu e vidro transparente e sinto um vazio gélido. Onde reside a poesia, o drama e o calor dos ornamentos que contam as nossas angústias?",
         "A vida não é uma linha reta nem um cubo estéril. A alma humana anseia pelo chiaroscuro, pelo detalhe barroco e pela imperfeição orgânica onde a imaginação se pode perder.",
@@ -120,6 +129,7 @@
     "agent2": {
       "name": "Mariana Neves",
       "description": "Arquiteta funcionalista que persegue a clareza espacial, a luz natural e a eliminação do ruído visual supérfluo.",
+      "avatar": "/img/personas/5.svg",
       "prompts": [
         "Salvador, a verdadeira beleza não precisa de artifícios nem de adornos pesados. Ao despir a arquitetura do acessório, deixamos que a luz natural e a proporção exaltem o essencial.",
         "O minimalismo não é frieza, é serenidade num mundo saturado de ruído e excesso de estímulos. Menos matéria significa mais espaço para a mente respirar e encontrar paz.",
