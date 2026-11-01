@@ -2,6 +2,9 @@ import type { ChatSettings, LanguageOption } from '@/types/chat'
 
 export const STORAGE_KEY_PREFIX = 'model_talks_settings'
 
+// MODELS
+// z-ai/glm-5.3-flash (https://openrouter.ai/z-ai/glm-5.3-flash)
+// mistralai/mistral-nemo (https://openrouter.ai/mistralai/mistral-nemo)
 export const DEFAULT_MODEL = 'mistralai/mistral-nemo'
 export const MODEL = DEFAULT_MODEL
 
