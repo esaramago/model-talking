@@ -1,6 +1,7 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
   import Grid from '@/components/ui/Grid.svelte'
+  import { t } from '@/lib/i18n/index.svelte'
   import type { ActionData } from './$types'
 
   let { form }: { form: ActionData } = $props()
@@ -9,8 +10,8 @@
 
 <Grid direction="column" gap="l">
   <Grid direction="column" gap="xs">
-    <h1 data-appearance="h2">Criar Conta</h1>
-    <p>Regista-te para guardares e acederes às tuas conversas.</p>
+    <h1 data-appearance="h2">{t('register.title')}</h1>
+    <p>{t('register.subtitle')}</p>
   </Grid>
 
   {#if form?.error}
@@ -41,8 +42,8 @@
         <wa-input
           name="name"
           type="text"
-          label="Nome"
-          placeholder="O teu nome (opcional)"
+          label={t('register.nameLabel')}
+          placeholder={t('register.namePlaceholder')}
           value={form?.name ?? ''}
           autocomplete="name"
         ></wa-input>
@@ -50,8 +51,8 @@
         <wa-input
           name="email"
           type="email"
-          label="Email"
-          placeholder="exemplo@dominio.com"
+          label={t('register.emailLabel')}
+          placeholder={t('register.emailPlaceholder')}
           value={form?.email ?? ''}
           required
           autocomplete="email"
@@ -60,8 +61,8 @@
         <wa-input
           name="password"
           type="password"
-          label="Palavra-passe"
-          placeholder="Mínimo de 8 caracteres"
+          label={t('register.passwordLabel')}
+          placeholder={t('register.passwordPlaceholder')}
           required
           minlength={8}
           password-toggle
@@ -71,8 +72,8 @@
         <wa-input
           name="passwordConfirm"
           type="password"
-          label="Confirmar Palavra-passe"
-          placeholder="Repete a palavra-passe"
+          label={t('register.confirmPasswordLabel')}
+          placeholder={t('register.confirmPasswordPlaceholder')}
           required
           minlength={8}
           password-toggle
@@ -80,14 +81,14 @@
         ></wa-input>
 
         <wa-button type="submit" variant="brand" {loading}>
-          Criar Conta
+          {t('register.submit')}
         </wa-button>
       </Grid>
     </form>
   </wa-card>
 
   <p class="u-text-small">
-    Já tens conta?
-    <a href="/login">Inicia sessão aqui</a>
+    {t('register.hasAccount')}
+    <a href="/login">{t('register.loginLink')}</a>
   </p>
 </Grid>

@@ -63,13 +63,13 @@ async function handleDeleteTalk() {
         talksState.triggerNewChat()
       }}
     >
-      Nova conversa
+      {t('sidebar.newChat')}
     </wa-button>
     {#if user}
       <Grid direction="column" gap="s">
-        <h2 data-appearance="h4">Conversas</h2>
+        <h2 data-appearance="h4">{t('sidebar.conversations')}</h2>
         {#if talks.length === 0}
-          <p class="u-text-small">Sem conversas ainda</p>
+          <p class="u-text-small">{t('sidebar.noConversations')}</p>
         {:else}
           <ul>
             {#each talks as talk (talk.id)}
@@ -83,7 +83,7 @@ async function handleDeleteTalk() {
                   variant="neutral"
                   appearance="plain"
                   size="s"
-                  aria-label="Apagar conversa"
+                  aria-label={t('sidebar.deleteConversation')}
                   onclick={(e: MouseEvent) => {
                     e.stopPropagation()
                     openDeleteConfirm(talk)
@@ -98,10 +98,10 @@ async function handleDeleteTalk() {
       </Grid>
       <Confirmation
         bind:open={isConfirmDeleteOpen}
-        title="Apagar conversa"
-        message="Tens a certeza de que pretendes apagar esta conversa do histórico?"
-        confirmText="Apagar"
-        cancelText="Cancelar"
+        title={t('sidebar.deleteConfirmTitle')}
+        message={t('sidebar.deleteConfirmMessage')}
+        confirmText={t('sidebar.delete')}
+        cancelText={t('sidebar.cancel')}
         confirmVariant="danger"
         loading={isDeleting}
         onconfirm={handleDeleteTalk}
@@ -113,7 +113,7 @@ async function handleDeleteTalk() {
       <Grid align="center" gap="xs">
         <wa-icon name="circle-info"></wa-icon>
         <p class="u-text-small">
-          <a href="/login" onclick={() => sidebar.close()}>Inicia a sessão</a> para guardar a atividade
+          <a href="/login" onclick={() => sidebar.close()}>{t('sidebar.loginToSavePrefix')}</a> {t('sidebar.loginToSaveSuffix')}
         </p>
       </Grid>
     {/if}
@@ -122,7 +122,7 @@ async function handleDeleteTalk() {
     <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
     <wa-button role="button" tabindex="0" size="s" href="/settings" variant="neutral" appearance="plain" onclick={() => sidebar.close()}>
       <wa-icon slot="start" name="gear" variant="solid"></wa-icon>
-      Definições
+      {t('sidebar.settings')}
     </wa-button>
 
     {#if user}
@@ -132,7 +132,7 @@ async function handleDeleteTalk() {
           <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
           <wa-button role="button" tabindex="0" type="submit" variant="neutral" appearance="plain" size="s" onclick={() => sidebar.close()}>
             <wa-icon slot="start" name="arrow-right-from-bracket" variant="solid"></wa-icon>
-            Sair
+            {t('sidebar.logout')}
           </wa-button>
         </form>
       </Grid>
@@ -140,7 +140,7 @@ async function handleDeleteTalk() {
       <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
       <wa-button role="button" tabindex="0" href="/login" variant="brand" appearance="outlined" onclick={() => sidebar.close()}>
         <wa-icon slot="start" name="arrow-right-to-bracket" variant="solid"></wa-icon>
-        Iniciar sessão
+        {t('sidebar.login')}
       </wa-button>
     {/if}
   </Grid>

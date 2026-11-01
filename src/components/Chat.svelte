@@ -23,6 +23,7 @@
     getRandomConversation,
     getRandomPersonaPair
   } from '@/lib/randomConversations'
+  import { i18n, t } from '@/lib/i18n/index.svelte'
   import type { ChatMessage, TalkRecord } from '@/types/chat'
 
   let props: {
@@ -50,7 +51,7 @@
 
   let messages = $state<ChatMessage[]>([])
   let isRunning = $state(false)
-  let statusMessage = $state('Pronto')
+  let statusMessage = $state(t('chat.ready'))
   let errorMessage = $state('')
 
   let totalPromptTokens = $state(0)
@@ -78,7 +79,7 @@
     if (talk.language) language = talk.language
     if (talk.maxTokens) maxTokens = talk.maxTokens
     if (talk.totalTokens) totalTokensUsed = talk.totalTokens
-    statusMessage = messages.length > 0 ? 'Conversa carregada.' : 'Pronto'
+    statusMessage = messages.length > 0 ? t('chat.conversationLoaded') : t('chat.ready')
   }
 
   function resetNewChat() {
@@ -89,7 +90,7 @@
     totalCompletionTokens = 0
     totalTokensUsed = 0
     randomizeAgents()
-    statusMessage = 'Pronto'
+    statusMessage = t('chat.ready')
   }
 
   function promptRestart() {
@@ -120,7 +121,7 @@
       totalCompletionTokens = 0
       totalTokensUsed = 0
       initialTopic = ''
-      statusMessage = 'Pronto'
+      statusMessage = t('chat.ready')
       errorMessage = ''
     }
   }
@@ -190,12 +191,18 @@
         systemPrompt1 = p.systemPrompt1
         systemPrompt2 = p.systemPrompt2
         initialTopic = ''
-        statusMessage = 'Pronto'
+        statusMessage = t('chat.ready')
         talksState.pendingRestartAgents = null
       } else {
         // Switched back to new chat
         resetNewChat()
       }
+    }
+  })
+
+  $effect(() => {
+    if (!props.talkId) {
+      language = i18n.currentLanguage
     }
   })
 
@@ -235,8 +242,8 @@
 
   function getSpeakerName(speaker: 'llm1' | 'llm2'): string {
     return speaker === 'llm1'
-      ? agent1Name.trim() || 'Agente 1'
-      : agent2Name.trim() || 'Agente 2'
+      ? agent1Name.trim() || t('agents.defaultAgent1')
+      : agent2Name.trim() || t('agents.defaultAgent2')
   }
 
   function randomizeAgents() {
@@ -269,7 +276,7 @@
     const currentMaxTokens = user ? maxTokens : DEFAULT_SETTINGS.maxTokens
 
     activeThinkingSpeaker = speakerName
-    statusMessage = `${speakerName} a pensar...`
+    statusMessage = t('chat.thinking', { speaker: speakerName })
     errorMessage = ''
 
     try {
@@ -302,7 +309,7 @@
         speaker: targetSpeaker,
         speakerName,
         model: response.model || currentModel,
-        content: response.content || '(Sem resposta)',
+        content: response.content || t('chat.noResponse'),
         turn: turnNumber,
         promptTokens: pTokens,
         completionTokens: cTokens,
@@ -326,12 +333,12 @@
       }
 
       activeThinkingSpeaker = null
-      statusMessage = 'Pronto'
+      statusMessage = t('chat.ready')
       return true
     } catch (err: unknown) {
       activeThinkingSpeaker = null
-      errorMessage = err instanceof Error ? err.message : 'Erro ao processar turno'
-      statusMessage = 'Ocorreu um erro.'
+      errorMessage = err instanceof Error ? err.message : t('chat.errorTurn')
+      statusMessage = t('chat.errorOccurred')
       return false
     }
   }
@@ -341,7 +348,7 @@
 
     if (messages.length === 0) {
       if (!initialTopic.trim()) {
-        errorMessage = 'Por favor introduz um tópico inicial para o LLM 1.'
+        errorMessage = t('chat.errorInitialTopic')
         return
       }
 
@@ -379,7 +386,7 @@
 
       const currentUserId = user?.id || pb.authStore.record?.id
       if (currentUserId) {
-        statusMessage = 'A guardar conversa...'
+        statusMessage = t('chat.savingConversation')
         try {
           const talkTitle = await talkTitlePromise
           const newTalk = await pb.collection('talks').create<TalkRecord>({
@@ -406,7 +413,7 @@
         }
       }
 
-      statusMessage = 'Pronto'
+      statusMessage = t('chat.ready')
       isRunning = false
       return
     }
@@ -423,7 +430,7 @@
     <wa-callout variant="danger">
       <wa-icon slot="start" name="triangle-exclamation" variant="solid"></wa-icon>
       <Grid direction="column" gap="xs">
-        <strong>Erro</strong>
+        <strong>{t('chat.error')}</strong>
         <p>{errorMessage}</p>
       </Grid>
     </wa-callout>
@@ -446,7 +453,7 @@
       <wa-textarea
         maxlength="200"
         value={initialTopic}
-        placeholder="Como começa a conversa?"
+        placeholder={t('chat.topicPlaceholder')}
         rows="1"
         oninput={handleTopicInput}
       ></wa-textarea>
@@ -463,7 +470,7 @@
         onclick={randomizeAgents}
       >
         <wa-icon slot="start" name="shuffle" variant="solid"></wa-icon>
-        Random
+        {t('chat.random')}
       </wa-button>
 
       <wa-button
@@ -474,7 +481,7 @@
         onclick={sendMessage}
       >
         <wa-icon slot="start" name="paper-plane" variant="solid"></wa-icon>
-        Enviar mensagem
+        {t('chat.sendMessage')}
       </wa-button>
     </Grid>
   {:else}
@@ -491,7 +498,7 @@
         onclick={promptRestart}
       >
         <wa-icon slot="start" name="arrow-rotate-left" variant="solid"></wa-icon>
-        Recomeçar
+        {t('chat.restart')}
       </wa-button>
 
       <wa-button
@@ -502,17 +509,17 @@
         onclick={sendMessage}
       >
         <wa-icon slot="start" name="paper-plane" variant="solid"></wa-icon>
-        Enviar mensagem
+        {t('chat.sendMessage')}
       </wa-button>
     </Grid>
   {/if}
 
   <Confirmation
     bind:open={isConfirmRestartOpen}
-    title="Recomeçar conversa"
-    message="Vai recomeçar uma conversa com estas personagens. Esta conversa vai ser gravada no histórico. Queres recomeçar?"
-    confirmText="Recomeçar"
-    cancelText="Cancelar"
+    title={t('chat.restartConfirmTitle')}
+    message={t('chat.restartConfirmMessage')}
+    confirmText={t('chat.restartConfirmButton')}
+    cancelText={t('chat.restartCancelButton')}
     onconfirm={handleRestart}
   />
 </Grid>

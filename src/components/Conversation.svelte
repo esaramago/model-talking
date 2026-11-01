@@ -1,6 +1,7 @@
 <script lang="ts">
   import Grid from '@/components/ui/Grid.svelte'
   import MessageCard from '@/components/MessageCard.svelte'
+  import { t } from '@/lib/i18n/index.svelte'
   import type { ChatMessage } from '@/types/chat'
 
   let {
@@ -21,7 +22,7 @@
     <wa-card>
       <Grid align="center" gap="s">
         <wa-spinner></wa-spinner>
-        <span>{activeThinkingSpeaker} a pensar...</span>
+        <span>{t('chat.thinking', { speaker: activeThinkingSpeaker })}</span>
       </Grid>
     </wa-card>
   {/if}

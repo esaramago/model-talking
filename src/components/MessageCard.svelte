@@ -1,5 +1,6 @@
 <script lang="ts">
   import Grid from '@/components/ui/Grid.svelte'
+  import { t } from '@/lib/i18n/index.svelte'
   import type { ChatMessage } from '@/types/chat'
 
   let { message }: { message: ChatMessage } = $props()
@@ -24,7 +25,7 @@
         </Grid>
 
         {#if message.totalTokens}
-          <wa-badge variant="neutral">{message.totalTokens} tokens</wa-badge>
+          <wa-badge variant="neutral">{t('chat.tokens', { count: message.totalTokens })}</wa-badge>
         {/if}
       </Grid>
 

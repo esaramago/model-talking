@@ -1,5 +1,6 @@
 <script lang="ts">
   import Grid from '@/components/ui/Grid.svelte'
+  import { t } from '@/lib/i18n/index.svelte'
 
   let {
     readonly = false,
@@ -73,8 +74,8 @@
             <wa-avatar image={config.avatar}></wa-avatar>
             <wa-input
               class="wa-visually-hidden-label"
-              label={`Nome da personagem ${index + 1}`}
-              placeholder="Como me chamo?"
+              label={t('agents.nameLabel', { number: index + 1 })}
+              placeholder={t('agents.namePlaceholder')}
               maxlength="40"
               value={config.name}
               oninput={config.onNameInput}
@@ -82,11 +83,11 @@
           </div>
           <wa-textarea
             class="wa-visually-hidden-label"
-            label={`Descreve a personagem ${index + 1}`}
+            label={t('agents.descriptionLabel', { number: index + 1 })}
             maxlength="200"
             value={config.value}
             oninput={config.oninput}
-            placeholder="Descreve-me"
+            placeholder={t('agents.descriptionPlaceholder')}
           ></wa-textarea>
         {/if}
       </Grid>

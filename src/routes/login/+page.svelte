@@ -1,6 +1,7 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
   import Grid from '@/components/ui/Grid.svelte'
+  import { t } from '@/lib/i18n/index.svelte'
   import type { ActionData } from './$types'
 
   let { form }: { form: ActionData } = $props()
@@ -9,8 +10,8 @@
 
 <Grid direction="column" gap="l">
   <Grid direction="column" gap="xs">
-    <h1 data-appearance="h2">Iniciar Sessão</h1>
-    <p>Introduz as tuas credenciais para acederes à tua conta.</p>
+    <h1 data-appearance="h2">{t('login.title')}</h1>
+    <p>{t('login.subtitle')}</p>
   </Grid>
 
   {#if form?.error}
@@ -41,8 +42,8 @@
         <wa-input
           name="email"
           type="email"
-          label="Email"
-          placeholder="exemplo@dominio.com"
+          label={t('login.emailLabel')}
+          placeholder={t('login.emailPlaceholder')}
           value={form?.email ?? ''}
           required
           autocomplete="email"
@@ -51,22 +52,22 @@
         <wa-input
           name="password"
           type="password"
-          label="Palavra-passe"
-          placeholder="A tua palavra-passe"
+          label={t('login.passwordLabel')}
+          placeholder={t('login.passwordPlaceholder')}
           required
           password-toggle
           autocomplete="current-password"
         ></wa-input>
 
         <wa-button type="submit" variant="brand" {loading}>
-          Entrar
+          {t('login.submit')}
         </wa-button>
       </Grid>
     </form>
   </wa-card>
 
   <p class="u-text-small">
-    Ainda não tens conta?
-    <a href="/register">Regista-te aqui</a>
+    {t('login.noAccount')}
+    <a href="/register">{t('login.registerLink')}</a>
   </p>
 </Grid>

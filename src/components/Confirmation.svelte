@@ -1,13 +1,14 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
   import Grid from '@/components/ui/Grid.svelte'
+  import { t } from '@/lib/i18n/index.svelte'
 
   let {
     open = $bindable(false),
-    title = 'Confirmação',
+    title = t('confirmation.title'),
     message = '',
-    confirmText = 'Confirmar',
-    cancelText = 'Cancelar',
+    confirmText = t('confirmation.confirm'),
+    cancelText = t('confirmation.cancel'),
     confirmVariant = 'brand',
     loading = false,
     onconfirm,
