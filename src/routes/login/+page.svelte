@@ -39,25 +39,30 @@
       }}
     >
       <Grid direction="column">
-        <wa-input
-          name="email"
-          type="email"
-          label={t('login.emailLabel')}
-          placeholder={t('login.emailPlaceholder')}
-          value={form?.email ?? ''}
-          required
-          autocomplete="email"
-        ></wa-input>
-
-        <wa-input
-          name="password"
-          type="password"
-          label={t('login.passwordLabel')}
-          placeholder={t('login.passwordPlaceholder')}
-          required
-          password-toggle
-          autocomplete="current-password"
-        ></wa-input>
+        <Grid direction="column" gap="none">
+          <label for="email">{t('login.emailLabel')}</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            placeholder={t('login.emailPlaceholder')}
+            value={form?.email ?? ''}
+            required
+            autocomplete="email"
+          />
+        </Grid>
+          
+        <Grid direction="column" gap="none">
+          <label for="password">{t('login.passwordLabel')}</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            placeholder={t('login.passwordPlaceholder')}
+            required
+            autocomplete="current-password"
+          />
+        </Grid>
 
         <wa-button type="submit" variant="brand" {loading}>
           {t('login.submit')}
