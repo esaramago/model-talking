@@ -5,9 +5,9 @@
 
   let { message }: { message: ChatMessage } = $props()
 
-  const reversed = $derived(message.speaker === 'llm1')
+  const reversed = $derived(message.speaker === 'agent1')
   const avatar = $derived(
-    message.avatar || (message.speaker === 'llm1' ? '/img/personas/1.svg' : '/img/personas/2.svg')
+    message.avatar || (message.speaker === 'agent1' ? '/img/personas/1.svg' : '/img/personas/2.svg')
   )
 </script>
 
@@ -19,7 +19,7 @@
     <Grid direction="column" gap="s">
       <Grid justify="space-between" align="center">
         <Grid align="center" gap="s">
-          <wa-badge variant={message.speaker === 'llm1' ? 'brand' : 'success'}>
+          <wa-badge variant={message.speaker === 'agent1' ? 'brand' : 'success'}>
             {message.speakerName}
           </wa-badge>
         </Grid>

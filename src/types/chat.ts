@@ -1,6 +1,6 @@
 export interface ChatMessage {
   id: string
-  speaker: 'llm1' | 'llm2'
+  speaker: 'agent1' | 'agent2'
   speakerName: string
   model: string
   content: string

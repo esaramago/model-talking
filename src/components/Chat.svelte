@@ -66,10 +66,10 @@
     currentTalkId = talk.id
     initialTopic = talk.initialTopic || ''
     messages = talk.messages || []
-    const firstLlm1 = messages.find((m) => m.speaker === 'llm1' && m.avatar)
-    if (firstLlm1?.avatar) agent1Avatar = firstLlm1.avatar
-    const firstLlm2 = messages.find((m) => m.speaker === 'llm2' && m.avatar)
-    if (firstLlm2?.avatar) agent2Avatar = firstLlm2.avatar
+    const firstAgent1 = messages.find((m) => m.speaker === 'agent1' && m.avatar)
+    if (firstAgent1?.avatar) agent1Avatar = firstAgent1.avatar
+    const firstAgent2 = messages.find((m) => m.speaker === 'agent2' && m.avatar)
+    if (firstAgent2?.avatar) agent2Avatar = firstAgent2.avatar
     if (talk.model) model = talk.model
     if (talk.agent1Name) agent1Name = talk.agent1Name
     if (talk.agent2Name) agent2Name = talk.agent2Name
@@ -240,8 +240,8 @@
     initialTopic = target.value
   }
 
-  function getSpeakerName(speaker: 'llm1' | 'llm2'): string {
-    return speaker === 'llm1'
+  function getSpeakerName(speaker: 'agent1' | 'agent2'): string {
+    return speaker === 'agent1'
       ? agent1Name.trim() || t('agents.defaultAgent1')
       : agent2Name.trim() || t('agents.defaultAgent2')
   }
@@ -267,11 +267,11 @@
     if (messages.length === 0) return false
 
     const lastMessage = messages[messages.length - 1]
-    const targetSpeaker: 'llm1' | 'llm2' = lastMessage.speaker === 'llm1' ? 'llm2' : 'llm1'
+    const targetSpeaker: 'agent1' | 'agent2' = lastMessage.speaker === 'agent1' ? 'agent2' : 'agent1'
     const speakerName = getSpeakerName(targetSpeaker)
     const currentModel = user ? model : DEFAULT_SETTINGS.model
-    const currentSystemPrompt = targetSpeaker === 'llm1' ? systemPrompt1 : systemPrompt2
-    const currentAgentName = targetSpeaker === 'llm1' ? agent1Name : agent2Name
+    const currentSystemPrompt = targetSpeaker === 'agent1' ? systemPrompt1 : systemPrompt2
+    const currentAgentName = targetSpeaker === 'agent1' ? agent1Name : agent2Name
     const currentGeneralRules = user ? generalRules : DEFAULT_SETTINGS.generalRules
     const currentMaxTokens = user ? maxTokens : DEFAULT_SETTINGS.maxTokens
 
@@ -314,7 +314,7 @@
         promptTokens: pTokens,
         completionTokens: cTokens,
         totalTokens: tTokens,
-        avatar: targetSpeaker === 'llm1' ? agent1Avatar : agent2Avatar,
+        avatar: targetSpeaker === 'agent1' ? agent1Avatar : agent2Avatar,
         timestamp: Date.now()
       }
 
@@ -362,8 +362,8 @@
 
       const firstMessage: ChatMessage = {
         id: crypto.randomUUID(),
-        speaker: 'llm1',
-        speakerName: getSpeakerName('llm1'),
+        speaker: 'agent1',
+        speakerName: getSpeakerName('agent1'),
         model: user ? model : DEFAULT_SETTINGS.model,
         content: initialTopic.trim(),
         turn: 1,
