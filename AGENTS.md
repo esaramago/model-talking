@@ -1,0 +1,11 @@
+# Rules
+- No Tailwind or other CSS frameworks.
+- Do not add inline styles.
+- Use the Grid.svelte component whenever possible to structure layout.
+- Use WebAwesome for elements whenever possible.
+- Do not write CSS or add unnecessary classes. I will write whatever CSS is needed.
+- Do not use redundant attributes. Example: `<Grid gap="m" />`
+- Code comments must be in English.
+- README.md and AGENTS.md must be in English.
+- Do not commit any changes. I'll do it.
+- Avoid repeating code. Create reusable functions and components when it makes sense.

@@ -1,0 +1,10 @@
+body {
+  overflow: hidden;
+}
+main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wa-space-xl);
+  overflow: auto;
+  justify-content: space-around;
+}

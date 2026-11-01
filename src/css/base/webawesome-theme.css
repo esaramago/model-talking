@@ -1,0 +1,16 @@
+:root {
+  color-scheme: dark;
+
+  --wa-font-size-scale: 1.6;
+  --wa-shadow-scale: 1.6;
+  --wa-space-scale: 1.6;
+  --wa-border-radius-scale: 3;
+
+  --wa-border-radius-xl: 3.6rem;
+}
+
+wa-button {
+  &::part(base) {
+    border-radius: var(--wa-border-radius-pill);
+  }
+}
