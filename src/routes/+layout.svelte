@@ -14,6 +14,7 @@
   import '@awesome.me/webawesome/dist/components/callout/callout.js'
   import '@awesome.me/webawesome/dist/components/details/details.js'
   import '@awesome.me/webawesome/dist/components/avatar/avatar.js'
+  import '@awesome.me/webawesome/dist/components/dialog/dialog.js'
   import Header from '@/components/ui/Header.svelte'
   import Sidebar from '@/components/ui/Sidebar.svelte'
   import { talksState } from '@/lib/state/talks.svelte'

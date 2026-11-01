@@ -5,6 +5,7 @@
   import Grid from '@/components/ui/Grid.svelte'
   import Conversation from '@/components/Conversation.svelte'
   import Agents from '@/components/Agents.svelte'
+  import Confirmation from '@/components/Confirmation.svelte'
   import { stats } from '@/lib/state/stats.svelte'
   import { talksState } from '@/lib/state/talks.svelte'
   import { pb } from '@/lib/pocketbase'
@@ -58,6 +59,7 @@
 
   let activeThinkingSpeaker = $state<string | null>(null)
   let lastRandomId = $state<string | undefined>(undefined)
+  let isConfirmRestartOpen = $state(false)
 
   function applyTalk(talk: TalkRecord) {
     currentTalkId = talk.id
@@ -90,20 +92,71 @@
     statusMessage = 'Pronto'
   }
 
+  function promptRestart() {
+    if (isRunning) return
+    isConfirmRestartOpen = true
+  }
+
+  function handleRestart() {
+    if (isRunning) return
+    isConfirmRestartOpen = false
+
+    const preservedAgents = {
+      agent1Name,
+      agent2Name,
+      agent1Avatar,
+      agent2Avatar,
+      systemPrompt1,
+      systemPrompt2
+    }
+
+    if (props.talkId) {
+      talksState.pendingRestartAgents = preservedAgents
+      goto('/')
+    } else {
+      currentTalkId = ''
+      messages = []
+      totalPromptTokens = 0
+      totalCompletionTokens = 0
+      totalTokensUsed = 0
+      initialTopic = ''
+      statusMessage = 'Pronto'
+      errorMessage = ''
+    }
+  }
+
   onMount(() => {
     const loaded = loadSettings(user?.id, user?.settings)
-    maxTokens = loaded.maxTokens
-    model = loaded.model
-    generalRules = loaded.generalRules
+    maxTokens = user ? loaded.maxTokens : DEFAULT_SETTINGS.maxTokens
+    model = user ? loaded.model : DEFAULT_SETTINGS.model
+    generalRules = user ? loaded.generalRules : DEFAULT_SETTINGS.generalRules
     language = loaded.language
 
     if (props.initialTalk) {
       applyTalk(props.initialTalk)
+    } else if (talksState.pendingRestartAgents) {
+      const p = talksState.pendingRestartAgents
+      agent1Name = p.agent1Name
+      agent2Name = p.agent2Name
+      agent1Avatar = p.agent1Avatar
+      agent2Avatar = p.agent2Avatar
+      systemPrompt1 = p.systemPrompt1
+      systemPrompt2 = p.systemPrompt2
+      initialTopic = ''
+      talksState.pendingRestartAgents = null
     } else {
       randomizeAgents()
     }
 
     isHydrated = true
+  })
+
+  $effect(() => {
+    if (!user) {
+      model = DEFAULT_SETTINGS.model
+      maxTokens = DEFAULT_SETTINGS.maxTokens
+      generalRules = DEFAULT_SETTINGS.generalRules
+    }
   })
 
   let lastNewChatTrigger = $state(0)
@@ -123,8 +176,26 @@
     } else if (props.talkId && props.talkId !== currentTalkId) {
       currentTalkId = props.talkId
     } else if (!props.talkId && currentTalkId && !isRunning) {
-      // Switched back to new chat
-      resetNewChat()
+      if (talksState.pendingRestartAgents) {
+        const p = talksState.pendingRestartAgents
+        currentTalkId = ''
+        messages = []
+        totalPromptTokens = 0
+        totalCompletionTokens = 0
+        totalTokensUsed = 0
+        agent1Name = p.agent1Name
+        agent2Name = p.agent2Name
+        agent1Avatar = p.agent1Avatar
+        agent2Avatar = p.agent2Avatar
+        systemPrompt1 = p.systemPrompt1
+        systemPrompt2 = p.systemPrompt2
+        initialTopic = ''
+        statusMessage = 'Pronto'
+        talksState.pendingRestartAgents = null
+      } else {
+        // Switched back to new chat
+        resetNewChat()
+      }
     }
   })
 
@@ -133,13 +204,13 @@
 
     saveSettings({
       initialTopic: currentTalkId ? loadSettings(user?.id, user?.settings).initialTopic : initialTopic,
-      maxTokens,
-      model,
+      maxTokens: user ? maxTokens : DEFAULT_SETTINGS.maxTokens,
+      model: user ? model : DEFAULT_SETTINGS.model,
       agent1Name,
       agent2Name,
       systemPrompt1,
       systemPrompt2,
-      generalRules,
+      generalRules: user ? generalRules : DEFAULT_SETTINGS.generalRules,
       language
     }, user?.id)
   })
@@ -191,9 +262,11 @@
     const lastMessage = messages[messages.length - 1]
     const targetSpeaker: 'llm1' | 'llm2' = lastMessage.speaker === 'llm1' ? 'llm2' : 'llm1'
     const speakerName = getSpeakerName(targetSpeaker)
-    const currentModel = model
+    const currentModel = user ? model : DEFAULT_SETTINGS.model
     const currentSystemPrompt = targetSpeaker === 'llm1' ? systemPrompt1 : systemPrompt2
     const currentAgentName = targetSpeaker === 'llm1' ? agent1Name : agent2Name
+    const currentGeneralRules = user ? generalRules : DEFAULT_SETTINGS.generalRules
+    const currentMaxTokens = user ? maxTokens : DEFAULT_SETTINGS.maxTokens
 
     activeThinkingSpeaker = speakerName
     statusMessage = `${speakerName} a pensar...`
@@ -204,7 +277,7 @@
         messages,
         targetSpeaker,
         currentSystemPrompt,
-        generalRules,
+        currentGeneralRules,
         currentAgentName,
         language
       )
@@ -212,7 +285,7 @@
       const response = await requestModelTurn({
         model: currentModel,
         messages: apiMessages,
-        maxTokens
+        maxTokens: currentMaxTokens
       })
 
       const turnNumber = messages.length + 1
@@ -284,7 +357,7 @@
         id: crypto.randomUUID(),
         speaker: 'llm1',
         speakerName: getSpeakerName('llm1'),
-        model,
+        model: user ? model : DEFAULT_SETTINGS.model,
         content: initialTopic.trim(),
         turn: 1,
         avatar: agent1Avatar,
@@ -293,22 +366,26 @@
 
       messages = [firstMessage]
 
-      statusMessage = 'A gerar título...'
-      let talkTitle = ''
-      try {
-        talkTitle = await generateTalkTitle(initialTopic, model)
-      } catch {
-        talkTitle = initialTopic.trim().slice(0, 30)
+      const titleModel = user ? model : DEFAULT_SETTINGS.model
+      const talkTitlePromise = generateTalkTitle(initialTopic, titleModel).catch(
+        () => initialTopic.trim().slice(0, 30)
+      )
+
+      const turnSuccess = await executeTurn()
+      if (!turnSuccess) {
+        isRunning = false
+        return
       }
 
       const currentUserId = user?.id || pb.authStore.record?.id
       if (currentUserId) {
         statusMessage = 'A guardar conversa...'
         try {
+          const talkTitle = await talkTitlePromise
           const newTalk = await pb.collection('talks').create<TalkRecord>({
             title: talkTitle,
             initialTopic: initialTopic.trim(),
-            messages: [firstMessage],
+            messages,
             agent1Name,
             agent2Name,
             systemPrompt1,
@@ -317,19 +394,19 @@
             language,
             model,
             maxTokens,
-            totalTokens: 0,
+            totalTokens: totalTokensUsed,
             user: currentUserId
           })
 
           currentTalkId = newTalk.id
           talksState.addOrUpdate(newTalk)
-          goto(`/talks/${newTalk.id}`, { replaceState: true, keepFocus: true })
+          await goto(`/talks/${newTalk.id}`, { replaceState: true, keepFocus: true })
         } catch (err) {
           console.error('Failed to create talk in PocketBase:', err)
         }
       }
 
-      await executeTurn()
+      statusMessage = 'Pronto'
       isRunning = false
       return
     }
@@ -351,16 +428,18 @@
       </Grid>
     </wa-callout>
   {/if}
+
+  <Agents
+    readonly={!!messages.length}
+    bind:agent1Name
+    bind:agent2Name
+    bind:agent1Avatar
+    bind:agent2Avatar
+    bind:systemPrompt1
+    bind:systemPrompt2
+  />
   
   {#if messages.length === 0}
-    <Agents
-      bind:agent1Name
-      bind:agent2Name
-      bind:agent1Avatar
-      bind:agent2Avatar
-      bind:systemPrompt1
-      bind:systemPrompt2
-    />
 
     <div class="chat-item">
       <wa-avatar image={agent1Avatar}></wa-avatar>
@@ -406,6 +485,18 @@
       <wa-button
         role="button"
         tabindex="0"
+        variant="neutral"
+        appearance="outlined"
+        disabled={isRunning}
+        onclick={promptRestart}
+      >
+        <wa-icon slot="start" name="arrow-rotate-left" variant="solid"></wa-icon>
+        Recomeçar
+      </wa-button>
+
+      <wa-button
+        role="button"
+        tabindex="0"
         variant="brand"
         disabled={isRunning}
         onclick={sendMessage}
@@ -415,6 +506,15 @@
       </wa-button>
     </Grid>
   {/if}
+
+  <Confirmation
+    bind:open={isConfirmRestartOpen}
+    title="Recomeçar conversa"
+    message="Vai recomeçar uma conversa com estas personagens. Esta conversa vai ser gravada no histórico. Queres recomeçar?"
+    confirmText="Recomeçar"
+    cancelText="Cancelar"
+    onconfirm={handleRestart}
+  />
 </Grid>
 
 <style>

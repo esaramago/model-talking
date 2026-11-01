@@ -5,6 +5,14 @@ class TalksState {
   items = $state<TalkRecord[]>([])
   isLoading = $state(false)
   newChatTrigger = $state(0)
+  pendingRestartAgents = $state<{
+    agent1Name: string
+    agent2Name: string
+    agent1Avatar: string
+    agent2Avatar: string
+    systemPrompt1: string
+    systemPrompt2: string
+  } | null>(null)
   private isSubscribed = false
 
   triggerNewChat() {
@@ -26,6 +34,11 @@ class TalksState {
 
   remove(id: string) {
     this.items = this.items.filter((item) => item.id !== id)
+  }
+
+  async delete(id: string) {
+    await pb.collection('talks').delete(id)
+    this.remove(id)
   }
 
   async refresh() {
