@@ -1,4 +1,4 @@
-export type SupportedLanguage = 'pt-PT' | 'en' | 'es' | 'fr' | 'de' | 'it'
+export type SupportedLanguage = 'pt-PT' | 'en' | 'es' | 'fr' | 'de' | 'it' | 'tr' | 'ru' | 'ar'
 
 export interface TranslationSchema {
   header: {
@@ -98,14 +98,6 @@ export interface TranslationSchema {
     submit: string
     hasAccount: string
     loginLink: string
-  }
-  languages: {
-    'pt-PT': string
-    en: string
-    es: string
-    fr: string
-    de: string
-    it: string
   }
 }
 

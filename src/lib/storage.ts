@@ -79,6 +79,13 @@ export function loadSettings(
   userId?: string | null,
   fallbackSettings?: Partial<ChatSettings> | null
 ): ChatSettings {
+  if (userId) {
+    const cached = userSettingsCache.get(userId)
+    if (cached) {
+      return cached
+    }
+  }
+
   if (fallbackSettings && typeof fallbackSettings === 'object' && Object.keys(fallbackSettings).length > 0) {
     const sanitized = sanitizeSettings(fallbackSettings)
     if (userId) {
@@ -93,12 +100,7 @@ export function loadSettings(
     }
   }
 
-  if (userId) {
-    const cached = userSettingsCache.get(userId)
-    if (cached) {
-      return cached
-    }
-  } else {
+  if (!userId) {
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
       try {
         const storedLang = localStorage.getItem('model_talks_lang')
@@ -132,17 +134,31 @@ export function saveSettings(settings: ChatSettings, userId?: string | null): vo
       maxTokens: DEFAULT_SETTINGS.maxTokens,
       generalRules: DEFAULT_SETTINGS.generalRules
     }
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem('model_talks_lang', sanitized.language)
+      } catch {
+        // Fail silently
+      }
+    }
   }
 
   i18n.setLanguage(sanitized.language)
 
   const activeUserId = userId || (typeof window !== 'undefined' ? pb.authStore.record?.id : null)
   if (activeUserId && typeof window !== 'undefined' && pb.authStore.record?.id === activeUserId) {
-    pb.collection('users').update(activeUserId, {
-      settings: sanitized
-    }).catch(() => {
-      // Fail silently
-    })
+    pb.collection('users')
+      .update(activeUserId, {
+        settings: sanitized
+      })
+      .then((updatedUser) => {
+        if (pb.authStore.isValid && pb.authStore.token) {
+          pb.authStore.save(pb.authStore.token, updatedUser)
+        }
+      })
+      .catch(() => {
+        // Fail silently
+      })
   }
 }
 

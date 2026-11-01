@@ -98,13 +98,5 @@ export const fr: TranslationSchema = {
     submit: 'Créer un Compte',
     hasAccount: 'Vous avez déjà un compte ?',
     loginLink: 'Connectez-vous ici'
-  },
-  languages: {
-    'pt-PT': 'Portugais (pt-PT)',
-    en: 'Anglais (en)',
-    es: 'Espagnol (es)',
-    fr: 'Français (fr)',
-    de: 'Allemand (de)',
-    it: 'Italien (it)'
   }
 }

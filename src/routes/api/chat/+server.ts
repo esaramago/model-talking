@@ -1,9 +1,18 @@
 import { json, type RequestHandler } from '@sveltejs/kit'
 import { env } from '$env/dynamic/private'
 
+interface ChatMessagePart {
+  type: string
+  text?: string
+  cache_control?: { type: 'ephemeral' }
+}
+
 interface ChatRequestBody {
   model: string
-  messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>
+  messages: Array<{
+    role: 'system' | 'user' | 'assistant'
+    content: string | ChatMessagePart[]
+  }>
   maxTokens?: number
   temperature?: number
 }

@@ -5,6 +5,9 @@ import { es } from './locales/es'
 import { fr } from './locales/fr'
 import { de } from './locales/de'
 import { it } from './locales/it'
+import { tr } from './locales/tr'
+import { ru } from './locales/ru'
+import { ar } from './locales/ar'
 
 export * from './types'
 
@@ -14,10 +17,13 @@ const LOCALES: Record<SupportedLanguage, TranslationSchema> = {
   es,
   fr,
   de,
-  it
+  it,
+  tr,
+  ru,
+  ar
 }
 
-const SUPPORTED_LANGUAGE_CODES: SupportedLanguage[] = ['pt-PT', 'en', 'es', 'fr', 'de', 'it']
+const SUPPORTED_LANGUAGE_CODES: SupportedLanguage[] = ['pt-PT', 'en', 'es', 'fr', 'de', 'it', 'tr', 'ru', 'ar']
 
 export function isSupportedLanguage(lang: unknown): lang is SupportedLanguage {
   return typeof lang === 'string' && SUPPORTED_LANGUAGE_CODES.includes(lang as SupportedLanguage)
@@ -42,6 +48,7 @@ export class I18nState {
         const stored = localStorage.getItem('model_talks_lang')
         if (stored && isSupportedLanguage(stored)) {
           this.currentLanguage = stored
+          document.documentElement.dir = stored === 'ar' ? 'rtl' : 'ltr'
         }
       } catch {
         // Ignore local storage error
@@ -58,6 +65,7 @@ export class I18nState {
       try {
         localStorage.setItem('model_talks_lang', resolved)
         document.documentElement.lang = resolved
+        document.documentElement.dir = resolved === 'ar' ? 'rtl' : 'ltr'
       } catch {
         // Ignore local storage error
       }

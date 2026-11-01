@@ -39,9 +39,16 @@
     currentUser.set(data.user ?? null)
   })
 
+  let lastUserId = $state<string | null | undefined>(undefined)
+
   $effect(() => {
-    if (data.user?.settings?.language) {
-      i18n.setLanguage(data.user.settings.language)
+    const currentUserId = data.user?.id ?? null
+    if (lastUserId === undefined) {
+      lastUserId = currentUserId
+    } else if (lastUserId !== currentUserId) {
+      lastUserId = currentUserId
+      const loaded = loadSettings(currentUserId, data.user?.settings)
+      i18n.setLanguage(loaded.language)
     }
   })
 

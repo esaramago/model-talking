@@ -1,7 +1,20 @@
 import type { ChatMessage, LanguageOption, ModelOption } from '@/types/chat'
-import { BASE_SYSTEM_PROMPT, DEFAULT_MODEL, DEFAULT_SETTINGS, SUPPORTED_LANGUAGES } from '@/lib/config'
+import {
+  AGENT_1_BASE_PROMPT,
+  AGENT_2_BASE_PROMPT,
+  BASE_SYSTEM_PROMPT,
+  DEFAULT_MODEL,
+  DEFAULT_SETTINGS,
+  SUPPORTED_LANGUAGES
+} from '@/lib/config'
 
-export { BASE_SYSTEM_PROMPT, DEFAULT_MODEL, SUPPORTED_LANGUAGES }
+export {
+  AGENT_1_BASE_PROMPT,
+  AGENT_2_BASE_PROMPT,
+  BASE_SYSTEM_PROMPT,
+  DEFAULT_MODEL,
+  SUPPORTED_LANGUAGES
+}
 
 export function getLanguageInstruction(language?: string): string {
   if (!language) return ''
@@ -37,12 +50,30 @@ export function getLanguageInstruction(language?: string): string {
     return 'Responde sempre em italiano.'
   }
 
+  if (normalized === 'tr') {
+    return 'Responde sempre em turco.'
+  }
+
+  if (normalized === 'ru') {
+    return 'Responde sempre em russo.'
+  }
+
+  if (normalized === 'ar') {
+    return 'Responde sempre em árabe.'
+  }
+
   return `Responde sempre em ${language}.`
+}
+
+export interface MessageContentPart {
+  type: 'text'
+  text: string
+  cache_control?: { type: 'ephemeral' }
 }
 
 export interface ApiChatMessage {
   role: 'system' | 'user' | 'assistant'
-  content: string
+  content: string | MessageContentPart[]
 }
 
 /**
@@ -51,7 +82,7 @@ export interface ApiChatMessage {
  */
 export function buildMessagesForModel(
   messages: ChatMessage[],
-  targetSpeaker: 'llm1' | 'llm2',
+  targetSpeaker: 'agent1' | 'agent2',
   systemPrompt: string,
   generalRules: string = DEFAULT_SETTINGS.generalRules,
   agentName?: string,
@@ -59,23 +90,40 @@ export function buildMessagesForModel(
 ): ApiChatMessage[] {
   const result: ApiChatMessage[] = []
 
+  const agentRolePrompt = targetSpeaker === 'agent1' ? AGENT_1_BASE_PROMPT : AGENT_2_BASE_PROMPT
   const namePrompt = agentName?.trim() ? `O teu nome é ${agentName.trim()}.` : ''
   const languagePrompt = getLanguageInstruction(language)
   const rules = generalRules !== undefined ? generalRules.trim() : DEFAULT_SETTINGS.generalRules
 
-  const combinedSystemPrompt = [BASE_SYSTEM_PROMPT, namePrompt, systemPrompt.trim(), languagePrompt, rules]
+  const combinedSystemPrompt = [
+    BASE_SYSTEM_PROMPT,
+    agentRolePrompt,
+    namePrompt,
+    systemPrompt.trim(),
+    languagePrompt,
+    rules
+  ]
     .filter(Boolean)
     .join('\n\n')
 
   if (combinedSystemPrompt) {
-    result.push({ role: 'system', content: combinedSystemPrompt })
+    result.push({
+      role: 'system',
+      content: [
+        {
+          type: 'text',
+          text: combinedSystemPrompt,
+          cache_control: { type: 'ephemeral' }
+        }
+      ]
+    })
   }
 
-  if (targetSpeaker === 'llm2') {
+  if (targetSpeaker === 'agent2') {
     // LLM 2 sees LLM 1 messages as 'user' and its own messages as 'assistant'
     for (const msg of messages) {
       result.push({
-        role: msg.speaker === 'llm1' ? 'user' : 'assistant',
+        role: msg.speaker === 'agent1' ? 'user' : 'assistant',
         content: msg.content
       })
     }
@@ -92,7 +140,7 @@ export function buildMessagesForModel(
       for (let i = 2; i < messages.length; i++) {
         const msg = messages[i]
         result.push({
-          role: msg.speaker === 'llm1' ? 'assistant' : 'user',
+          role: msg.speaker === 'agent1' ? 'assistant' : 'user',
           content: msg.content
         })
       }

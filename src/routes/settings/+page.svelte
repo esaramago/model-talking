@@ -14,6 +14,7 @@
   let maxTokens = $state(DEFAULT_SETTINGS.maxTokens)
   let generalRules = $state(DEFAULT_SETTINGS.generalRules)
   let isHydrated = $state(false)
+  let lastSyncedUserId = $state<string | null | undefined>(undefined)
 
   const generalRulesMaxChars = 120
 
@@ -28,13 +29,19 @@
 
   onMount(() => {
     applySettings(user?.id, user?.settings)
+    lastSyncedUserId = user?.id ?? null
     isHydrated = true
   })
 
   $effect(() => {
     const currentUserId = user?.id ?? null
     const userSettings = user?.settings ?? null
-    applySettings(currentUserId, userSettings)
+    if (lastSyncedUserId === undefined) {
+      lastSyncedUserId = currentUserId
+    } else if (lastSyncedUserId !== currentUserId) {
+      lastSyncedUserId = currentUserId
+      applySettings(currentUserId, userSettings)
+    }
   })
 
   function handleModelInput(e: Event) {
@@ -49,11 +56,12 @@
   }
 
   function handleLanguageChange(e: Event) {
-    const target = e.currentTarget as HTMLElement & { value: string }
-    const newLang = target.value || DEFAULT_SETTINGS.language
+    const target = e.target as HTMLElement & { value?: string }
+    const currentTarget = e.currentTarget as HTMLElement & { value?: string }
+    const newLang = target?.value || currentTarget?.value || DEFAULT_SETTINGS.language
+    if (!newLang) return
     language = newLang
     i18n.setLanguage(newLang)
-    if (!isHydrated) return
     const current = loadSettings(user?.id, user?.settings)
     saveSettings({
       ...current,
@@ -128,9 +136,10 @@
         value={language}
         hint={t('settings.languageHint')}
         onchange={handleLanguageChange}
+        oninput={handleLanguageChange}
       >
         {#each SUPPORTED_LANGUAGES as lang}
-          <wa-option value={lang.value}>{t(`languages.${lang.value}` as any) || lang.label}</wa-option>
+          <wa-option value={lang.value}>{lang.label}</wa-option>
         {/each}
       </wa-select>
     </Grid>
