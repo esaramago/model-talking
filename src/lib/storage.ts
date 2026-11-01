@@ -5,8 +5,22 @@ import { i18n } from '@/lib/i18n/index.svelte'
 
 export { DEFAULT_SETTINGS, STORAGE_KEY_PREFIX }
 
+export const DRAFT_STORAGE_KEY = 'model_talks_draft'
+
+export interface AgentDraft {
+  initialTopic: string
+  agent1Name: string
+  agent2Name: string
+  systemPrompt1: string
+  systemPrompt2: string
+}
+
 export function getStorageKey(userId?: string | null): string {
   return userId ? `${STORAGE_KEY_PREFIX}_${userId}` : `${STORAGE_KEY_PREFIX}_guest`
+}
+
+function getDraftStorageKey(userId?: string | null): string {
+  return userId ? `${DRAFT_STORAGE_KEY}_${userId}` : `${DRAFT_STORAGE_KEY}_guest`
 }
 
 export function sanitizeSettings(
@@ -151,5 +165,82 @@ export function clearSettings(userId?: string | null): void {
     userSettingsCache.delete(userId)
   } else {
     guestSettings = { ...DEFAULT_SETTINGS }
+  }
+}
+
+/**
+ * Loads the unsaved agents draft from localStorage, if any.
+ * The draft is cleared once the conversation is persisted to the database.
+ */
+export function loadAgentDraft(userId?: string | null): AgentDraft | null {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return null
+  }
+
+  try {
+    const raw = localStorage.getItem(getDraftStorageKey(userId))
+    if (!raw) return null
+
+    const parsed = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object') return null
+
+    return {
+      initialTopic:
+        typeof parsed.initialTopic === 'string'
+          ? parsed.initialTopic.slice(0, 200)
+          : '',
+      agent1Name:
+        typeof parsed.agent1Name === 'string' ? parsed.agent1Name.slice(0, 40) : '',
+      agent2Name:
+        typeof parsed.agent2Name === 'string' ? parsed.agent2Name.slice(0, 40) : '',
+      systemPrompt1:
+        typeof parsed.systemPrompt1 === 'string'
+          ? parsed.systemPrompt1.slice(0, 200)
+          : '',
+      systemPrompt2:
+        typeof parsed.systemPrompt2 === 'string'
+          ? parsed.systemPrompt2.slice(0, 200)
+          : ''
+    }
+  } catch {
+    return null
+  }
+}
+
+export function saveAgentDraft(
+  draft: AgentDraft,
+  userId?: string | null
+): void {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return
+  }
+
+  try {
+    const key = getDraftStorageKey(userId)
+    const serialized = JSON.stringify({
+      initialTopic: draft.initialTopic.slice(0, 200),
+      agent1Name: draft.agent1Name.slice(0, 40),
+      agent2Name: draft.agent2Name.slice(0, 40),
+      systemPrompt1: draft.systemPrompt1.slice(0, 200),
+      systemPrompt2: draft.systemPrompt2.slice(0, 200)
+    })
+
+    if (localStorage.getItem(key) !== serialized) {
+      localStorage.setItem(key, serialized)
+    }
+  } catch {
+    // Fail silently
+  }
+}
+
+export function clearAgentDraft(userId?: string | null): void {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return
+  }
+
+  try {
+    localStorage.removeItem(getDraftStorageKey(userId))
+  } catch {
+    // Fail silently
   }
 }

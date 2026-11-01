@@ -8,87 +8,89 @@
   let loading = $state(false)
 </script>
 
-<Grid direction="column" gap="l">
-  <Grid direction="column" gap="xs">
-    <h1 data-appearance="h2">{t('register.title')}</h1>
-    <p>{t('register.subtitle')}</p>
-  </Grid>
+<div class="l-container l-container--s">
+  <Grid direction="column" gap="l">
+    <Grid direction="column" gap="xs">
+      <h1 data-appearance="h2">{t('register.title')}</h1>
+      <p>{t('register.subtitle')}</p>
+    </Grid>
 
-  {#if form?.error}
-    <wa-callout variant="danger">
-      <wa-icon slot="start" name="triangle-exclamation" variant="solid"></wa-icon>
-      {form.error}
-    </wa-callout>
-  {/if}
+    {#if form?.error}
+      <wa-callout variant="danger">
+        <wa-icon slot="start" name="triangle-exclamation" variant="solid"></wa-icon>
+        {form.error}
+      </wa-callout>
+    {/if}
 
-  <wa-card>
-    <form
-      method="POST"
-      use:enhance={({ formElement, formData }) => {
-        loading = true
-        const inputs = formElement.querySelectorAll('wa-input')
-        for (const input of inputs) {
-          if (input.name && input.value !== undefined && input.value !== null && !formData.has(input.name)) {
-            formData.append(input.name, String(input.value))
+    <wa-card>
+      <form
+        method="POST"
+        use:enhance={({ formElement, formData }) => {
+          loading = true
+          const inputs = formElement.querySelectorAll('wa-input')
+          for (const input of inputs) {
+            if (input.name && input.value !== undefined && input.value !== null && !formData.has(input.name)) {
+              formData.append(input.name, String(input.value))
+            }
           }
-        }
-        return async ({ update }) => {
-          loading = false
-          await update()
-        }
-      }}
-    >
-      <Grid direction="column">
-        <wa-input
-          name="name"
-          type="text"
-          label={t('register.nameLabel')}
-          placeholder={t('register.namePlaceholder')}
-          value={form?.name ?? ''}
-          autocomplete="name"
-        ></wa-input>
+          return async ({ update }) => {
+            loading = false
+            await update()
+          }
+        }}
+      >
+        <Grid direction="column">
+          <wa-input
+            name="name"
+            type="text"
+            label={t('register.nameLabel')}
+            placeholder={t('register.namePlaceholder')}
+            value={form?.name ?? ''}
+            autocomplete="name"
+          ></wa-input>
 
-        <wa-input
-          name="email"
-          type="email"
-          label={t('register.emailLabel')}
-          placeholder={t('register.emailPlaceholder')}
-          value={form?.email ?? ''}
-          required
-          autocomplete="email"
-        ></wa-input>
+          <wa-input
+            name="email"
+            type="email"
+            label={t('register.emailLabel')}
+            placeholder={t('register.emailPlaceholder')}
+            value={form?.email ?? ''}
+            required
+            autocomplete="email"
+          ></wa-input>
 
-        <wa-input
-          name="password"
-          type="password"
-          label={t('register.passwordLabel')}
-          placeholder={t('register.passwordPlaceholder')}
-          required
-          minlength={8}
-          password-toggle
-          autocomplete="new-password"
-        ></wa-input>
+          <wa-input
+            name="password"
+            type="password"
+            label={t('register.passwordLabel')}
+            placeholder={t('register.passwordPlaceholder')}
+            required
+            minlength={8}
+            password-toggle
+            autocomplete="new-password"
+          ></wa-input>
 
-        <wa-input
-          name="passwordConfirm"
-          type="password"
-          label={t('register.confirmPasswordLabel')}
-          placeholder={t('register.confirmPasswordPlaceholder')}
-          required
-          minlength={8}
-          password-toggle
-          autocomplete="new-password"
-        ></wa-input>
+          <wa-input
+            name="passwordConfirm"
+            type="password"
+            label={t('register.confirmPasswordLabel')}
+            placeholder={t('register.confirmPasswordPlaceholder')}
+            required
+            minlength={8}
+            password-toggle
+            autocomplete="new-password"
+          ></wa-input>
 
-        <wa-button type="submit" variant="brand" {loading}>
-          {t('register.submit')}
-        </wa-button>
-      </Grid>
-    </form>
-  </wa-card>
+          <wa-button type="submit" variant="brand" {loading}>
+            {t('register.submit')}
+          </wa-button>
+        </Grid>
+      </form>
+    </wa-card>
 
-  <p class="u-text-small">
-    {t('register.hasAccount')}
-    <a href="/login">{t('register.loginLink')}</a>
-  </p>
-</Grid>
+    <p class="u-text-small">
+      {t('register.hasAccount')}
+      <a href="/login">{t('register.loginLink')}</a>
+    </p>
+  </Grid>
+</div>

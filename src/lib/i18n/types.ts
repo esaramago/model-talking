@@ -5,6 +5,7 @@ export interface TranslationSchema {
     generatedMessageSingular: string
     generatedMessagePlural: string
     totalTokens: string
+    model: string
   }
   sidebar: {
     newChat: string

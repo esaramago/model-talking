@@ -4,7 +4,8 @@ export const ar: TranslationSchema = {
   header: {
     generatedMessageSingular: 'رسالة مُنشأة',
     generatedMessagePlural: 'رسائل مُنشأة',
-    totalTokens: 'إجمالي التوكنات'
+    totalTokens: 'إجمالي التوكنات',
+    model: 'النموذج'
   },
   sidebar: {
     newChat: 'محادثة جديدة',

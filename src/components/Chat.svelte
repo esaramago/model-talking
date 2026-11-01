@@ -12,17 +12,20 @@
   import {
     buildMessagesForModel,
     requestModelTurn,
-    generateTalkTitle
+    generateTalkTitle,
   } from '@/lib/chat'
   import { DEFAULT_MAX_TOKENS, DEFAULT_MODEL } from '@/lib/config'
   import {
     DEFAULT_SETTINGS,
+    clearAgentDraft,
+    loadAgentDraft,
     loadSettings,
-    saveSettings
+    saveAgentDraft,
+    saveSettings,
   } from '@/lib/storage'
   import {
     getRandomConversation,
-    getRandomPersonaPair
+    getRandomPersonaPair,
   } from '@/lib/randomConversations'
   import { i18n, t } from '@/lib/i18n/index.svelte'
   import type { ChatMessage, TalkRecord } from '@/types/chat'
@@ -80,7 +83,22 @@
     if (talk.language) language = talk.language
     if (talk.maxTokens) maxTokens = talk.maxTokens
     if (talk.totalTokens) totalTokensUsed = talk.totalTokens
-    statusMessage = messages.length > 0 ? t('chat.conversationLoaded') : t('chat.ready')
+    statusMessage = conversationStarted
+      ? t('chat.conversationLoaded')
+      : t('chat.ready')
+  }
+
+  function restoreDraft(): boolean {
+    const draft = loadAgentDraft(user?.id)
+    if (!draft) return false
+
+    initialTopic = draft.initialTopic
+    agent1Name = draft.agent1Name
+    agent2Name = draft.agent2Name
+    systemPrompt1 = draft.systemPrompt1
+    systemPrompt2 = draft.systemPrompt2
+
+    return true
   }
 
   function resetNewChat() {
@@ -92,7 +110,9 @@
     totalPromptTokens = 0
     totalCompletionTokens = 0
     totalTokensUsed = 0
-    randomizeAgents()
+    if (!restoreDraft()) {
+      randomizeAgents()
+    }
     statusMessage = t('chat.ready')
   }
 
@@ -111,7 +131,7 @@
       agent1Avatar,
       agent2Avatar,
       systemPrompt1,
-      systemPrompt2
+      systemPrompt2,
     }
 
     if (props.talkId) {
@@ -149,7 +169,9 @@
       initialTopic = ''
       talksState.pendingRestartAgents = null
     } else {
-      randomizeAgents()
+      if (!restoreDraft()) {
+        randomizeAgents()
+      }
     }
 
     isHydrated = true
@@ -161,7 +183,7 @@
     }
   })
 
-  let lastNewChatTrigger = $state(0)
+  let lastNewChatTrigger = $state(talksState.newChatTrigger)
 
   $effect(() => {
     if (talksState.newChatTrigger > lastNewChatTrigger) {
@@ -201,6 +223,8 @@
     }
   })
 
+  let conversationStarted = $derived(messages.length > 0)
+
   $effect(() => {
     if (!props.talkId) {
       language = i18n.currentLanguage
@@ -210,15 +234,37 @@
   $effect(() => {
     if (!isHydrated) return
 
-    saveSettings({
-      initialTopic: currentTalkId ? loadSettings(user?.id, user?.settings).initialTopic : initialTopic,
-      agent1Name,
-      agent2Name,
-      systemPrompt1,
-      systemPrompt2,
-      generalRules: user ? generalRules : DEFAULT_SETTINGS.generalRules,
-      language
-    }, user?.id)
+    saveSettings(
+      {
+        initialTopic: currentTalkId
+          ? loadSettings(user?.id, user?.settings).initialTopic
+          : initialTopic,
+        agent1Name,
+        agent2Name,
+        systemPrompt1,
+        systemPrompt2,
+        generalRules: user ? generalRules : DEFAULT_SETTINGS.generalRules,
+        language,
+      },
+      user?.id,
+    )
+  })
+
+  $effect(() => {
+    // Keep the agents the user is editing in localStorage until the
+    // conversation is persisted in the database.
+    if (!isHydrated || currentTalkId || props.talkId || props.initialTalk) return
+
+    saveAgentDraft(
+      {
+        initialTopic,
+        agent1Name,
+        agent2Name,
+        systemPrompt1,
+        systemPrompt2,
+      },
+      user?.id,
+    )
   })
 
   $effect(() => {
@@ -229,6 +275,7 @@
     stats.completionTokens = totalCompletionTokens
     stats.status = statusMessage
     stats.isRunning = isRunning
+    stats.model = model || DEFAULT_MODEL
   })
 
   function handleTopicInput(e: Event) {
@@ -263,15 +310,20 @@
   }
 
   async function executeTurn(): Promise<boolean> {
-    if (messages.length === 0) return false
+    if (!conversationStarted) return false
 
     const lastMessage = messages[messages.length - 1]
-    const targetSpeaker: 'agent1' | 'agent2' = lastMessage.speaker === 'agent1' ? 'agent2' : 'agent1'
+    const targetSpeaker: 'agent1' | 'agent2' =
+      lastMessage.speaker === 'agent1' ? 'agent2' : 'agent1'
     const speakerName = getSpeakerName(targetSpeaker)
     const currentModel = model || DEFAULT_MODEL
-    const currentSystemPrompt = targetSpeaker === 'agent1' ? systemPrompt1 : systemPrompt2
-    const currentAgentName = targetSpeaker === 'agent1' ? agent1Name : agent2Name
-    const currentGeneralRules = user ? generalRules : DEFAULT_SETTINGS.generalRules
+    const currentSystemPrompt =
+      targetSpeaker === 'agent1' ? systemPrompt1 : systemPrompt2
+    const currentAgentName =
+      targetSpeaker === 'agent1' ? agent1Name : agent2Name
+    const currentGeneralRules = user
+      ? generalRules
+      : DEFAULT_SETTINGS.generalRules
     const currentMaxTokens = maxTokens || DEFAULT_MAX_TOKENS
 
     activeThinkingSpeaker = speakerName
@@ -285,13 +337,13 @@
         currentSystemPrompt,
         currentGeneralRules,
         currentAgentName,
-        language
+        language,
       )
 
       const response = await requestModelTurn({
         model: currentModel,
         messages: apiMessages,
-        maxTokens: currentMaxTokens
+        maxTokens: currentMaxTokens,
       })
 
       const turnNumber = messages.length + 1
@@ -314,17 +366,19 @@
         completionTokens: cTokens,
         totalTokens: tTokens,
         avatar: targetSpeaker === 'agent1' ? agent1Avatar : agent2Avatar,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       }
 
       messages = [...messages, newMessage]
 
       if (currentTalkId && (user?.id || pb.authStore.record?.id)) {
         try {
-          const updated = await pb.collection('talks').update<TalkRecord>(currentTalkId, {
-            messages,
-            totalTokens: totalTokensUsed
-          })
+          const updated = await pb
+            .collection('talks')
+            .update<TalkRecord>(currentTalkId, {
+              messages,
+              totalTokens: totalTokensUsed,
+            })
           talksState.addOrUpdate(updated)
         } catch (err) {
           console.error('Failed to update talk in PocketBase:', err)
@@ -345,7 +399,7 @@
   async function sendMessage() {
     if (isRunning) return
 
-    if (messages.length === 0) {
+    if (!conversationStarted) {
       if (!initialTopic.trim()) {
         errorMessage = t('chat.errorInitialTopic')
         return
@@ -367,15 +421,16 @@
         content: initialTopic.trim(),
         turn: 1,
         avatar: agent1Avatar,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       }
 
       messages = [firstMessage]
 
       const titleModel = model || DEFAULT_MODEL
-      const talkTitlePromise = generateTalkTitle(initialTopic, titleModel).catch(
-        () => initialTopic.trim().slice(0, 30)
-      )
+      const talkTitlePromise = generateTalkTitle(
+        initialTopic,
+        titleModel,
+      ).catch(() => initialTopic.trim().slice(0, 30))
 
       const turnSuccess = await executeTurn()
       if (!turnSuccess) {
@@ -401,12 +456,16 @@
             model: model || DEFAULT_MODEL,
             maxTokens: maxTokens || DEFAULT_MAX_TOKENS,
             totalTokens: totalTokensUsed,
-            user: currentUserId
+            user: currentUserId,
           })
 
+          clearAgentDraft(currentUserId)
           currentTalkId = newTalk.id
           talksState.addOrUpdate(newTalk)
-          await goto(`/talks/${newTalk.id}`, { replaceState: true, keepFocus: true })
+          await goto(`/talks/${newTalk.id}`, {
+            replaceState: true,
+            keepFocus: true,
+          })
         } catch (err) {
           console.error('Failed to create talk in PocketBase:', err)
         }
@@ -427,7 +486,8 @@
 <Grid direction="column" gap="xl" justify="stretch">
   {#if errorMessage}
     <wa-callout variant="danger">
-      <wa-icon slot="start" name="triangle-exclamation" variant="solid"></wa-icon>
+      <wa-icon slot="start" name="triangle-exclamation" variant="solid"
+      ></wa-icon>
       <Grid direction="column" gap="xs">
         <strong>{t('chat.error')}</strong>
         <p>{errorMessage}</p>
@@ -444,9 +504,36 @@
     bind:systemPrompt1
     bind:systemPrompt2
   />
-  
-  {#if messages.length === 0}
 
+  {#if conversationStarted}<Conversation {messages} {activeThinkingSpeaker} />
+
+    <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+    <Grid wrap={true} align="center" justify="end" gap="s">
+      <wa-button
+        role="button"
+        tabindex="0"
+        variant="neutral"
+        appearance="outlined"
+        disabled={isRunning}
+        onclick={promptRestart}
+      >
+        <wa-icon slot="start" name="arrow-rotate-left" variant="solid"
+        ></wa-icon>
+        {t('chat.restart')}
+      </wa-button>
+
+      <wa-button
+        role="button"
+        tabindex="0"
+        variant="brand"
+        disabled={isRunning}
+        onclick={sendMessage}
+      >
+        <wa-icon slot="start" name="paper-plane" variant="solid"></wa-icon>
+        {t('chat.sendMessage')}
+      </wa-button>
+    </Grid>
+  {:else}
     <div class="chat-item">
       <wa-avatar image={agent1Avatar}></wa-avatar>
       <wa-textarea
@@ -483,34 +570,6 @@
         {t('chat.sendMessage')}
       </wa-button>
     </Grid>
-  {:else}
-    <Conversation {messages} {activeThinkingSpeaker} />
-
-    <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-    <Grid wrap={true} align="center" justify="end" gap="s">
-      <wa-button
-        role="button"
-        tabindex="0"
-        variant="neutral"
-        appearance="outlined"
-        disabled={isRunning}
-        onclick={promptRestart}
-      >
-        <wa-icon slot="start" name="arrow-rotate-left" variant="solid"></wa-icon>
-        {t('chat.restart')}
-      </wa-button>
-
-      <wa-button
-        role="button"
-        tabindex="0"
-        variant="brand"
-        disabled={isRunning}
-        onclick={sendMessage}
-      >
-        <wa-icon slot="start" name="paper-plane" variant="solid"></wa-icon>
-        {t('chat.sendMessage')}
-      </wa-button>
-    </Grid>
   {/if}
 
   <Confirmation
@@ -524,25 +583,25 @@
 </Grid>
 
 <style>
-.chat-item {
-  --avatar-size: 7.3rem;
-  display: grid;
-  align-items: end;
-  grid-template-columns: var(--avatar-size) 1fr;
-  gap: var(--wa-space-m)
-}
-wa-textarea {
-  &::part(textarea) {
-    padding: var(--wa-space-l) var(--wa-space-xl);
-    field-sizing: content;
-    resize: none;
+  .chat-item {
+    --avatar-size: 7.3rem;
+    display: grid;
+    align-items: end;
+    grid-template-columns: var(--avatar-size) 1fr;
+    gap: var(--wa-space-m);
   }
-  &::part(base) {
-    border-radius: var(--wa-border-radius-xl);
-    background-color: var(--wa-color-surface-lowered);
+  wa-textarea {
+    &::part(textarea) {
+      padding: var(--wa-space-l) var(--wa-space-xl);
+      field-sizing: content;
+      resize: none;
+    }
+    &::part(base) {
+      border-radius: var(--wa-border-radius-xl);
+      background-color: var(--wa-color-surface-lowered);
+    }
   }
-}
-wa-avatar {
-  --size: var(--avatar-size);
-}
+  wa-avatar {
+    --size: var(--avatar-size);
+  }
 </style>

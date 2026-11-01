@@ -4,7 +4,8 @@ export const fr: TranslationSchema = {
   header: {
     generatedMessageSingular: 'Message généré',
     generatedMessagePlural: 'Messages générés',
-    totalTokens: 'Total des tokens'
+    totalTokens: 'Total des tokens',
+    model: 'Modèle'
   },
   sidebar: {
     newChat: 'Nouvelle conversation',

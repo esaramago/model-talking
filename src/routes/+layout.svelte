@@ -17,6 +17,7 @@
   import '@awesome.me/webawesome/dist/components/dialog/dialog.js'
   import Header from '@/components/ui/Header.svelte'
   import Sidebar from '@/components/ui/Sidebar.svelte'
+  import Footer from '@/components/ui/Footer.svelte'
   import { talksState } from '@/lib/state/talks.svelte'
   import { currentUser } from '@/lib/pocketbase'
   import { i18n } from '@/lib/i18n/index.svelte'
@@ -70,28 +71,26 @@
       <div class="content">
         {@render children?.()}
       </div>
+      <Footer />
     </div>
   </main>
 </div>
 
 <style>
 .wrapper {
-  height: 100vh;
   @media (min-width: 961px) {
     display: grid;
     grid-template-columns: 28rem 1fr;
   }
 }
 .container {
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: space-between;
 }
 .content {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: contents;
   padding-block-end: var(--wa-space-l);
 }
 </style>

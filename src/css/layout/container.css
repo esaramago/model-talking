@@ -7,3 +7,6 @@
     padding-inline: var(--wa-space-xl);
   }
 }
+.l-container--s {
+  max-width: 60rem;
+}

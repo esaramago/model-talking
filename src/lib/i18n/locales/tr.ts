@@ -4,7 +4,8 @@ export const tr: TranslationSchema = {
   header: {
     generatedMessageSingular: 'Oluşturulan Mesaj',
     generatedMessagePlural: 'Oluşturulan Mesajlar',
-    totalTokens: 'Toplam Token'
+    totalTokens: 'Toplam Token',
+    model: 'Model'
   },
   sidebar: {
     newChat: 'Yeni sohbet',

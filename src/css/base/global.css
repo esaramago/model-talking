@@ -2,11 +2,8 @@ body {
   overflow: hidden;
 }
 main {
-  display: flex;
-  flex-direction: column;
-  gap: var(--wa-space-xl);
   overflow: auto;
-  justify-content: space-around;
+  height: 100vh;
   background: radial-gradient(circle, rgb(43, 7, 54) 0%, rgb(24, 5, 75) 50%, transparent 100%);
 
   @media (prefers-color-scheme: light) {

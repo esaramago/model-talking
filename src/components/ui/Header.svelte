@@ -18,6 +18,7 @@
       </div>
     </Grid>
     <Grid align="center" gap="s">
+      <wa-badge variant="neutral">{t('header.model')}: {stats.model}</wa-badge>
       <wa-badge variant="neutral">
         {stats.generatedMessages} {stats.generatedMessages === 1 ? t('header.generatedMessageSingular') : t('header.generatedMessagePlural')}
       </wa-badge>

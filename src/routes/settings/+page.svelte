@@ -80,56 +80,58 @@
   }
 </script>
 
-<Grid direction="column" gap="l">
-  <Grid direction="column" gap="xs">
-    <h1 data-appearance="h2">{t('settings.title')}</h1>
-    <p>{t('settings.subtitle')}</p>
-  </Grid>
+<div class="l-container l-container--s">
+  <Grid direction="column" gap="l">
+    <Grid direction="column" gap="xs">
+      <h1 data-appearance="h2">{t('settings.title')}</h1>
+      <p>{t('settings.subtitle')}</p>
+    </Grid>
 
-  <wa-card>
-    <Grid direction="column" gap="s">
-      <h2 data-appearance="h4">{t('settings.language')}</h2>
-      <wa-select
-        label={t('settings.languageLabel')}
-        value={language}
-        hint={t('settings.languageHint')}
-        onchange={handleLanguageChange}
-        oninput={handleLanguageChange}
+    <wa-card>
+      <Grid direction="column" gap="s">
+        <h2 data-appearance="h4">{t('settings.language')}</h2>
+        <wa-select
+          label={t('settings.languageLabel')}
+          value={language}
+          hint={t('settings.languageHint')}
+          onchange={handleLanguageChange}
+          oninput={handleLanguageChange}
+        >
+          {#each SUPPORTED_LANGUAGES as lang}
+            <wa-option value={lang.value}>{lang.label}</wa-option>
+          {/each}
+        </wa-select>
+      </Grid>
+    </wa-card>
+
+    <wa-card>
+      <Grid direction="column" gap="s">
+        <h2 data-appearance="h4">{t('settings.generalRules')}</h2>
+        <wa-textarea
+          label={t('settings.generalRulesLabel')}
+          value={generalRules}
+          maxlength={generalRulesMaxChars}
+          rows="2"
+          placeholder={t('settings.generalRulesPlaceholder')}
+          hint={t('settings.generalRulesHint', { current: generalRules.length, max: generalRulesMaxChars })}
+          disabled={isGuest}
+          oninput={handleGeneralRulesInput}
+        ></wa-textarea>
+      </Grid>
+    </wa-card>
+
+    <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+    <Grid align="center" gap="s">
+      <wa-button
+        role="button"
+        tabindex="0"
+        variant="neutral"
+        appearance="outlined"
+        onclick={handleReset}
       >
-        {#each SUPPORTED_LANGUAGES as lang}
-          <wa-option value={lang.value}>{lang.label}</wa-option>
-        {/each}
-      </wa-select>
+        <wa-icon slot="start" name="arrow-rotate-left" variant="solid"></wa-icon>
+        {t('settings.restoreDefaults')}
+      </wa-button>
     </Grid>
-  </wa-card>
-
-  <wa-card>
-    <Grid direction="column" gap="s">
-      <h2 data-appearance="h4">{t('settings.generalRules')}</h2>
-      <wa-textarea
-        label={t('settings.generalRulesLabel')}
-        value={generalRules}
-        maxlength={generalRulesMaxChars}
-        rows="2"
-        placeholder={t('settings.generalRulesPlaceholder')}
-        hint={t('settings.generalRulesHint', { current: generalRules.length, max: generalRulesMaxChars })}
-        disabled={isGuest}
-        oninput={handleGeneralRulesInput}
-      ></wa-textarea>
-    </Grid>
-  </wa-card>
-
-  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-  <Grid align="center" gap="s">
-    <wa-button
-      role="button"
-      tabindex="0"
-      variant="neutral"
-      appearance="outlined"
-      onclick={handleReset}
-    >
-      <wa-icon slot="start" name="arrow-rotate-left" variant="solid"></wa-icon>
-      {t('settings.restoreDefaults')}
-    </wa-button>
   </Grid>
-</Grid>
+</div>
