@@ -3,6 +3,7 @@
   import Logo from './Logo.svelte'
   import { stats } from '@/lib/state/stats.svelte'
   import { sidebar } from '@/lib/state/sidebar.svelte'
+  import { t } from '@/lib/i18n/index.svelte'
 </script>
 
 <header>
@@ -17,8 +18,10 @@
       </div>
     </Grid>
     <Grid align="center" gap="s">
-      <wa-badge variant="neutral">{stats.generatedMessages} {stats.generatedMessages === 1 ? 'Mensagem Gerada' : 'Mensagens Geradas'}</wa-badge>
-      <wa-badge variant="brand">{stats.totalTokens} Tokens Total</wa-badge>
+      <wa-badge variant="neutral">
+        {stats.generatedMessages} {stats.generatedMessages === 1 ? t('header.generatedMessageSingular') : t('header.generatedMessagePlural')}
+      </wa-badge>
+      <wa-badge variant="brand">{stats.totalTokens} {t('header.totalTokens')}</wa-badge>
     </Grid>
   </Grid>
 </header>

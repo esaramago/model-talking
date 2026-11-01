@@ -2,13 +2,15 @@
   import Grid from '@/components/ui/Grid.svelte'
 
   let {
+    readonly = false,
     agent1Name = $bindable('Agente 1'),
     agent2Name = $bindable('Agente 2'),
     agent1Avatar = $bindable('/img/personas/1.svg'),
     agent2Avatar = $bindable('/img/personas/2.svg'),
     systemPrompt1 = $bindable(),
-    systemPrompt2 = $bindable()
+    systemPrompt2 = $bindable(),
   }: {
+    readonly?: boolean,
     agent1Name?: string
     agent2Name?: string
     agent1Avatar?: string
@@ -57,25 +59,36 @@
   {#each configs as config, index (config.id)}
     <wa-card>
       <Grid direction="column" gap="s">
-        <div class="name">
-          <wa-avatar image={config.avatar}></wa-avatar>
-          <wa-input
+
+        {#if readonly}
+          <div class="avatar">
+            <wa-avatar image={config.avatar}></wa-avatar>
+            <Grid direction="column" gap="xs">
+              <strong>{config.name}</strong>
+              <p>{config.value}</p>
+            </Grid>
+          </div>
+        {:else}
+          <div class="avatar">
+            <wa-avatar image={config.avatar}></wa-avatar>
+            <wa-input
+              class="wa-visually-hidden-label"
+              label={`Nome da personagem ${index + 1}`}
+              placeholder="Como me chamo?"
+              maxlength="40"
+              value={config.name}
+              oninput={config.onNameInput}
+            ></wa-input>
+          </div>
+          <wa-textarea
             class="wa-visually-hidden-label"
-            label={`Nome da personagem ${index + 1}`}
-            placeholder="Como me chamo?"
-            maxlength="40"
-            value={config.name}
-            oninput={config.onNameInput}
-          ></wa-input>
-        </div>
-        <wa-textarea
-          class="wa-visually-hidden-label"
-          label={`Descreve a personagem ${index + 1}`}
-          maxlength="200"
-          value={config.value}
-          oninput={config.oninput}
-          placeholder="Descreve-me"
-        ></wa-textarea>
+            label={`Descreve a personagem ${index + 1}`}
+            maxlength="200"
+            value={config.value}
+            oninput={config.oninput}
+            placeholder="Descreve-me"
+          ></wa-textarea>
+        {/if}
       </Grid>
     </wa-card>
   {/each}
@@ -88,7 +101,7 @@ wa-textarea {
     resize: none;
   }
 }
-.name {
+.avatar {
   --avatar-size: 4rem;
   display: grid;
   grid-template-columns: var(--avatar-size) 1fr;

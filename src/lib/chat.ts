@@ -1,20 +1,7 @@
 import type { ChatMessage, LanguageOption, ModelOption } from '@/types/chat'
+import { BASE_SYSTEM_PROMPT, DEFAULT_MODEL, DEFAULT_SETTINGS, SUPPORTED_LANGUAGES } from '@/lib/config'
 
-export const DEFAULT_MODELS: ModelOption[] = [
-  { label: 'Nemotron 3.5 (free)', value: 'nvidia/nemotron-3.5-lightning:free', isFree: true },
-  { label: 'XingChen (free)', value: 'xingchen-agi/xing4.0-29b-a4b:free', isFree: true },
-  { label: 'Gemma 4', value: 'google/gemma-4-26b-a4b-it', isFree: false },
-  { label: 'Mistra Nemo', value: 'mistralai/mistral-nemo', isFree: false },
-]
-
-export const SUPPORTED_LANGUAGES: LanguageOption[] = [
-  { value: 'pt-PT', label: 'Português (pt-PT)' },
-  { value: 'en', label: 'Inglês (en)' },
-  { value: 'es', label: 'Espanhol (es)' },
-  { value: 'fr', label: 'Francês (fr)' },
-  { value: 'de', label: 'Alemão (de)' },
-  { value: 'it', label: 'Italiano (it)' }
-]
+export { BASE_SYSTEM_PROMPT, DEFAULT_MODEL, SUPPORTED_LANGUAGES }
 
 export function getLanguageInstruction(language?: string): string {
   if (!language) return ''
@@ -66,7 +53,7 @@ export function buildMessagesForModel(
   messages: ChatMessage[],
   targetSpeaker: 'llm1' | 'llm2',
   systemPrompt: string,
-  generalRules?: string,
+  generalRules: string = DEFAULT_SETTINGS.generalRules,
   agentName?: string,
   language?: string
 ): ApiChatMessage[] {
@@ -74,8 +61,9 @@ export function buildMessagesForModel(
 
   const namePrompt = agentName?.trim() ? `O teu nome é ${agentName.trim()}.` : ''
   const languagePrompt = getLanguageInstruction(language)
+  const rules = generalRules !== undefined ? generalRules.trim() : DEFAULT_SETTINGS.generalRules
 
-  const combinedSystemPrompt = [namePrompt, systemPrompt.trim(), languagePrompt, generalRules?.trim()]
+  const combinedSystemPrompt = [BASE_SYSTEM_PROMPT, namePrompt, systemPrompt.trim(), languagePrompt, rules]
     .filter(Boolean)
     .join('\n\n')
 
@@ -159,12 +147,12 @@ export async function generateTalkTitle(promptText: string, model?: string): Pro
 
   try {
     const res = await requestModelTurn({
-      model: model || DEFAULT_MODELS[0].value,
+      model: model || DEFAULT_MODEL,
       messages: [
         {
           role: 'system',
           content:
-            'És um gerador de títulos concisos para conversas. Cria um título descritivo e curto baseado no tópico fornecido. O título DEVE ter no máximo 30 caracteres. Responde APENAS com o título, sem aspas, sem pontuação final e sem texto adicional.'
+            'És um gerador de títulos concisos para conversas. O título DEVE ter no máximo 30 caracteres.'
         },
         {
           role: 'user',

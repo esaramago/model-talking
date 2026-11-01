@@ -2,10 +2,12 @@
   import { onMount } from 'svelte'
   import { page } from '$app/state'
   import Grid from '@/components/ui/Grid.svelte'
-  import { DEFAULT_SETTINGS, loadSettings, saveSettings } from '@/lib/storage'
-  import { SUPPORTED_LANGUAGES } from '@/lib/chat'
+  import { DEFAULT_SETTINGS, SUPPORTED_LANGUAGES } from '@/lib/config'
+  import { loadSettings, saveSettings } from '@/lib/storage'
+  import { i18n, t } from '@/lib/i18n/index.svelte'
 
   const user = $derived(page.data?.user ?? null)
+  const isGuest = $derived(!user)
 
   let model = $state(DEFAULT_SETTINGS.model)
   let language = $state(DEFAULT_SETTINGS.language)
@@ -17,10 +19,11 @@
 
   function applySettings(userId?: string | null, fallback?: any) {
     const loaded = loadSettings(userId, fallback)
-    model = loaded.model
+    model = userId ? loaded.model : DEFAULT_SETTINGS.model
     language = loaded.language
-    maxTokens = loaded.maxTokens
-    generalRules = loaded.generalRules
+    maxTokens = userId ? loaded.maxTokens : DEFAULT_SETTINGS.maxTokens
+    generalRules = userId ? loaded.generalRules : DEFAULT_SETTINGS.generalRules
+    i18n.setLanguage(loaded.language)
   }
 
   onMount(() => {
@@ -35,6 +38,7 @@
   })
 
   function handleModelInput(e: Event) {
+    if (isGuest) return
     model = (e.currentTarget as HTMLInputElement).value
     if (!isHydrated) return
     const current = loadSettings(user?.id, user?.settings)
@@ -46,16 +50,19 @@
 
   function handleLanguageChange(e: Event) {
     const target = e.currentTarget as HTMLElement & { value: string }
-    language = target.value || DEFAULT_SETTINGS.language
+    const newLang = target.value || DEFAULT_SETTINGS.language
+    language = newLang
+    i18n.setLanguage(newLang)
     if (!isHydrated) return
     const current = loadSettings(user?.id, user?.settings)
     saveSettings({
       ...current,
-      language
+      language: newLang
     }, user?.id)
   }
 
   function handleGeneralRulesInput(e: Event) {
+    if (isGuest) return
     const target = e.currentTarget as HTMLTextAreaElement
     if (target.value.length > generalRulesMaxChars) {
       target.value = target.value.slice(0, generalRulesMaxChars)
@@ -70,6 +77,7 @@
   }
 
   function handleMaxTokensInput(e: Event) {
+    if (isGuest) return
     maxTokens = Number((e.currentTarget as HTMLInputElement).value) || DEFAULT_SETTINGS.maxTokens
     if (!isHydrated) return
     const current = loadSettings(user?.id, user?.settings)
@@ -84,6 +92,7 @@
     language = DEFAULT_SETTINGS.language
     maxTokens = DEFAULT_SETTINGS.maxTokens
     generalRules = DEFAULT_SETTINGS.generalRules
+    i18n.setLanguage(DEFAULT_SETTINGS.language)
     if (!isHydrated) return
     saveSettings({
       ...DEFAULT_SETTINGS
@@ -93,18 +102,19 @@
 
 <Grid direction="column" gap="l">
   <Grid direction="column" gap="xs">
-    <h1 data-appearance="h2">Definições</h1>
-    <p>Configurações gerais para os modelos de conversação.</p>
+    <h1 data-appearance="h2">{t('settings.title')}</h1>
+    <p>{t('settings.subtitle')}</p>
   </Grid>
 
   <wa-card>
     <Grid direction="column" gap="s">
-      <h2 data-appearance="h4">Modelo de IA</h2>
+      <h2 data-appearance="h4">{t('settings.aiModel')}</h2>
       <wa-input
-        label="Modelo"
+        label={t('settings.modelLabel')}
         value={model}
-        placeholder="ex: meta-llama/llama-3.3-70b-instruct:free"
-        hint="Modelo utilizado por ambos os conversadores."
+        placeholder={t('settings.modelPlaceholder')}
+        hint={t('settings.modelHint')}
+        disabled={isGuest}
         oninput={handleModelInput}
       ></wa-input>
     </Grid>
@@ -112,15 +122,15 @@
 
   <wa-card>
     <Grid direction="column" gap="s">
-      <h2 data-appearance="h4">Idioma</h2>
+      <h2 data-appearance="h4">{t('settings.language')}</h2>
       <wa-select
-        label="Idioma das Conversas"
+        label={t('settings.languageLabel')}
         value={language}
-        hint="Idioma utilizado pelos agentes no diálogo."
+        hint={t('settings.languageHint')}
         onchange={handleLanguageChange}
       >
         {#each SUPPORTED_LANGUAGES as lang}
-          <wa-option value={lang.value}>{lang.label}</wa-option>
+          <wa-option value={lang.value}>{t(`languages.${lang.value}` as any) || lang.label}</wa-option>
         {/each}
       </wa-select>
     </Grid>
@@ -128,14 +138,15 @@
 
   <wa-card>
     <Grid direction="column" gap="s">
-      <h2 data-appearance="h4">Regras Gerais</h2>
+      <h2 data-appearance="h4">{t('settings.generalRules')}</h2>
       <wa-textarea
-        label="Regras Gerais para os Agentes"
+        label={t('settings.generalRulesLabel')}
         value={generalRules}
-        maxlength="generalRulesMaxChars"
+        maxlength={generalRulesMaxChars}
         rows="2"
-        placeholder="ex: Responde sempre em português e de forma concisa."
-        hint={`Regras adicionadas à descrição dos agentes (${generalRules.length}/${generalRulesMaxChars} caracteres).`}
+        placeholder={t('settings.generalRulesPlaceholder')}
+        hint={t('settings.generalRulesHint', { current: generalRules.length, max: generalRulesMaxChars })}
+        disabled={isGuest}
         oninput={handleGeneralRulesInput}
       ></wa-textarea>
     </Grid>
@@ -143,15 +154,16 @@
 
   <wa-card>
     <Grid direction="column" gap="s">
-      <h2 data-appearance="h4">Proteção de Tokens</h2>
+      <h2 data-appearance="h4">{t('settings.tokenProtection')}</h2>
       <wa-input
-        label="Máximo de Tokens por resposta"
+        label={t('settings.maxTokensLabel')}
         type="number"
         min="50"
         max="1000"
         step="50"
         value={String(maxTokens)}
-        hint="Restringe o tamanho de cada resposta individual."
+        hint={t('settings.maxTokensHint')}
+        disabled={isGuest}
         oninput={handleMaxTokensInput}
       ></wa-input>
     </Grid>
@@ -167,7 +179,7 @@
       onclick={handleReset}
     >
       <wa-icon slot="start" name="arrow-rotate-left" variant="solid"></wa-icon>
-      Restaurar Predefinições
+      {t('settings.restoreDefaults')}
     </wa-button>
   </Grid>
 </Grid>

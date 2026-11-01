@@ -1,4 +1,5 @@
 import rawConversations from '@/data/randomConversations.json'
+import { AVAILABLE_PERSONAS } from '@/lib/config'
 
 export interface RandomConversationCharacter {
   name: string
@@ -14,7 +15,7 @@ export interface RandomConversation {
   agent2: RandomConversationCharacter
 }
 
-export const AVAILABLE_PERSONAS = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
+export { AVAILABLE_PERSONAS }
 
 export function getPersonaImageUrl(personaId: string | number): string {
   return `/img/personas/${personaId}.svg`

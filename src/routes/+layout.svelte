@@ -19,6 +19,8 @@
   import Sidebar from '@/components/ui/Sidebar.svelte'
   import { talksState } from '@/lib/state/talks.svelte'
   import { currentUser } from '@/lib/pocketbase'
+  import { i18n } from '@/lib/i18n/index.svelte'
+  import { loadSettings } from '@/lib/storage'
   import type { LayoutData } from './$types'
   import type { Snippet } from 'svelte'
   import { onMount } from 'svelte'
@@ -37,7 +39,15 @@
     currentUser.set(data.user ?? null)
   })
 
+  $effect(() => {
+    if (data.user?.settings?.language) {
+      i18n.setLanguage(data.user.settings.language)
+    }
+  })
+
   onMount(() => {
+    const loaded = loadSettings(data.user?.id, data.user?.settings)
+    i18n.setLanguage(loaded.language)
     talksState.subscribe()
     return () => {
       talksState.unsubscribe()

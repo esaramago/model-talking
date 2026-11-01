@@ -1,22 +1,12 @@
 import type { ChatSettings } from '@/types/chat'
 import { pb } from '@/lib/pocketbase'
+import { DEFAULT_SETTINGS, STORAGE_KEY_PREFIX } from '@/lib/config'
+import { i18n } from '@/lib/i18n/index.svelte'
 
-export const STORAGE_KEY_PREFIX = 'model_talks_settings'
+export { DEFAULT_SETTINGS, STORAGE_KEY_PREFIX }
 
 export function getStorageKey(userId?: string | null): string {
   return userId ? `${STORAGE_KEY_PREFIX}_${userId}` : `${STORAGE_KEY_PREFIX}_guest`
-}
-
-export const DEFAULT_SETTINGS: ChatSettings = {
-  initialTopic: '',
-  maxTokens: 200,
-  model: 'mistralai/mistral-nemo',
-  agent1Name: '',
-  agent2Name: '',
-  systemPrompt1: '',
-  systemPrompt2: '',
-  generalRules: 'A resposta não pode ter mais de 300 caracteres.',
-  language: 'pt-PT'
 }
 
 export function sanitizeSettings(
@@ -93,8 +83,14 @@ export function loadSettings(
     const sanitized = sanitizeSettings(fallbackSettings)
     if (userId) {
       userSettingsCache.set(userId, sanitized)
+      return sanitized
     }
-    return sanitized
+    return {
+      ...sanitized,
+      model: DEFAULT_SETTINGS.model,
+      maxTokens: DEFAULT_SETTINGS.maxTokens,
+      generalRules: DEFAULT_SETTINGS.generalRules
+    }
   }
 
   if (userId) {
@@ -103,7 +99,22 @@ export function loadSettings(
       return cached
     }
   } else {
-    return guestSettings
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      try {
+        const storedLang = localStorage.getItem('model_talks_lang')
+        if (storedLang) {
+          guestSettings.language = storedLang
+        }
+      } catch {
+        // Fail silently
+      }
+    }
+    return {
+      ...guestSettings,
+      model: DEFAULT_SETTINGS.model,
+      maxTokens: DEFAULT_SETTINGS.maxTokens,
+      generalRules: DEFAULT_SETTINGS.generalRules
+    }
   }
 
   return DEFAULT_SETTINGS
@@ -115,8 +126,15 @@ export function saveSettings(settings: ChatSettings, userId?: string | null): vo
   if (userId) {
     userSettingsCache.set(userId, sanitized)
   } else {
-    guestSettings = sanitized
+    guestSettings = {
+      ...sanitized,
+      model: DEFAULT_SETTINGS.model,
+      maxTokens: DEFAULT_SETTINGS.maxTokens,
+      generalRules: DEFAULT_SETTINGS.generalRules
+    }
   }
+
+  i18n.setLanguage(sanitized.language)
 
   const activeUserId = userId || (typeof window !== 'undefined' ? pb.authStore.record?.id : null)
   if (activeUserId && typeof window !== 'undefined' && pb.authStore.record?.id === activeUserId) {
