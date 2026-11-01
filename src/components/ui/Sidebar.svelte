@@ -36,14 +36,23 @@ const talks = $derived(user ? (talksState.items.length > 0 ? talksState.items : 
           </ul>
         {/if}
       </Grid>
+    {:else}
+      <Grid align="center" gap="xs">
+        <wa-icon name="circle-info"></wa-icon>
+        <p class="u-text-small">
+          <a href="/login" onclick={() => sidebar.close()}>Inicia a sessão</a> para guardar a atividade
+        </p>
+      </Grid>
     {/if}
   </Grid>
   <Grid direction="column" gap="s">
     <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-    <wa-button role="button" tabindex="0" href="/settings" variant="neutral" appearance="outlined" onclick={() => sidebar.close()}>
-      <wa-icon slot="start" name="gear" variant="solid"></wa-icon>
-      Definições
-    </wa-button>
+    <div>
+      <wa-button role="button" tabindex="0" size="s" href="/settings" variant="neutral" appearance="plain" onclick={() => sidebar.close()}>
+        <wa-icon slot="start" name="gear" variant="solid"></wa-icon>
+        Definições
+      </wa-button>
+    </div>
 
     {#if user}
       <Grid justify="space-between" align="center" gap="s">
@@ -57,17 +66,11 @@ const talks = $derived(user ? (talksState.items.length > 0 ? talksState.items : 
         </form>
       </Grid>
     {:else}
-      <Grid gap="s">
-        <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-        <wa-button role="button" tabindex="0" href="/login" variant="neutral" appearance="outlined" onclick={() => sidebar.close()}>
-          <wa-icon slot="start" name="arrow-right-to-bracket" variant="solid"></wa-icon>
-          Entrar
-        </wa-button>
-        <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-        <wa-button role="button" tabindex="0" href="/register" variant="brand" onclick={() => sidebar.close()}>
-          Registar
-        </wa-button>
-      </Grid>
+      <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+      <wa-button role="button" tabindex="0" href="/login" variant="brand" appearance="outlined" onclick={() => sidebar.close()}>
+        <wa-icon slot="start" name="arrow-right-to-bracket" variant="solid"></wa-icon>
+        Iniciar sessão
+      </wa-button>
     {/if}
   </Grid>
 </aside>
