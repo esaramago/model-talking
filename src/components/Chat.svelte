@@ -18,6 +18,12 @@
     loadSettings,
     saveSettings
   } from '@/lib/storage'
+  import {
+    getRandomConversation,
+    buildRandomChatMessages,
+    setActiveRandomTalk,
+    getActiveRandomTalk
+  } from '@/lib/randomConversations'
   import type { ChatMessage, TalkRecord } from '@/types/chat'
 
   let props: {
@@ -54,6 +60,10 @@
   let totalTokensUsed = $state(0)
 
   let activeThinkingSpeaker = $state<string | null>(null)
+
+  let isRandomMode = $state(false)
+  let randomScriptMessages = $state<ChatMessage[] | null>(null)
+  let lastRandomId = $state<string | undefined>(undefined)
 
   function applyTalk(talk: TalkRecord) {
     currentTalkId = talk.id
@@ -98,6 +108,12 @@
       initialTopic = loaded.initialTopic
     }
 
+    const activeRandom = getActiveRandomTalk()
+    if (activeRandom && (!currentTalkId || activeRandom.talkId === currentTalkId)) {
+      isRandomMode = true
+      randomScriptMessages = activeRandom.messages
+    }
+
     isHydrated = true
   })
 
@@ -113,6 +129,9 @@
       totalPromptTokens = 0
       totalCompletionTokens = 0
       totalTokensUsed = 0
+      isRandomMode = false
+      randomScriptMessages = null
+      setActiveRandomTalk(null)
       const loaded = loadSettings(user?.id, user?.settings)
       initialTopic = loaded.initialTopic
       language = loaded.language
@@ -387,10 +406,143 @@
     await runDialogueLoop()
   }
 
+  const RANDOM_TURN_DELAY_SECONDS = 3
+
+  async function runRandomDialogueLoop() {
+    while (!shouldStop && randomScriptMessages && messages.length < currentMaxTurns) {
+      const shouldContinue = await waitWithCountdown(RANDOM_TURN_DELAY_SECONDS)
+      if (!shouldContinue || shouldStop) break
+
+      const nextIndex = messages.length
+      if (nextIndex >= randomScriptMessages.length) break
+
+      const nextMessage = randomScriptMessages[nextIndex]
+      messages = [...messages, nextMessage]
+
+      if (currentTalkId && (user?.id || pb.authStore.record?.id)) {
+        try {
+          const updated = await pb.collection('talks').update<TalkRecord>(currentTalkId, {
+            messages,
+            totalTokens: 0
+          })
+          talksState.addOrUpdate(updated)
+        } catch (err) {
+          console.error('Failed to update talk in PocketBase:', err)
+        }
+      }
+
+      if (messages.length >= currentMaxTurns) {
+        activeThinkingSpeaker = null
+        statusMessage = `Concluído: limite de ${currentMaxTurns} turnos atingido.`
+        break
+      } else {
+        const upcomingSpeaker = randomScriptMessages[messages.length].speakerName
+        activeThinkingSpeaker = upcomingSpeaker
+        statusMessage = `${upcomingSpeaker} a pensar...`
+      }
+    }
+
+    isRunning = false
+    if (shouldStop) {
+      activeThinkingSpeaker = null
+      statusMessage = 'Diálogo pausado.'
+    } else if (messages.length >= currentMaxTurns) {
+      activeThinkingSpeaker = null
+    }
+  }
+
+  async function startRandomDialogue() {
+    if (isRunning) return
+
+    const conv = getRandomConversation(lastRandomId)
+    lastRandomId = conv.id
+
+    agent1Name = conv.agent1.name
+    systemPrompt1 = conv.agent1.description
+    agent2Name = conv.agent2.name
+    systemPrompt2 = conv.agent2.description
+    initialTopic = conv.agent1.prompts[0]
+
+    const scriptMessages = buildRandomChatMessages(conv, model)
+    randomScriptMessages = scriptMessages
+    isRandomMode = true
+
+    errorMessage = ''
+    shouldStop = false
+    isRunning = true
+
+    messages = []
+    totalPromptTokens = 0
+    totalCompletionTokens = 0
+    totalTokensUsed = 0
+    currentMaxTurns = scriptMessages.length
+    activeThinkingSpeaker = null
+
+    const firstMessage = scriptMessages[0]
+    messages = [firstMessage]
+
+    const talkTitle = conv.title
+    const currentUserId = user?.id || pb.authStore.record?.id
+
+    if (currentUserId) {
+      statusMessage = 'A guardar conversa...'
+      try {
+        const newTalk = await pb.collection('talks').create<TalkRecord>({
+          title: talkTitle,
+          initialTopic: initialTopic.trim(),
+          messages: [firstMessage],
+          agent1Name,
+          agent2Name,
+          systemPrompt1,
+          systemPrompt2,
+          generalRules,
+          language,
+          model,
+          maxTurns: currentMaxTurns,
+          maxTokens,
+          totalTokens: 0,
+          user: currentUserId
+        })
+
+        currentTalkId = newTalk.id
+        talksState.addOrUpdate(newTalk)
+        setActiveRandomTalk({ talkId: newTalk.id, conv, messages: scriptMessages })
+        if (typeof window !== 'undefined') {
+          window.history.replaceState(window.history.state, '', `/talks/${newTalk.id}`)
+        }
+      } catch (err) {
+        console.error('Failed to create talk in PocketBase:', err)
+      }
+    } else {
+      setActiveRandomTalk({ conv, messages: scriptMessages })
+    }
+
+    const nextSpeakerName = getSpeakerName('llm2')
+    activeThinkingSpeaker = nextSpeakerName
+    statusMessage = `${nextSpeakerName} a pensar...`
+
+    await runRandomDialogueLoop()
+  }
+
   async function continueDialogue() {
     if (isRunning) return
     if (messages.length === 0) {
       await startDialogue()
+      return
+    }
+
+    if (isRandomMode && randomScriptMessages && messages.length < randomScriptMessages.length) {
+      errorMessage = ''
+      shouldStop = false
+      isRunning = true
+      currentMaxTurns = randomScriptMessages.length
+
+      const nextMessage = randomScriptMessages[messages.length]
+      const nextSpeakerName = nextMessage.speakerName
+      activeThinkingSpeaker = nextSpeakerName
+      statusMessage = `${nextSpeakerName} a pensar...`
+
+      await runRandomDialogueLoop()
       return
     }
 
@@ -448,6 +600,18 @@
 
     <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
     <Grid wrap={true} align="center" justify="end" gap="s">
+      <wa-button
+        role="button"
+        tabindex="0"
+        variant="neutral"
+        appearance="outlined"
+        disabled={isRunning}
+        onclick={startRandomDialogue}
+      >
+        <wa-icon slot="start" name="shuffle" variant="solid"></wa-icon>
+        Random
+      </wa-button>
+
       <wa-button
         role="button"
         tabindex="0"
