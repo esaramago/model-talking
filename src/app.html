@@ -1,13 +1,23 @@
 <!doctype html>
-<html lang="pt" class="wa-dark wa-cloak">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<title>Model Talking</title>
-		%sveltekit.head%
-	</head>
-	<body data-sveltekit-preload-data="hover">
-		<div style="display: contents">%sveltekit.body%</div>
-	</body>
+<html lang="pt" class="wa-cloak">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%sveltekit.assets%/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Model Talking</title>
+    <script>
+      (function () {
+        const media = window.matchMedia('(prefers-color-scheme: dark)');
+        function applyTheme(isDark) {
+          document.documentElement.classList.toggle('wa-dark', isDark);
+        }
+        applyTheme(media.matches);
+        media.addEventListener('change', (e) => applyTheme(e.matches));
+      })();
+    </script>
+    %sveltekit.head%
+  </head>
+  <body data-sveltekit-preload-data="hover">
+    <div style="display: contents">%sveltekit.body%</div>
+  </body>
 </html>

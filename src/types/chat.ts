@@ -25,7 +25,6 @@ export interface LanguageOption {
 
 export interface ChatSettings {
   initialTopic: string
-  maxTurns: number
   maxTokens: number
   model: string
   agent1Name: string
@@ -48,7 +47,6 @@ export interface TalkRecord {
   generalRules?: string
   language?: string
   model?: string
-  maxTurns?: number
   maxTokens?: number
   totalTokens?: number
   user?: string

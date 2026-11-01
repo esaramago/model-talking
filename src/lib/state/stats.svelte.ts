@@ -1,6 +1,6 @@
 class StatsState {
   currentTurn = $state(0)
-  maxTurns = $state(4)
+  generatedMessages = $state(0)
   totalTokens = $state(0)
   promptTokens = $state(0)
   completionTokens = $state(0)
@@ -9,6 +9,7 @@ class StatsState {
 
   reset() {
     this.currentTurn = 0
+    this.generatedMessages = 0
     this.totalTokens = 0
     this.promptTokens = 0
     this.completionTokens = 0

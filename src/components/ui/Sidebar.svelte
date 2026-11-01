@@ -19,7 +19,18 @@ const talks = $derived(user ? (talksState.items.length > 0 ? talksState.items : 
       </wa-button>
     </Grid>
     <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-    <wa-button role="button" tabindex="0" href="/" variant="brand" onclick={() => sidebar.close()}>Nova conversa</wa-button>
+    <wa-button
+      role="button"
+      tabindex="0"
+      href="/"
+      variant="brand"
+      onclick={() => {
+        sidebar.close()
+        talksState.triggerNewChat()
+      }}
+    >
+      Nova conversa
+    </wa-button>
     {#if user}
       <Grid direction="column" gap="s">
         <h2 data-appearance="h4">Conversas</h2>
@@ -82,7 +93,7 @@ aside {
   justify-content: space-between;
   width: 28rem;
   padding: var(--wa-space-m) var(--wa-space-s);
-  background-color: var(--wa-color-neutral-10);
+  background-color: var(--wa-color-surface-lowered);
   overflow: auto;
   @media (max-width: 960px) {
     position: absolute;

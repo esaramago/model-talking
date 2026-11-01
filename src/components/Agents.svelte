@@ -54,18 +54,23 @@
 </script>
 
 <Grid wrap={true} break="small" fullWidth>
-  {#each configs as config (config.id)}
+  {#each configs as config, index (config.id)}
     <wa-card>
       <Grid direction="column" gap="s">
-        <wa-avatar image={config.avatar}></wa-avatar>
-        <wa-input
-          label="Name"
-          placeholder="Como me chamo?"
-          maxlength="40"
-          value={config.name}
-          oninput={config.onNameInput}
-        ></wa-input>
+        <div class="name">
+          <wa-avatar image={config.avatar}></wa-avatar>
+          <wa-input
+            class="wa-visually-hidden-label"
+            label={`Nome da personagem ${index + 1}`}
+            placeholder="Como me chamo?"
+            maxlength="40"
+            value={config.name}
+            oninput={config.onNameInput}
+          ></wa-input>
+        </div>
         <wa-textarea
+          class="wa-visually-hidden-label"
+          label={`Descreve a personagem ${index + 1}`}
           maxlength="200"
           value={config.value}
           oninput={config.oninput}
@@ -82,8 +87,14 @@ wa-textarea {
     field-sizing: content;
     resize: none;
   }
-  &::part(base) {
-    background-color: var(--wa-color-neutral-10);
-  }
+}
+.name {
+  --avatar-size: 4rem;
+  display: grid;
+  grid-template-columns: var(--avatar-size) 1fr;
+  gap: var(--wa-space-s);
+}
+wa-avatar {
+  --size: var(--avatar-size);
 }
 </style>

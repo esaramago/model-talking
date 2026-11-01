@@ -8,17 +8,14 @@ export function getStorageKey(userId?: string | null): string {
 }
 
 export const DEFAULT_SETTINGS: ChatSettings = {
-  initialTopic: 'Qual o teu filme favorito de todos os tempos e porquê?',
-  maxTurns: 4,
-  maxTokens: 150,
+  initialTopic: '',
+  maxTokens: 200,
   model: 'mistralai/mistral-nemo',
-  agent1Name: 'John Doe',
-  agent2Name: 'Jane Doe',
-  systemPrompt1:
-    'You are John Doe in a friendly discussion. Answer concisely and ask an engaging follow-up.',
-  systemPrompt2:
-    'You are Jane Doe in a friendly discussion. Answer concisely and respond thoughtfully.',
-  generalRules: '',
+  agent1Name: '',
+  agent2Name: '',
+  systemPrompt1: '',
+  systemPrompt2: '',
+  generalRules: 'A resposta não pode ter mais de 300 caracteres.',
   language: 'pt-PT'
 }
 
@@ -30,10 +27,6 @@ export function sanitizeSettings(
       typeof settings.initialTopic === 'string'
         ? settings.initialTopic.slice(0, 200)
         : DEFAULT_SETTINGS.initialTopic,
-    maxTurns:
-      typeof settings.maxTurns === 'number' && !Number.isNaN(settings.maxTurns)
-        ? settings.maxTurns
-        : DEFAULT_SETTINGS.maxTurns,
     maxTokens:
       typeof settings.maxTokens === 'number' && !Number.isNaN(settings.maxTokens)
         ? settings.maxTokens

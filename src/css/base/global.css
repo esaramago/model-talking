@@ -7,5 +7,9 @@ main {
   gap: var(--wa-space-xl);
   overflow: auto;
   justify-content: space-around;
-  background: radial-gradient(circle,rgb(43, 7, 54) 0%, rgb(24, 5, 75) 50%, transparent 100%);
+  background: radial-gradient(circle,rgb(43, 7, 54) 0%, rgb(24, 5, 75) 50%);
+
+  @media (prefers-color-scheme: light) {
+    background: radial-gradient(circle,rgb(223, 202, 230) 0%, rgb(215, 207, 236) 50%); 
+  }
 }

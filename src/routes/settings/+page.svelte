@@ -9,7 +9,6 @@
 
   let model = $state(DEFAULT_SETTINGS.model)
   let language = $state(DEFAULT_SETTINGS.language)
-  let maxTurns = $state(DEFAULT_SETTINGS.maxTurns)
   let maxTokens = $state(DEFAULT_SETTINGS.maxTokens)
   let generalRules = $state(DEFAULT_SETTINGS.generalRules)
   let isHydrated = $state(false)
@@ -20,7 +19,6 @@
     const loaded = loadSettings(userId, fallback)
     model = loaded.model
     language = loaded.language
-    maxTurns = loaded.maxTurns
     maxTokens = loaded.maxTokens
     generalRules = loaded.generalRules
   }
@@ -71,16 +69,6 @@
     }, user?.id)
   }
 
-  function handleMaxTurnsInput(e: Event) {
-    maxTurns = Number((e.currentTarget as HTMLInputElement).value) || DEFAULT_SETTINGS.maxTurns
-    if (!isHydrated) return
-    const current = loadSettings(user?.id, user?.settings)
-    saveSettings({
-      ...current,
-      maxTurns
-    }, user?.id)
-  }
-
   function handleMaxTokensInput(e: Event) {
     maxTokens = Number((e.currentTarget as HTMLInputElement).value) || DEFAULT_SETTINGS.maxTokens
     if (!isHydrated) return
@@ -94,7 +82,6 @@
   function handleReset() {
     model = DEFAULT_SETTINGS.model
     language = DEFAULT_SETTINGS.language
-    maxTurns = DEFAULT_SETTINGS.maxTurns
     maxTokens = DEFAULT_SETTINGS.maxTokens
     generalRules = DEFAULT_SETTINGS.generalRules
     if (!isHydrated) return
@@ -157,29 +144,16 @@
   <wa-card>
     <Grid direction="column" gap="s">
       <h2 data-appearance="h4">Proteção de Tokens</h2>
-      <Grid fullWidth break="small">
-        <wa-input
-          label="Máximo de Turnos"
-          type="number"
-          min="2"
-          max="20"
-          value={String(maxTurns)}
-          hint="Limite total de respostas trocadas (evita loop infinito)"
-          oninput={handleMaxTurnsInput}
-        ></wa-input>
-
-        <wa-input
-          label="Máximo de Tokens por resposta"
-          type="number"
-          min="50"
-          max="1000"
-          step="50"
-          value={String(maxTokens)}
-          hint="Restringe o tamanho de cada resposta individual."
-          oninput={handleMaxTokensInput}
-        ></wa-input>
-          
-      </Grid>
+      <wa-input
+        label="Máximo de Tokens por resposta"
+        type="number"
+        min="50"
+        max="1000"
+        step="50"
+        value={String(maxTokens)}
+        hint="Restringe o tamanho de cada resposta individual."
+        oninput={handleMaxTokensInput}
+      ></wa-input>
     </Grid>
   </wa-card>
 

@@ -1,5 +1,4 @@
 import rawConversations from '@/data/randomConversations.json'
-import type { ChatMessage } from '@/types/chat'
 
 export interface RandomConversationCharacter {
   name: string
@@ -41,68 +40,3 @@ export function getRandomConversation(excludeId?: string): RandomConversation {
   const index = Math.floor(Math.random() * list.length)
   return list[index]
 }
-
-export function buildRandomChatMessages(
-  conversation: RandomConversation,
-  model = 'random-mode',
-  agent1Avatar = '/img/personas/1.svg',
-  agent2Avatar = '/img/personas/2.svg'
-): ChatMessage[] {
-  const result: ChatMessage[] = []
-  const maxTurns = 5
-
-  for (let i = 0; i < maxTurns; i++) {
-    // Turn from Agent 1 (odd turn number)
-    if (conversation.agent1.prompts[i]) {
-      result.push({
-        id: crypto.randomUUID(),
-        speaker: 'llm1',
-        speakerName: conversation.agent1.name,
-        model,
-        content: conversation.agent1.prompts[i],
-        turn: result.length + 1,
-        promptTokens: 0,
-        completionTokens: 0,
-        totalTokens: 0,
-        avatar: agent1Avatar,
-        timestamp: Date.now()
-      })
-    }
-
-    // Turn from Agent 2 (even turn number)
-    if (conversation.agent2.prompts[i]) {
-      result.push({
-        id: crypto.randomUUID(),
-        speaker: 'llm2',
-        speakerName: conversation.agent2.name,
-        model,
-        content: conversation.agent2.prompts[i],
-        turn: result.length + 1,
-        promptTokens: 0,
-        completionTokens: 0,
-        totalTokens: 0,
-        avatar: agent2Avatar,
-        timestamp: Date.now()
-      })
-    }
-  }
-
-  return result
-}
-
-export interface ActiveRandomTalk {
-  talkId?: string
-  conv: RandomConversation
-  messages: ChatMessage[]
-}
-
-let activeRandomTalk: ActiveRandomTalk | null = null
-
-export function setActiveRandomTalk(talk: ActiveRandomTalk | null): void {
-  activeRandomTalk = talk
-}
-
-export function getActiveRandomTalk(): ActiveRandomTalk | null {
-  return activeRandomTalk
-}
-

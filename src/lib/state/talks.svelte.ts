@@ -4,7 +4,12 @@ import type { TalkRecord } from '@/types/chat'
 class TalksState {
   items = $state<TalkRecord[]>([])
   isLoading = $state(false)
+  newChatTrigger = $state(0)
   private isSubscribed = false
+
+  triggerNewChat() {
+    this.newChatTrigger++
+  }
 
   setTalks(talks: TalkRecord[]) {
     this.items = talks
