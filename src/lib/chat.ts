@@ -241,6 +241,11 @@ export async function requestModelTurn(payload: {
   maxTokens: number
   temperature?: number
   isTitle?: boolean
+  reasoning?: {
+    effort?: 'low' | 'medium' | 'high' | 'max' | 'none'
+    max_tokens?: number
+    exclude?: boolean
+  }
 }): Promise<ChatResponse> {
   const res = await fetch('/api/chat', {
     method: 'POST',
@@ -278,7 +283,7 @@ export async function generateTalkTitle(promptText: string, model?: string): Pro
           content: `Tópico: ${trimmedPrompt}`
         }
       ],
-      maxTokens: 25,
+      maxTokens: 250,
       temperature: 0.5,
       isTitle: true
     })

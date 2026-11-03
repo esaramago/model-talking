@@ -81,7 +81,7 @@
     if (talk.systemPrompt2) systemPrompt2 = talk.systemPrompt2
     if (talk.generalRules) generalRules = talk.generalRules
     if (talk.language) language = talk.language
-    if (talk.maxTokens) maxTokens = talk.maxTokens
+    if (talk.maxTokens) maxTokens = Math.max(talk.maxTokens, MAX_OUTPUT_TOKENS)
     if (talk.totalTokens) totalTokensUsed = talk.totalTokens
     statusMessage = conversationStarted
       ? t('chat.conversationLoaded')

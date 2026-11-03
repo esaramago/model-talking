@@ -18,6 +18,11 @@ interface ChatRequestBody {
   maxTokens?: number
   temperature?: number
   isTitle?: boolean
+  reasoning?: {
+    effort?: 'low' | 'medium' | 'high' | 'max' | 'none'
+    max_tokens?: number
+    exclude?: boolean
+  }
 }
 
 export const GET: RequestHandler = async (event) => {
@@ -30,7 +35,14 @@ export const POST: RequestHandler = async (event) => {
   const { request, locals } = event
   try {
     const body = (await request.json()) as ChatRequestBody
-    const { model, messages, maxTokens = MAX_OUTPUT_TOKENS, temperature = 0.7, isTitle = false } = body
+    const {
+      model,
+      messages,
+      maxTokens = MAX_OUTPUT_TOKENS,
+      temperature = 0.7,
+      isTitle = false,
+      reasoning = { effort: 'low' }
+    } = body
 
     const resolvedApiKey = env.OPENROUTER_API_KEY?.trim() || process.env.OPENROUTER_API_KEY?.trim()
 
@@ -96,6 +108,17 @@ export const POST: RequestHandler = async (event) => {
 
     const clampedTokens = Math.max(10, Math.min(Number(maxTokens) || MAX_OUTPUT_TOKENS, MAX_OUTPUT_TOKENS))
 
+    const requestPayload: Record<string, unknown> = {
+      model,
+      messages,
+      max_tokens: clampedTokens,
+      temperature: Number(temperature) || 0.7
+    }
+
+    if (reasoning) {
+      requestPayload.reasoning = reasoning
+    }
+
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -104,12 +127,7 @@ export const POST: RequestHandler = async (event) => {
         'HTTP-Referer': 'http://localhost:5174',
         'X-Title': 'Model Talking'
       },
-      body: JSON.stringify({
-        model,
-        messages,
-        max_tokens: clampedTokens,
-        temperature: Number(temperature) || 0.7
-      })
+      body: JSON.stringify(requestPayload)
     })
 
     if (!response.ok) {
