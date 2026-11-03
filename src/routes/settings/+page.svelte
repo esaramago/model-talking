@@ -2,7 +2,7 @@
   import { onMount } from 'svelte'
   import { page } from '$app/state'
   import Grid from '@/components/ui/Grid.svelte'
-  import { DEFAULT_SETTINGS, SUPPORTED_LANGUAGES } from '@/lib/config'
+  import { DEFAULT_SETTINGS, SUPPORTED_LANGUAGES, GENERAL_RULES_MAX_CHARS } from '@/lib/config'
   import { loadSettings, saveSettings } from '@/lib/storage'
   import { i18n, t } from '@/lib/i18n/index.svelte'
 
@@ -13,8 +13,6 @@
   let generalRules = $state(DEFAULT_SETTINGS.generalRules)
   let isHydrated = $state(false)
   let lastSyncedUserId = $state<string | null | undefined>(undefined)
-
-  const generalRulesMaxChars = 120
 
   function applySettings(userId?: string | null, fallback?: any) {
     const loaded = loadSettings(userId, fallback)
@@ -57,8 +55,8 @@
   function handleGeneralRulesInput(e: Event) {
     if (isGuest) return
     const target = e.currentTarget as HTMLTextAreaElement
-    if (target.value.length > generalRulesMaxChars) {
-      target.value = target.value.slice(0, generalRulesMaxChars)
+    if (target.value.length > GENERAL_RULES_MAX_CHARS) {
+      target.value = target.value.slice(0, GENERAL_RULES_MAX_CHARS)
     }
     generalRules = target.value
     if (!isHydrated) return
@@ -110,10 +108,10 @@
         <wa-textarea
           label={t('settings.generalRulesLabel')}
           value={generalRules}
-          maxlength={generalRulesMaxChars}
+          maxlength={GENERAL_RULES_MAX_CHARS}
           rows="2"
           placeholder={t('settings.generalRulesPlaceholder')}
-          hint={t('settings.generalRulesHint', { current: generalRules.length, max: generalRulesMaxChars })}
+          hint={t('settings.generalRulesHint', { current: generalRules.length, max: GENERAL_RULES_MAX_CHARS })}
           disabled={isGuest}
           oninput={handleGeneralRulesInput}
         ></wa-textarea>

@@ -10,6 +10,8 @@ export const MODEL = 'mistralai/mistral-nemo'
 export const MAX_OUTPUT_TOKENS = 1024
 export const MAX_INPUT_TOKENS = 8192
 
+export const GENERAL_RULES_MAX_CHARS = 150
+
 /**
  * Static base system prompt sent in every conversation to establish context
  * and maximize prefix prompt caching across agents and turns.
