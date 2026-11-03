@@ -59,8 +59,7 @@ export const de: TranslationSchema = {
     generalRules: 'Allgemeine Regeln',
     generalRulesLabel: 'Allgemeine Regeln für die Agenten',
     generalRulesPlaceholder: 'z.B.: Antworte immer auf Deutsch und halte dich kurz.',
-    generalRulesHint: 'Regeln, die der Beschreibung der Agenten hinzugefügt werden ({current}/{max} Zeichen).',
-    restoreDefaults: 'Standardeinstellungen wiederherstellen'
+    generalRulesHint: 'Regeln, die der Beschreibung der Agenten hinzugefügt werden ({current}/{max} Zeichen).'
   },
   confirmation: {
     title: 'Bestätigung',

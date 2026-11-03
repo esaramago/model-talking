@@ -59,8 +59,7 @@ export const ru: TranslationSchema = {
     generalRules: 'Общие правила',
     generalRulesLabel: 'Общие правила для агентов',
     generalRulesPlaceholder: 'напр.: Всегда отвечай на русском языке и кратко.',
-    generalRulesHint: 'Правила, добавляемые к описанию агентов ({current}/{max} символов).',
-    restoreDefaults: 'Восстановить настройки по умолчанию'
+    generalRulesHint: 'Правила, добавляемые к описанию агентов ({current}/{max} символов).'
   },
   confirmation: {
     title: 'Подтверждение',

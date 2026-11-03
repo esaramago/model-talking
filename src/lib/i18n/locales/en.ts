@@ -59,8 +59,7 @@ export const en: TranslationSchema = {
     generalRules: 'General Rules',
     generalRulesLabel: 'General Rules for Agents',
     generalRulesPlaceholder: 'e.g.: Always respond in English and concisely.',
-    generalRulesHint: 'Rules added to agent descriptions ({current}/{max} characters).',
-    restoreDefaults: 'Restore Defaults'
+    generalRulesHint: 'Rules added to agent descriptions ({current}/{max} characters).'
   },
   confirmation: {
     title: 'Confirmation',

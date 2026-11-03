@@ -60,7 +60,6 @@ export interface TranslationSchema {
     generalRulesLabel: string
     generalRulesPlaceholder: string
     generalRulesHint: string
-    restoreDefaults: string
   }
   confirmation: {
     title: string

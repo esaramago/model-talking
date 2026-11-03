@@ -59,8 +59,7 @@ export const ar: TranslationSchema = {
     generalRules: 'القواعد العامة',
     generalRulesLabel: 'القواعد العامة للوكلاء',
     generalRulesPlaceholder: 'مثال: أجب دائمًا باللغة العربية وبإيجاز.',
-    generalRulesHint: 'قواعد مضافة إلى وصف الوكلاء ({current}/{max} حرفًا).',
-    restoreDefaults: 'استعادة الإعدادات الافتراضية'
+    generalRulesHint: 'قواعد مضافة إلى وصف الوكلاء ({current}/{max} حرفًا).'
   },
   confirmation: {
     title: 'تأكيد',

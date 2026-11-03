@@ -59,8 +59,7 @@ export const ptPT: TranslationSchema = {
     generalRules: 'Regras Gerais',
     generalRulesLabel: 'Regras Gerais para os Agentes',
     generalRulesPlaceholder: 'ex: Responde sempre em português e de forma concisa.',
-    generalRulesHint: 'Regras adicionadas à descrição dos agentes ({current}/{max} caracteres).',
-    restoreDefaults: 'Restaurar Predefinições'
+    generalRulesHint: 'Regras adicionadas à descrição dos agentes ({current}/{max} caracteres).'
   },
   confirmation: {
     title: 'Confirmação',

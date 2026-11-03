@@ -66,16 +66,6 @@
       generalRules
     }, user?.id)
   }
-
-  function handleReset() {
-    language = DEFAULT_SETTINGS.language
-    generalRules = DEFAULT_SETTINGS.generalRules
-    i18n.setLanguage(DEFAULT_SETTINGS.language)
-    if (!isHydrated) return
-    saveSettings({
-      ...DEFAULT_SETTINGS
-    }, user?.id)
-  }
 </script>
 
 <div class="l-container l-container--s">
@@ -117,19 +107,5 @@
         ></wa-textarea>
       </Grid>
     </wa-card>
-
-    <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-    <Grid align="center" gap="s">
-      <wa-button
-        role="button"
-        tabindex="0"
-        variant="neutral"
-        appearance="outlined"
-        onclick={handleReset}
-      >
-        <wa-icon slot="start" name="arrow-rotate-left" variant="solid"></wa-icon>
-        {t('settings.restoreDefaults')}
-      </wa-button>
-    </Grid>
   </Grid>
 </div>

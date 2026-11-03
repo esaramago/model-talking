@@ -59,8 +59,7 @@ export const tr: TranslationSchema = {
     generalRules: 'Genel Kurallar',
     generalRulesLabel: 'Ajanlar için Genel Kurallar',
     generalRulesPlaceholder: 'ör.: Her zaman Türkçe ve özlü bir şekilde yanıt ver.',
-    generalRulesHint: 'Ajan açıklamalarına eklenen kurallar ({current}/{max} karakter).',
-    restoreDefaults: 'Varsayılanları Geri Yükle'
+    generalRulesHint: 'Ajan açıklamalarına eklenen kurallar ({current}/{max} karakter).'
   },
   confirmation: {
     title: 'Onay',
