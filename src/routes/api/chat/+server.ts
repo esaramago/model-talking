@@ -1,5 +1,6 @@
 import { json, type RequestHandler } from '@sveltejs/kit'
 import { env } from '$env/dynamic/private'
+import { MAX_INPUT_TOKENS, MAX_OUTPUT_TOKENS } from '@/lib/config'
 
 interface ChatMessagePart {
   type: string
@@ -20,7 +21,7 @@ interface ChatRequestBody {
 export const POST: RequestHandler = async ({ request }) => {
   try {
     const body = (await request.json()) as ChatRequestBody
-    const { model, messages, maxTokens = 150, temperature = 0.7 } = body
+    const { model, messages, maxTokens = MAX_OUTPUT_TOKENS, temperature = 0.7 } = body
 
     const resolvedApiKey = env.OPENROUTER_API_KEY?.trim() || process.env.OPENROUTER_API_KEY?.trim()
 
@@ -41,7 +42,22 @@ export const POST: RequestHandler = async ({ request }) => {
       return json({ error: 'Conversation messages are required.' }, { status: 400 })
     }
 
-    const clampedTokens = Math.max(10, Math.min(Number(maxTokens) || 150, 1000))
+    const totalEstimatedChars = messages.reduce((acc, m) => {
+      if (typeof m.content === 'string') return acc + m.content.length
+      if (Array.isArray(m.content)) {
+        return acc + m.content.reduce((sum, p) => sum + (p.text?.length || 0), 0)
+      }
+      return acc
+    }, 0)
+
+    if (totalEstimatedChars > MAX_INPUT_TOKENS * 4) {
+      return json(
+        { error: `Input exceeds the maximum allowed token limit (${MAX_INPUT_TOKENS}).` },
+        { status: 400 }
+      )
+    }
+
+    const clampedTokens = Math.max(10, Math.min(Number(maxTokens) || MAX_OUTPUT_TOKENS, MAX_OUTPUT_TOKENS))
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',

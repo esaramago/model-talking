@@ -1,12 +1,12 @@
 import type PocketBase from 'pocketbase'
-import type { RecordModel } from 'pocketbase'
+import type { UserRecord } from '@/types/user'
 
 declare global {
   namespace App {
     // interface Error {}
     interface Locals {
       pb: PocketBase
-      user: RecordModel | null
+      user: UserRecord | null
     }
     // interface PageData {}
     // interface PageState {}

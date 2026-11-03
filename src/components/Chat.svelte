@@ -14,7 +14,7 @@
     requestModelTurn,
     generateTalkTitle,
   } from '@/lib/chat'
-  import { DEFAULT_MAX_TOKENS, DEFAULT_MODEL } from '@/lib/config'
+  import { MAX_OUTPUT_TOKENS, MODEL } from '@/lib/config'
   import {
     DEFAULT_SETTINGS,
     clearAgentDraft,
@@ -39,9 +39,9 @@
 
   let currentTalkId = $state('')
   let initialTopic = $state(DEFAULT_SETTINGS.initialTopic)
-  let maxTokens = $state(DEFAULT_MAX_TOKENS)
+  let maxTokens = $state(MAX_OUTPUT_TOKENS)
 
-  let model = $state(DEFAULT_MODEL)
+  let model = $state(MODEL)
   let agent1Name = $state(DEFAULT_SETTINGS.agent1Name)
   let agent2Name = $state(DEFAULT_SETTINGS.agent2Name)
   let agent1Avatar = $state('/img/personas/1.svg')
@@ -105,8 +105,8 @@
     if (isRunning) return
     currentTalkId = ''
     messages = []
-    model = DEFAULT_MODEL
-    maxTokens = DEFAULT_MAX_TOKENS
+    model = MODEL
+    maxTokens = MAX_OUTPUT_TOKENS
     totalPromptTokens = 0
     totalCompletionTokens = 0
     totalTokensUsed = 0
@@ -140,8 +140,8 @@
     } else {
       currentTalkId = ''
       messages = []
-      model = DEFAULT_MODEL
-      maxTokens = DEFAULT_MAX_TOKENS
+      model = MODEL
+      maxTokens = MAX_OUTPUT_TOKENS
       totalPromptTokens = 0
       totalCompletionTokens = 0
       totalTokensUsed = 0
@@ -275,7 +275,7 @@
     stats.completionTokens = totalCompletionTokens
     stats.status = statusMessage
     stats.isRunning = isRunning
-    stats.model = model || DEFAULT_MODEL
+    stats.model = model || MODEL
   })
 
   function handleTopicInput(e: Event) {
@@ -316,7 +316,7 @@
     const targetSpeaker: 'agent1' | 'agent2' =
       lastMessage.speaker === 'agent1' ? 'agent2' : 'agent1'
     const speakerName = getSpeakerName(targetSpeaker)
-    const currentModel = model || DEFAULT_MODEL
+    const currentModel = model || MODEL
     const currentSystemPrompt =
       targetSpeaker === 'agent1' ? systemPrompt1 : systemPrompt2
     const currentAgentName =
@@ -324,7 +324,7 @@
     const currentGeneralRules = user
       ? generalRules
       : DEFAULT_SETTINGS.generalRules
-    const currentMaxTokens = maxTokens || DEFAULT_MAX_TOKENS
+    const currentMaxTokens = maxTokens || MAX_OUTPUT_TOKENS
 
     activeThinkingSpeaker = speakerName
     statusMessage = t('chat.thinking', { speaker: speakerName })
@@ -417,7 +417,7 @@
         id: crypto.randomUUID(),
         speaker: 'agent1',
         speakerName: getSpeakerName('agent1'),
-        model: model || DEFAULT_MODEL,
+        model: model || MODEL,
         content: initialTopic.trim(),
         turn: 1,
         avatar: agent1Avatar,
@@ -426,7 +426,7 @@
 
       messages = [firstMessage]
 
-      const titleModel = model || DEFAULT_MODEL
+      const titleModel = model || MODEL
       const talkTitlePromise = generateTalkTitle(
         initialTopic,
         titleModel,
@@ -453,8 +453,8 @@
             systemPrompt2,
             generalRules,
             language,
-            model: model || DEFAULT_MODEL,
-            maxTokens: maxTokens || DEFAULT_MAX_TOKENS,
+            model: model || MODEL,
+            maxTokens: maxTokens || MAX_OUTPUT_TOKENS,
             totalTokens: totalTokensUsed,
             user: currentUserId,
           })

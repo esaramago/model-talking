@@ -44,7 +44,8 @@ export const actions: Actions = {
       const createData: Record<string, string> = {
         email,
         password,
-        passwordConfirm
+        passwordConfirm,
+        role: 'free'
       }
       if (name) {
         createData.name = name

@@ -1,4 +1,4 @@
-import { DEFAULT_MODEL } from '@/lib/config'
+import { MODEL } from '@/lib/config'
 
 class StatsState {
   currentTurn = $state(0)
@@ -8,7 +8,7 @@ class StatsState {
   completionTokens = $state(0)
   status = $state('Pronto')
   isRunning = $state(false)
-  model = $state(DEFAULT_MODEL)
+  model = $state(MODEL)
 
   reset() {
     this.currentTurn = 0
@@ -18,7 +18,7 @@ class StatsState {
     this.completionTokens = 0
     this.status = 'Pronto'
     this.isRunning = false
-    this.model = DEFAULT_MODEL
+    this.model = MODEL
   }
 }
 

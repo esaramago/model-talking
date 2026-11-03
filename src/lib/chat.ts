@@ -3,8 +3,9 @@ import {
   AGENT_1_BASE_PROMPT,
   AGENT_2_BASE_PROMPT,
   BASE_SYSTEM_PROMPT,
-  DEFAULT_MODEL,
+  MODEL,
   DEFAULT_SETTINGS,
+  MAX_INPUT_TOKENS,
   SUPPORTED_LANGUAGES
 } from '@/lib/config'
 
@@ -12,7 +13,8 @@ export {
   AGENT_1_BASE_PROMPT,
   AGENT_2_BASE_PROMPT,
   BASE_SYSTEM_PROMPT,
-  DEFAULT_MODEL,
+  MODEL,
+  MAX_INPUT_TOKENS,
   SUPPORTED_LANGUAGES
 }
 
@@ -76,6 +78,69 @@ export interface ApiChatMessage {
   content: string | MessageContentPart[]
 }
 
+export function estimateTextTokens(text: string): number {
+  return Math.ceil((text?.length || 0) / 3.5)
+}
+
+/**
+ * Ensures conversation messages fit within the token budget while preserving
+ * topic grounding and strict alternating user/assistant role integrity.
+ */
+export function budgetMessages(
+  messages: ChatMessage[],
+  targetSpeaker: 'agent1' | 'agent2',
+  availableBudget: number
+): ChatMessage[] {
+  if (messages.length <= 2) return messages
+
+  const totalTokens = messages.reduce((acc, m) => acc + estimateTextTokens(m.content), 0)
+  if (totalTokens <= availableBudget) return messages
+
+  if (targetSpeaker === 'agent1') {
+    const baseTokens = estimateTextTokens(messages[0].content) + estimateTextTokens(messages[1].content)
+    let currentTokens = baseTokens
+    let startIndex = messages.length
+
+    for (let i = messages.length - 1; i >= 2; i--) {
+      const msgTokens = estimateTextTokens(messages[i].content)
+      if (currentTokens + msgTokens > availableBudget) break
+      currentTokens += msgTokens
+      startIndex = i
+    }
+
+    if (startIndex % 2 !== 0 && startIndex < messages.length) {
+      startIndex++
+    }
+
+    if (startIndex >= messages.length) {
+      return [messages[0], messages[1]]
+    }
+
+    return [messages[0], messages[1], ...messages.slice(startIndex)]
+  } else {
+    const baseTokens = estimateTextTokens(messages[0].content)
+    let currentTokens = baseTokens
+    let startIndex = messages.length
+
+    for (let i = messages.length - 1; i >= 1; i--) {
+      const msgTokens = estimateTextTokens(messages[i].content)
+      if (currentTokens + msgTokens > availableBudget) break
+      currentTokens += msgTokens
+      startIndex = i
+    }
+
+    if (startIndex % 2 === 0 && startIndex < messages.length) {
+      startIndex++
+    }
+
+    if (startIndex >= messages.length) {
+      return [messages[0]]
+    }
+
+    return [messages[0], ...messages.slice(startIndex)]
+  }
+}
+
 /**
  * Builds standard OpenAI/OpenRouter message payload tailored for the target speaker,
  * ensuring strict alternating roles and leading user message.
@@ -119,9 +184,13 @@ export function buildMessagesForModel(
     })
   }
 
+  const systemTokens = estimateTextTokens(combinedSystemPrompt)
+  const availableBudget = Math.max(500, MAX_INPUT_TOKENS - systemTokens)
+  const budgetedMessages = budgetMessages(messages, targetSpeaker, availableBudget)
+
   if (targetSpeaker === 'agent2') {
     // LLM 2 sees LLM 1 messages as 'user' and its own messages as 'assistant'
-    for (const msg of messages) {
+    for (const msg of budgetedMessages) {
       result.push({
         role: msg.speaker === 'agent1' ? 'user' : 'assistant',
         content: msg.content
@@ -130,24 +199,24 @@ export function buildMessagesForModel(
   } else {
     // LLM 1 sees LLM 2 messages as 'user' and its own as 'assistant'
     // To strictly begin with role 'user', combine initial turn 1 & 2 into opening context
-    if (messages.length >= 2) {
-      const otherSpeakerName = messages[1].speakerName || 'LLM 2'
+    if (budgetedMessages.length >= 2) {
+      const otherSpeakerName = budgetedMessages[1].speakerName || 'LLM 2'
       result.push({
         role: 'user',
-        content: `Opening context:\nYou started with: "${messages[0].content}"\n${otherSpeakerName} replied: "${messages[1].content}"`
+        content: `Opening context:\nYou started with: "${budgetedMessages[0].content}"\n${otherSpeakerName} replied: "${budgetedMessages[1].content}"`
       })
 
-      for (let i = 2; i < messages.length; i++) {
-        const msg = messages[i]
+      for (let i = 2; i < budgetedMessages.length; i++) {
+        const msg = budgetedMessages[i]
         result.push({
           role: msg.speaker === 'agent1' ? 'assistant' : 'user',
           content: msg.content
         })
       }
-    } else if (messages.length === 1) {
+    } else if (budgetedMessages.length === 1) {
       result.push({
         role: 'user',
-        content: messages[0].content
+        content: budgetedMessages[0].content
       })
     }
   }
@@ -195,7 +264,7 @@ export async function generateTalkTitle(promptText: string, model?: string): Pro
 
   try {
     const res = await requestModelTurn({
-      model: model || DEFAULT_MODEL,
+      model: model || MODEL,
       messages: [
         {
           role: 'system',
