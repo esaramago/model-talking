@@ -1,6 +1,12 @@
 import type { ChatSettings } from '@/types/chat'
 import { pb } from '@/lib/pocketbase'
-import { DEFAULT_SETTINGS, STORAGE_KEY_PREFIX, GENERAL_RULES_MAX_CHARS } from '@/lib/config'
+import {
+  DEFAULT_SETTINGS,
+  STORAGE_KEY_PREFIX,
+  GENERAL_RULES_MAX_CHARS,
+  MESSAGE_MAX_CHARS_MIN,
+  MESSAGE_MAX_CHARS_MAX
+} from '@/lib/config'
 import { i18n } from '@/lib/i18n/index.svelte'
 
 export { DEFAULT_SETTINGS, STORAGE_KEY_PREFIX }
@@ -54,7 +60,13 @@ export function sanitizeSettings(
     language:
       typeof settings.language === 'string' && settings.language.trim()
         ? settings.language.trim()
-        : DEFAULT_SETTINGS.language
+        : DEFAULT_SETTINGS.language,
+    maxChars:
+      typeof settings.maxChars === 'number' && !isNaN(settings.maxChars)
+        ? Math.min(Math.max(Math.round(settings.maxChars), MESSAGE_MAX_CHARS_MIN), MESSAGE_MAX_CHARS_MAX)
+        : (typeof (settings as any)?.maxChars === 'string' && !isNaN(Number((settings as any).maxChars))
+            ? Math.min(Math.max(Math.round(Number((settings as any).maxChars)), MESSAGE_MAX_CHARS_MIN), MESSAGE_MAX_CHARS_MAX)
+            : DEFAULT_SETTINGS.maxChars)
   }
 }
 
@@ -98,6 +110,7 @@ export function loadSettings(
   // 1. Language & General Rules (stored in PocketBase for authenticated users)
   let language = DEFAULT_SETTINGS.language
   let generalRules = DEFAULT_SETTINGS.generalRules
+  let maxChars = DEFAULT_SETTINGS.maxChars
 
   if (userId) {
     if (userFallback && typeof userFallback === 'object') {
@@ -112,6 +125,12 @@ export function loadSettings(
       } else if (userFallback.settings && typeof userFallback.settings.generalRules === 'string') {
         generalRules = userFallback.settings.generalRules.slice(0, GENERAL_RULES_MAX_CHARS)
       }
+
+      if (typeof userFallback.maxChars === 'number' && !isNaN(userFallback.maxChars)) {
+        maxChars = userFallback.maxChars
+      } else if (userFallback.settings && typeof userFallback.settings.maxChars === 'number') {
+        maxChars = userFallback.settings.maxChars
+      }
     } else if (typeof window !== 'undefined' && pb.authStore.record?.id === userId) {
       const rec = pb.authStore.record
       if (typeof rec.language === 'string' && rec.language.trim()) {
@@ -120,6 +139,9 @@ export function loadSettings(
       if (typeof rec.generalRules === 'string') {
         generalRules = rec.generalRules.slice(0, GENERAL_RULES_MAX_CHARS)
       }
+      if (typeof rec.maxChars === 'number' && !isNaN(rec.maxChars)) {
+        maxChars = rec.maxChars
+      }
     }
   } else {
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
@@ -127,6 +149,11 @@ export function loadSettings(
         const storedLang = localStorage.getItem('model_talks_lang')
         if (storedLang) {
           language = storedLang
+        }
+        const storedMaxChars = localStorage.getItem('model_talks_max_chars')
+        if (storedMaxChars) {
+          const num = Number(storedMaxChars)
+          if (!isNaN(num)) maxChars = num
         }
       } catch {
         // Fail silently
@@ -151,6 +178,9 @@ export function loadSettings(
     if (typeof local.systemPrompt2 === 'string') systemPrompt2 = local.systemPrompt2.slice(0, 200)
     if (!userId && typeof local.language === 'string' && local.language.trim() && !language) {
       language = local.language.trim()
+    }
+    if (typeof local.maxChars === 'number' && !isNaN(local.maxChars) && maxChars === DEFAULT_SETTINGS.maxChars) {
+      maxChars = local.maxChars
     }
   } else if (userFallback && typeof userFallback === 'object') {
     // Migrate any legacy agent settings from PocketBase into localStorage once
@@ -189,7 +219,8 @@ export function loadSettings(
     systemPrompt1,
     systemPrompt2,
     generalRules,
-    language
+    language,
+    maxChars
   })
 
   if (userId) {
@@ -211,7 +242,8 @@ export function saveSettings(settings: ChatSettings, userId?: string | null): vo
       agent1Name: sanitized.agent1Name,
       agent2Name: sanitized.agent2Name,
       systemPrompt1: sanitized.systemPrompt1,
-      systemPrompt2: sanitized.systemPrompt2
+      systemPrompt2: sanitized.systemPrompt2,
+      maxChars: sanitized.maxChars
     },
     userId
   )
@@ -226,6 +258,7 @@ export function saveSettings(settings: ChatSettings, userId?: string | null): vo
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
       try {
         localStorage.setItem('model_talks_lang', sanitized.language)
+        localStorage.setItem('model_talks_max_chars', String(sanitized.maxChars))
       } catch {
         // Fail silently
       }
@@ -234,19 +267,24 @@ export function saveSettings(settings: ChatSettings, userId?: string | null): vo
 
   i18n.setLanguage(sanitized.language)
 
-  // 2. Save language and generalRules directly to user fields in PocketBase
+  // 2. Save language, generalRules, and maxChars directly to user fields in PocketBase
   const activeUserId = userId || (typeof window !== 'undefined' ? pb.authStore.record?.id : null)
   if (activeUserId && typeof window !== 'undefined' && pb.authStore.record?.id === activeUserId) {
     const currentLang = pb.authStore.record?.language
     const currentRules = pb.authStore.record?.generalRules
+    const currentMaxChars = pb.authStore.record?.maxChars
 
-    const hasChanged = currentLang !== sanitized.language || currentRules !== sanitized.generalRules
+    const hasChanged =
+      currentLang !== sanitized.language ||
+      currentRules !== sanitized.generalRules ||
+      currentMaxChars !== sanitized.maxChars
 
     if (hasChanged) {
       pb.collection('users')
         .update(activeUserId, {
           language: sanitized.language,
-          generalRules: sanitized.generalRules
+          generalRules: sanitized.generalRules,
+          maxChars: sanitized.maxChars
         })
         .then((updatedUser) => {
           if (pb.authStore.isValid && pb.authStore.token) {

@@ -31,6 +31,7 @@ export interface ChatSettings {
   systemPrompt2: string
   generalRules: string
   language: string
+  maxChars: number
 }
 
 export interface DailyQuota {
@@ -53,6 +54,7 @@ export interface TalkRecord {
   language?: string
   model?: string
   maxTokens?: number
+  maxChars?: number
   totalTokens?: number
   user?: string
   created?: string

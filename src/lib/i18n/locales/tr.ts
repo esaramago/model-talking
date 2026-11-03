@@ -50,7 +50,8 @@ export const tr: TranslationSchema = {
     nameLabel: 'Karakter adı {number}',
     namePlaceholder: 'Benim adım ne?',
     descriptionLabel: 'Karakteri tanımla {number}',
-    descriptionPlaceholder: 'Beni tanımla'
+    descriptionPlaceholder: 'Beni tanımla',
+    selectAvatar: 'Avatar seç'
   },
   settings: {
     title: 'Ayarlar',
@@ -61,7 +62,10 @@ export const tr: TranslationSchema = {
     generalRules: 'Genel Kurallar',
     generalRulesLabel: 'Ajanlar için Genel Kurallar',
     generalRulesPlaceholder: 'ör.: Her zaman Türkçe ve özlü bir şekilde yanıt ver.',
-    generalRulesHint: 'Ajan açıklamalarına eklenen kurallar ({current}/{max} karakter).'
+    generalRulesHint: 'Ajan açıklamalarına eklenen kurallar ({current}/{max} karakter).',
+    maxChars: 'Maksimum Karakter',
+    maxCharsLabel: 'Mesaj başına karakter sınırı',
+    maxCharsHint: 'Her yanıtın maksimum uzunluğunu belirler.'
   },
   confirmation: {
     title: 'Onay',

@@ -2,7 +2,14 @@
   import { onMount } from 'svelte'
   import { page } from '$app/state'
   import Grid from '@/components/ui/Grid.svelte'
-  import { DEFAULT_SETTINGS, SUPPORTED_LANGUAGES, GENERAL_RULES_MAX_CHARS } from '@/lib/config'
+  import {
+    DEFAULT_SETTINGS,
+    SUPPORTED_LANGUAGES,
+    GENERAL_RULES_MAX_CHARS,
+    MESSAGE_MAX_CHARS_MIN,
+    MESSAGE_MAX_CHARS_MAX,
+    MESSAGE_MAX_CHARS_STEP
+  } from '@/lib/config'
   import { loadSettings, saveSettings } from '@/lib/storage'
   import { i18n, t } from '@/lib/i18n/index.svelte'
 
@@ -11,6 +18,7 @@
 
   let language = $state(DEFAULT_SETTINGS.language)
   let generalRules = $state(DEFAULT_SETTINGS.generalRules)
+  let maxChars = $state(DEFAULT_SETTINGS.maxChars)
   let isHydrated = $state(false)
   let lastSyncedUserId = $state<string | null | undefined>(undefined)
 
@@ -18,6 +26,7 @@
     const loaded = loadSettings(userId, fallback)
     language = loaded.language
     generalRules = userId ? loaded.generalRules : DEFAULT_SETTINGS.generalRules
+    maxChars = loaded.maxChars
     i18n.setLanguage(loaded.language)
   }
 
@@ -65,6 +74,28 @@
       generalRules
     }, user?.id)
   }
+
+  function handleMaxCharsInput(e: Event) {
+    const target = e.target as HTMLElement & { value?: number | string }
+    const val = Number(target?.value)
+    if (!isNaN(val)) {
+      maxChars = Math.min(Math.max(Math.round(val), MESSAGE_MAX_CHARS_MIN), MESSAGE_MAX_CHARS_MAX)
+    }
+  }
+
+  function handleMaxCharsChange(e: Event) {
+    const target = e.target as HTMLElement & { value?: number | string }
+    const val = Number(target?.value)
+    if (isNaN(val)) return
+    const clamped = Math.min(Math.max(Math.round(val), MESSAGE_MAX_CHARS_MIN), MESSAGE_MAX_CHARS_MAX)
+    maxChars = clamped
+    if (!isHydrated) return
+    const current = loadSettings(user?.id, user)
+    saveSettings({
+      ...current,
+      maxChars: clamped
+    }, user?.id)
+  }
 </script>
 
 <div class="l-container l-container--s">
@@ -104,6 +135,24 @@
           disabled={isGuest}
           oninput={handleGeneralRulesInput}
         ></wa-textarea>
+      </Grid>
+    </wa-card>
+
+    <wa-card>
+      <Grid direction="column" gap="s">
+        <h2 data-appearance="h4">{t('settings.maxChars')}</h2>
+        <strong>{maxChars}</strong>
+        <wa-slider
+          label={t('settings.maxCharsLabel')}
+          value={maxChars}
+          min={MESSAGE_MAX_CHARS_MIN}
+          max={MESSAGE_MAX_CHARS_MAX}
+          step={MESSAGE_MAX_CHARS_STEP}
+          with-tooltip
+          hint={t('settings.maxCharsHint')}
+          oninput={handleMaxCharsInput}
+          onchange={handleMaxCharsChange}
+        ></wa-slider>
       </Grid>
     </wa-card>
   </Grid>

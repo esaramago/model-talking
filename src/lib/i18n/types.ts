@@ -51,6 +51,7 @@ export interface TranslationSchema {
     namePlaceholder: string
     descriptionLabel: string
     descriptionPlaceholder: string
+    selectAvatar: string
   }
   settings: {
     title: string
@@ -62,6 +63,9 @@ export interface TranslationSchema {
     generalRulesLabel: string
     generalRulesPlaceholder: string
     generalRulesHint: string
+    maxChars: string
+    maxCharsLabel: string
+    maxCharsHint: string
   }
   confirmation: {
     title: string

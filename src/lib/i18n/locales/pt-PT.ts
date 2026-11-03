@@ -50,7 +50,8 @@ export const ptPT: TranslationSchema = {
     nameLabel: 'Nome da personagem {number}',
     namePlaceholder: 'Como me chamo?',
     descriptionLabel: 'Descreve a personagem {number}',
-    descriptionPlaceholder: 'Descreve-me'
+    descriptionPlaceholder: 'Descreve-me',
+    selectAvatar: 'Escolher avatar'
   },
   settings: {
     title: 'Definições',
@@ -58,10 +59,13 @@ export const ptPT: TranslationSchema = {
     language: 'Idioma',
     languageLabel: 'Idioma da aplicação',
     languageHint: 'Idioma usado na interface da aplicação e nas conversas.',
-    generalRules: 'Regras Gerais',
-    generalRulesLabel: 'Regras Gerais para os Agentes',
+    generalRules: 'Regras gerais',
+    generalRulesLabel: 'Regras gerais para os agentes',
     generalRulesPlaceholder: 'ex: Responde sempre em português e de forma concisa.',
-    generalRulesHint: 'Regras adicionadas à descrição dos agentes ({current}/{max} caracteres).'
+    generalRulesHint: 'Regras adicionadas à descrição dos agentes ({current}/{max} caracteres).',
+    maxChars: 'Máximo de caracteres',
+    maxCharsLabel: 'Limite de caracteres por mensagem',
+    maxCharsHint: 'Define o tamanho máximo de cada mensagem durante as conversas.'
   },
   confirmation: {
     title: 'Confirmação',

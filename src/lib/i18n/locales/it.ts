@@ -50,7 +50,8 @@ export const it: TranslationSchema = {
     nameLabel: 'Nome del personaggio {number}',
     namePlaceholder: 'Come mi chiamo?',
     descriptionLabel: 'Descrivi il personaggio {number}',
-    descriptionPlaceholder: 'Descrivimi'
+    descriptionPlaceholder: 'Descrivimi',
+    selectAvatar: 'Scegli avatar'
   },
   settings: {
     title: 'Impostazioni',
@@ -61,7 +62,10 @@ export const it: TranslationSchema = {
     generalRules: 'Regole Generali',
     generalRulesLabel: 'Regole Generali per gli Agenti',
     generalRulesPlaceholder: 'es: Rispondi sempre in italiano e in modo conciso.',
-    generalRulesHint: 'Regole aggiunte alla descrizione degli agenti ({current}/{max} caratteri).'
+    generalRulesHint: 'Regole aggiunte alla descrizione degli agenti ({current}/{max} caratteri).',
+    maxChars: 'Caratteri Massimi',
+    maxCharsLabel: 'Limite di caratteri per messaggio',
+    maxCharsHint: 'Imposta la lunghezza massima di ciascuna risposta.'
   },
   confirmation: {
     title: 'Conferma',

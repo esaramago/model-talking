@@ -50,7 +50,8 @@ export const ar: TranslationSchema = {
     nameLabel: 'اسم الشخصية {number}',
     namePlaceholder: 'ما هو اسمي؟',
     descriptionLabel: 'وصف الشخصية {number}',
-    descriptionPlaceholder: 'صفني'
+    descriptionPlaceholder: 'صفني',
+    selectAvatar: 'اختر الصورة الرمزية'
   },
   settings: {
     title: 'الإعدادات',
@@ -61,7 +62,10 @@ export const ar: TranslationSchema = {
     generalRules: 'القواعد العامة',
     generalRulesLabel: 'القواعد العامة للوكلاء',
     generalRulesPlaceholder: 'مثال: أجب دائمًا باللغة العربية وبإيجاز.',
-    generalRulesHint: 'قواعد مضافة إلى وصف الوكلاء ({current}/{max} حرفًا).'
+    generalRulesHint: 'قواعد مضافة إلى وصف الوكلاء ({current}/{max} حرفًا).',
+    maxChars: 'الحد الأقصى للأحرف',
+    maxCharsLabel: 'الحد الأقصى للأحرف لكل رسالة',
+    maxCharsHint: 'يحدد الحد الأقصى لطول كل رد.'
   },
   confirmation: {
     title: 'تأكيد',

@@ -50,7 +50,8 @@ export const en: TranslationSchema = {
     nameLabel: 'Character name {number}',
     namePlaceholder: 'What is my name?',
     descriptionLabel: 'Describe character {number}',
-    descriptionPlaceholder: 'Describe me'
+    descriptionPlaceholder: 'Describe me',
+    selectAvatar: 'Choose avatar'
   },
   settings: {
     title: 'Settings',
@@ -61,7 +62,10 @@ export const en: TranslationSchema = {
     generalRules: 'General Rules',
     generalRulesLabel: 'General Rules for Agents',
     generalRulesPlaceholder: 'e.g.: Always respond in English and concisely.',
-    generalRulesHint: 'Rules added to agent descriptions ({current}/{max} characters).'
+    generalRulesHint: 'Rules added to agent descriptions ({current}/{max} characters).',
+    maxChars: 'Maximum Characters',
+    maxCharsLabel: 'Character limit per message',
+    maxCharsHint: 'Sets the maximum length for each response.'
   },
   confirmation: {
     title: 'Confirmation',

@@ -1,5 +1,6 @@
 <script lang="ts">
   import Grid from '@/components/ui/Grid.svelte'
+  import AvatarPicker from '@/components/AvatarPicker.svelte'
   import { t } from '@/lib/i18n/index.svelte'
 
   let {
@@ -20,9 +21,29 @@
     systemPrompt2: string
   } = $props()
 
+  let isAvatarPickerOpen = $state(false)
+  let activeAvatarAgent = $state<'agent1' | 'agent2'>('agent1')
+
+  const currentSelectedAvatar = $derived(
+    activeAvatarAgent === 'agent1' ? agent1Avatar : agent2Avatar
+  )
+
+  function openAvatarPicker(agentId: 'agent1' | 'agent2') {
+    activeAvatarAgent = agentId
+    isAvatarPickerOpen = true
+  }
+
+  function handleAvatarSelect(newAvatar: string) {
+    if (activeAvatarAgent === 'agent1') {
+      agent1Avatar = newAvatar
+    } else {
+      agent2Avatar = newAvatar
+    }
+  }
+
   const configs = $derived([
     {
-      id: 'agent1',
+      id: 'agent1' as const,
       name: agent1Name,
       value: systemPrompt1,
       avatar: agent1Avatar,
@@ -38,7 +59,7 @@
       }
     },
     {
-      id: 'agent2',
+      id: 'agent2' as const,
       name: agent2Name,
       value: systemPrompt2,
       avatar: agent2Avatar,
@@ -71,7 +92,17 @@
           </div>
         {:else}
           <div class="avatar">
-            <wa-avatar image={config.avatar}></wa-avatar>
+            <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+            <button
+              type="button"
+              title={`Alterar avatar do Agente ${index + 1}`}
+              onclick={() => openAvatarPicker(config.id)}
+              class="avatar-button"
+            >
+              <wa-avatar
+                image={config.avatar}
+              ></wa-avatar>
+            </button>
             <wa-input
               class="wa-visually-hidden-label"
               label={t('agents.nameLabel', { number: index + 1 })}
@@ -95,6 +126,14 @@
   {/each}
 </Grid>
 
+{#if !readonly}
+  <AvatarPicker
+    bind:open={isAvatarPickerOpen}
+    value={currentSelectedAvatar}
+    onselect={handleAvatarSelect}
+  />
+{/if}
+
 <style>
 wa-textarea {
   &::part(textarea) {
@@ -110,5 +149,8 @@ wa-textarea {
 }
 wa-avatar {
   --size: var(--avatar-size);
+}
+.avatar-button:hover wa-avatar {
+  background-color: var(--wa-color-brand-40);
 }
 </style>

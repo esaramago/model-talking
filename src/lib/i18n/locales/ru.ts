@@ -50,7 +50,8 @@ export const ru: TranslationSchema = {
     nameLabel: 'Имя персонажа {number}',
     namePlaceholder: 'Как меня зовут?',
     descriptionLabel: 'Опишите персонажа {number}',
-    descriptionPlaceholder: 'Опишите меня'
+    descriptionPlaceholder: 'Опишите меня',
+    selectAvatar: 'Выбрать аватар'
   },
   settings: {
     title: 'Настройки',
@@ -61,7 +62,10 @@ export const ru: TranslationSchema = {
     generalRules: 'Общие правила',
     generalRulesLabel: 'Общие правила для агентов',
     generalRulesPlaceholder: 'напр.: Всегда отвечай на русском языке и кратко.',
-    generalRulesHint: 'Правила, добавляемые к описанию агентов ({current}/{max} символов).'
+    generalRulesHint: 'Правила, добавляемые к описанию агентов ({current}/{max} символов).',
+    maxChars: 'Максимум символов',
+    maxCharsLabel: 'Лимит символов на сообщение',
+    maxCharsHint: 'Задает максимальную длину каждого ответа.'
   },
   confirmation: {
     title: 'Подтверждение',

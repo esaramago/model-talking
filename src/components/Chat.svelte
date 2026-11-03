@@ -50,6 +50,7 @@
   let systemPrompt2 = $state(DEFAULT_SETTINGS.systemPrompt2)
   let generalRules = $state(DEFAULT_SETTINGS.generalRules)
   let language = $state(DEFAULT_SETTINGS.language)
+  let maxChars = $state(DEFAULT_SETTINGS.maxChars)
 
   let isHydrated = $state(false)
 
@@ -81,6 +82,7 @@
     if (talk.systemPrompt2) systemPrompt2 = talk.systemPrompt2
     if (talk.generalRules) generalRules = talk.generalRules
     if (talk.language) language = talk.language
+    if (talk.maxChars) maxChars = talk.maxChars
     if (talk.maxTokens) maxTokens = Math.max(talk.maxTokens, MAX_OUTPUT_TOKENS)
     if (talk.totalTokens) totalTokensUsed = talk.totalTokens
     statusMessage = conversationStarted
@@ -107,6 +109,8 @@
     messages = []
     model = MODEL
     maxTokens = MAX_OUTPUT_TOKENS
+    const loaded = loadSettings(user?.id, user)
+    maxChars = loaded.maxChars
     totalPromptTokens = 0
     totalCompletionTokens = 0
     totalTokensUsed = 0
@@ -155,6 +159,7 @@
     const loaded = loadSettings(user?.id, user)
     generalRules = user ? loaded.generalRules : DEFAULT_SETTINGS.generalRules
     language = loaded.language
+    maxChars = loaded.maxChars
 
     if (props.initialTalk) {
       applyTalk(props.initialTalk)
@@ -245,6 +250,7 @@
         systemPrompt2,
         generalRules: user ? generalRules : DEFAULT_SETTINGS.generalRules,
         language,
+        maxChars,
       },
       user?.id,
     )
@@ -338,6 +344,7 @@
         currentGeneralRules,
         currentAgentName,
         language,
+        maxChars,
       )
 
       const response = await requestModelTurn({
@@ -459,6 +466,7 @@
             language,
             model: model || MODEL,
             maxTokens: maxTokens || MAX_OUTPUT_TOKENS,
+            maxChars,
             totalTokens: totalTokensUsed,
             user: currentUserId,
           })

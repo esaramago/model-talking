@@ -6,4 +6,5 @@ export interface UserRecord extends RecordModel {
   role?: UserRole
   language?: string
   generalRules?: string
+  maxChars?: number
 }

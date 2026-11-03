@@ -17,26 +17,33 @@
         <Logo />
       </div>
     </Grid>
-    <Grid align="center" gap="s">
-      <wa-badge variant="brand">{stats.totalTokens} {t('header.totalTokens')}</wa-badge>
-      {#if stats.isUnlimited}
+    <div class="header__stats">
+      <Grid align="center" gap="s">
+        <wa-badge variant="brand">{stats.totalTokens} {t('header.totalTokens')}</wa-badge>
+        {#if stats.isUnlimited}
         <wa-badge variant="success">{t('header.dailyMessages')}: {t('header.unlimited')}</wa-badge>
-      {:else}
+        {:else}
         <wa-badge variant={stats.dailyRemaining === 0 ? 'danger' : 'neutral'}>
           {t('header.dailyMessages')}: {stats.dailyRemaining}/{stats.dailyTotal}
         </wa-badge>
-      {/if}
-    </Grid>
+        {/if}
+      </Grid>
+    </div>
   </Grid>
 </header>
 
 <style>
-  .logo {
-    @media (min-width: 961px) {
-      display: none;
-    }
+.logo {
+  @media (min-width: 961px) {
+    display: none;
   }
-  header {
-    margin-block: var(--wa-space-l);
+}
+header {
+  margin-block: var(--wa-space-l);
+  @media (min-width: 961px) {
+    position: sticky;
+    inset-block-start: var(--wa-space-s);
+    z-index: 1;
   }
+}
 </style>

@@ -151,7 +151,8 @@ export function buildMessagesForModel(
   systemPrompt: string,
   generalRules: string = DEFAULT_SETTINGS.generalRules,
   agentName?: string,
-  language?: string
+  language?: string,
+  maxChars: number = DEFAULT_SETTINGS.maxChars
 ): ApiChatMessage[] {
   const result: ApiChatMessage[] = []
 
@@ -159,6 +160,7 @@ export function buildMessagesForModel(
   const namePrompt = agentName?.trim() ? `O teu nome é ${agentName.trim()}.` : ''
   const languagePrompt = getLanguageInstruction(language)
   const rules = generalRules !== undefined ? generalRules.trim() : DEFAULT_SETTINGS.generalRules
+  const lengthPrompt = `Strict Character Ceiling: Every response must remain concise and under ${maxChars} characters.`
 
   const combinedSystemPrompt = [
     BASE_SYSTEM_PROMPT,
@@ -166,7 +168,8 @@ export function buildMessagesForModel(
     namePrompt,
     systemPrompt.trim(),
     languagePrompt,
-    rules
+    rules,
+    lengthPrompt
   ]
     .filter(Boolean)
     .join('\n\n')

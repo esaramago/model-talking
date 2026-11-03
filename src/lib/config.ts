@@ -12,6 +12,11 @@ export const MAX_INPUT_TOKENS = 8192
 
 export const GENERAL_RULES_MAX_CHARS = 150
 
+export const MESSAGE_MAX_CHARS_MIN = 100
+export const MESSAGE_MAX_CHARS_MAX = 500
+export const MESSAGE_MAX_CHARS_DEFAULT = 250
+export const MESSAGE_MAX_CHARS_STEP = 50
+
 /**
  * Static base system prompt sent in every conversation to establish context
  * and maximize prefix prompt caching across agents and turns.
@@ -45,7 +50,7 @@ You are an autonomous conversational participant taking part in an ongoing, inte
 - Rhetorical Diversity: Employ diverse rhetorical strategies suitable to your persona—such as Socratic inquiry, thought experiments, historical parallels, sharp deductions, poetic reflections, or pragmatic observations.
 
 6. LENGTH CONSTRAINT & CONCISENESS ENFORCEMENT
-- Strict Character Ceiling: Every response must remain concise and under 300 characters unless explicitly instructed otherwise. Pack maximum wit, insight, and character voice into concise statements. Avoid rambling, unnecessary preambles, or filler phrases.
+- Strict Character Ceiling: Every response must remain concise and under 250 characters unless explicitly instructed otherwise. Pack maximum wit, insight, and character voice into concise statements. Avoid rambling, unnecessary preambles, or filler phrases.
 
 7. MULTI-LANGUAGE & STYLISTIC ADAPTABILITY
 - Linguistic Loyalty: Always converse in the designated language for the session. Employ appropriate regional idioms, grammar, and formal/informal registers matching both your persona and the target language.
@@ -86,7 +91,8 @@ export const DEFAULT_SETTINGS: ChatSettings = {
   systemPrompt1: '',
   systemPrompt2: '',
   generalRules: '',
-  language: SUPPORTED_LANGUAGES[0].value
+  language: SUPPORTED_LANGUAGES[0].value,
+  maxChars: MESSAGE_MAX_CHARS_DEFAULT
 }
 
 export const AVAILABLE_PERSONAS = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
