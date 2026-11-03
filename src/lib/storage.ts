@@ -105,33 +105,25 @@ function saveLocalSettings(
 
 export function loadSettings(
   userId?: string | null,
-  userFallback?: { language?: string; generalRules?: string; settings?: Record<string, any>; [key: string]: any } | null
+  userFallback?: { language?: string; generalRules?: string; maxChars?: number; settings?: Record<string, any>; [key: string]: any } | null
 ): ChatSettings {
-  // 1. Language & General Rules (stored in PocketBase for authenticated users)
+  const effectiveUserId = userId || (typeof window !== 'undefined' ? pb.authStore.record?.id : null)
+  const effectiveFallback = userFallback || (typeof window !== 'undefined' ? pb.authStore.record : null)
+
+  // 1. Language, General Rules, Max Chars (stored in PocketBase for authenticated users)
   let language = DEFAULT_SETTINGS.language
   let generalRules = DEFAULT_SETTINGS.generalRules
   let maxChars = DEFAULT_SETTINGS.maxChars
 
-  if (userId) {
-    if (userFallback && typeof userFallback === 'object') {
-      if (typeof userFallback.language === 'string' && userFallback.language.trim()) {
-        language = userFallback.language.trim()
-      } else if (userFallback.settings && typeof userFallback.settings.language === 'string' && userFallback.settings.language.trim()) {
-        language = userFallback.settings.language.trim()
-      }
+  if (effectiveUserId) {
+    const cached = userSettingsCache.get(effectiveUserId)
+    if (cached) {
+      language = cached.language
+      generalRules = cached.generalRules
+      maxChars = cached.maxChars
+    }
 
-      if (typeof userFallback.generalRules === 'string') {
-        generalRules = userFallback.generalRules.slice(0, GENERAL_RULES_MAX_CHARS)
-      } else if (userFallback.settings && typeof userFallback.settings.generalRules === 'string') {
-        generalRules = userFallback.settings.generalRules.slice(0, GENERAL_RULES_MAX_CHARS)
-      }
-
-      if (typeof userFallback.maxChars === 'number' && !isNaN(userFallback.maxChars)) {
-        maxChars = userFallback.maxChars
-      } else if (userFallback.settings && typeof userFallback.settings.maxChars === 'number') {
-        maxChars = userFallback.settings.maxChars
-      }
-    } else if (typeof window !== 'undefined' && pb.authStore.record?.id === userId) {
+    if (typeof window !== 'undefined' && pb.authStore.record?.id === effectiveUserId) {
       const rec = pb.authStore.record
       if (typeof rec.language === 'string' && rec.language.trim()) {
         language = rec.language.trim()
@@ -139,8 +131,26 @@ export function loadSettings(
       if (typeof rec.generalRules === 'string') {
         generalRules = rec.generalRules.slice(0, GENERAL_RULES_MAX_CHARS)
       }
-      if (typeof rec.maxChars === 'number' && !isNaN(rec.maxChars)) {
+      if (typeof rec.maxChars === 'number' && rec.maxChars >= MESSAGE_MAX_CHARS_MIN && rec.maxChars <= MESSAGE_MAX_CHARS_MAX) {
         maxChars = rec.maxChars
+      }
+    } else if (!cached && effectiveFallback && typeof effectiveFallback === 'object') {
+      if (typeof effectiveFallback.language === 'string' && effectiveFallback.language.trim()) {
+        language = effectiveFallback.language.trim()
+      } else if (effectiveFallback.settings && typeof effectiveFallback.settings.language === 'string' && effectiveFallback.settings.language.trim()) {
+        language = effectiveFallback.settings.language.trim()
+      }
+
+      if (typeof effectiveFallback.generalRules === 'string') {
+        generalRules = effectiveFallback.generalRules.slice(0, GENERAL_RULES_MAX_CHARS)
+      } else if (effectiveFallback.settings && typeof effectiveFallback.settings.generalRules === 'string') {
+        generalRules = effectiveFallback.settings.generalRules.slice(0, GENERAL_RULES_MAX_CHARS)
+      }
+
+      if (typeof effectiveFallback.maxChars === 'number' && effectiveFallback.maxChars >= MESSAGE_MAX_CHARS_MIN && effectiveFallback.maxChars <= MESSAGE_MAX_CHARS_MAX) {
+        maxChars = effectiveFallback.maxChars
+      } else if (effectiveFallback.settings && typeof effectiveFallback.settings.maxChars === 'number' && effectiveFallback.settings.maxChars >= MESSAGE_MAX_CHARS_MIN && effectiveFallback.settings.maxChars <= MESSAGE_MAX_CHARS_MAX) {
+        maxChars = effectiveFallback.settings.maxChars
       }
     }
   } else {
@@ -153,16 +163,26 @@ export function loadSettings(
         const storedMaxChars = localStorage.getItem('model_talks_max_chars')
         if (storedMaxChars) {
           const num = Number(storedMaxChars)
-          if (!isNaN(num)) maxChars = num
+          if (!isNaN(num) && num >= MESSAGE_MAX_CHARS_MIN && num <= MESSAGE_MAX_CHARS_MAX) {
+            maxChars = num
+          }
+        }
+        const storedRules = localStorage.getItem('model_talks_general_rules')
+        if (typeof storedRules === 'string') {
+          generalRules = storedRules.slice(0, GENERAL_RULES_MAX_CHARS)
         }
       } catch {
         // Fail silently
       }
+    } else if (guestSettings) {
+      language = guestSettings.language
+      generalRules = guestSettings.generalRules
+      maxChars = guestSettings.maxChars
     }
   }
 
   // 2. The rest (stored in localStorage)
-  const local = loadLocalSettings(userId)
+  const local = loadLocalSettings(effectiveUserId)
 
   let initialTopic = DEFAULT_SETTINGS.initialTopic
   let agent1Name = DEFAULT_SETTINGS.agent1Name
@@ -176,16 +196,19 @@ export function loadSettings(
     if (typeof local.agent2Name === 'string' && local.agent2Name.trim()) agent2Name = local.agent2Name
     if (typeof local.systemPrompt1 === 'string') systemPrompt1 = local.systemPrompt1.slice(0, 200)
     if (typeof local.systemPrompt2 === 'string') systemPrompt2 = local.systemPrompt2.slice(0, 200)
-    if (!userId && typeof local.language === 'string' && local.language.trim() && !language) {
+    if (typeof local.generalRules === 'string' && (!generalRules || generalRules === DEFAULT_SETTINGS.generalRules)) {
+      generalRules = local.generalRules.slice(0, GENERAL_RULES_MAX_CHARS)
+    }
+    if (typeof local.language === 'string' && local.language.trim() && (!language || language === DEFAULT_SETTINGS.language)) {
       language = local.language.trim()
     }
-    if (typeof local.maxChars === 'number' && !isNaN(local.maxChars) && maxChars === DEFAULT_SETTINGS.maxChars) {
+    if (typeof local.maxChars === 'number' && local.maxChars >= MESSAGE_MAX_CHARS_MIN && local.maxChars <= MESSAGE_MAX_CHARS_MAX && maxChars === DEFAULT_SETTINGS.maxChars) {
       maxChars = local.maxChars
     }
-  } else if (userFallback && typeof userFallback === 'object') {
+  } else if (effectiveFallback && typeof effectiveFallback === 'object') {
     // Migrate any legacy agent settings from PocketBase into localStorage once
     const legacyMigrated: Partial<ChatSettings> = {}
-    const legacy = userFallback.settings || userFallback
+    const legacy = effectiveFallback.settings || effectiveFallback
 
     if (typeof legacy.initialTopic === 'string' && legacy.initialTopic) {
       initialTopic = legacy.initialTopic.slice(0, 200)
@@ -208,7 +231,7 @@ export function loadSettings(
       legacyMigrated.systemPrompt2 = systemPrompt2
     }
     if (Object.keys(legacyMigrated).length > 0) {
-      saveLocalSettings(legacyMigrated, userId)
+      saveLocalSettings(legacyMigrated, effectiveUserId)
     }
   }
 
@@ -223,8 +246,8 @@ export function loadSettings(
     maxChars
   })
 
-  if (userId) {
-    userSettingsCache.set(userId, result)
+  if (effectiveUserId) {
+    userSettingsCache.set(effectiveUserId, result)
   } else {
     guestSettings = result
   }
@@ -235,7 +258,7 @@ export function loadSettings(
 export function saveSettings(settings: ChatSettings, userId?: string | null): void {
   const sanitized = sanitizeSettings(settings)
 
-  // 1. Save the rest in localStorage
+  // 1. Save all settings in localStorage
   saveLocalSettings(
     {
       initialTopic: sanitized.initialTopic,
@@ -243,6 +266,8 @@ export function saveSettings(settings: ChatSettings, userId?: string | null): vo
       agent2Name: sanitized.agent2Name,
       systemPrompt1: sanitized.systemPrompt1,
       systemPrompt2: sanitized.systemPrompt2,
+      generalRules: sanitized.generalRules,
+      language: sanitized.language,
       maxChars: sanitized.maxChars
     },
     userId
@@ -251,14 +276,12 @@ export function saveSettings(settings: ChatSettings, userId?: string | null): vo
   if (userId) {
     userSettingsCache.set(userId, sanitized)
   } else {
-    guestSettings = {
-      ...sanitized,
-      generalRules: DEFAULT_SETTINGS.generalRules
-    }
+    guestSettings = sanitized
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
       try {
         localStorage.setItem('model_talks_lang', sanitized.language)
         localStorage.setItem('model_talks_max_chars', String(sanitized.maxChars))
+        localStorage.setItem('model_talks_general_rules', sanitized.generalRules)
       } catch {
         // Fail silently
       }

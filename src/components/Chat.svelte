@@ -157,7 +157,7 @@
 
   onMount(() => {
     const loaded = loadSettings(user?.id, user)
-    generalRules = user ? loaded.generalRules : DEFAULT_SETTINGS.generalRules
+    generalRules = loaded.generalRules
     language = loaded.language
     maxChars = loaded.maxChars
 
@@ -180,12 +180,6 @@
     }
 
     isHydrated = true
-  })
-
-  $effect(() => {
-    if (!user) {
-      generalRules = DEFAULT_SETTINGS.generalRules
-    }
   })
 
   let lastNewChatTrigger = $state(talksState.newChatTrigger)
@@ -248,7 +242,7 @@
         agent2Name,
         systemPrompt1,
         systemPrompt2,
-        generalRules: user ? generalRules : DEFAULT_SETTINGS.generalRules,
+        generalRules,
         language,
         maxChars,
       },
