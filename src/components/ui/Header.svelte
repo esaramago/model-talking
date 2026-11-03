@@ -1,9 +1,15 @@
 <script lang="ts">
+  import { page } from '$app/state'
   import Grid from '@/components/ui/Grid.svelte'
   import Logo from './Logo.svelte'
   import { stats } from '@/lib/state/stats.svelte'
   import { sidebar } from '@/lib/state/sidebar.svelte'
   import { t } from '@/lib/i18n/index.svelte'
+
+  const isAdmin = $derived(page.data?.user?.role === 'admin')
+  const isConversationPage = $derived(
+    page.url.pathname === '/' || page.url.pathname.startsWith('/talks/')
+  )
 </script>
 
 <header>
@@ -19,7 +25,9 @@
     </Grid>
     <div class="header__stats">
       <Grid align="center" gap="s">
-        <wa-badge variant="brand">{stats.totalTokens} {t('header.totalTokens')}</wa-badge>
+        {#if isAdmin && isConversationPage}
+          <wa-badge variant="brand">{stats.totalTokens} {t('header.totalTokens')}</wa-badge>
+        {/if}
         {#if stats.isUnlimited}
         <wa-badge variant="success">{t('header.dailyMessages')}: {t('header.unlimited')}</wa-badge>
         {:else}

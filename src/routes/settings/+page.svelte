@@ -141,7 +141,6 @@
     <wa-card>
       <Grid direction="column" gap="s">
         <h2 data-appearance="h4">{t('settings.maxChars')}</h2>
-        <strong>{maxChars}</strong>
         <wa-slider
           label={t('settings.maxCharsLabel')}
           value={maxChars}
@@ -153,6 +152,7 @@
           oninput={handleMaxCharsInput}
           onchange={handleMaxCharsChange}
         ></wa-slider>
+        <strong>{maxChars}</strong>
       </Grid>
     </wa-card>
   </Grid>

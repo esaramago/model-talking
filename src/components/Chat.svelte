@@ -84,7 +84,7 @@
     if (talk.language) language = talk.language
     if (talk.maxChars) maxChars = talk.maxChars
     if (talk.maxTokens) maxTokens = Math.max(talk.maxTokens, MAX_OUTPUT_TOKENS)
-    if (talk.totalTokens) totalTokensUsed = talk.totalTokens
+    totalTokensUsed = talk.totalTokens ?? 0
     statusMessage = conversationStarted
       ? t('chat.conversationLoaded')
       : t('chat.ready')
