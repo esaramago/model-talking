@@ -11,7 +11,7 @@
 
 <style>
   footer {
-    padding: var(--wa-space-s);
+    padding-block: var(--wa-space-3xl) var(--wa-space-m);
     text-align: center;
     color: var(--wa-color-text-quiet);
     font-size: var(--wa-font-size-xs);
