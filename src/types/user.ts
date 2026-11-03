@@ -1,6 +1,6 @@
 import type { RecordModel } from 'pocketbase'
 
-export type UserRole = 'admin' | 'free' | 'paid'
+export type UserRole = 'admin' | 'user'
 
 export interface UserRecord extends RecordModel {
   role?: UserRole

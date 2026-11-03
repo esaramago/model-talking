@@ -45,7 +45,7 @@ export const actions: Actions = {
         email,
         password,
         passwordConfirm,
-        role: 'free'
+        role: 'user'
       }
       if (name) {
         createData.name = name
