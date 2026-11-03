@@ -1,4 +1,4 @@
-import type { ChatMessage, LanguageOption, ModelOption } from '@/types/chat'
+import type { ChatMessage, DailyQuota, LanguageOption, ModelOption } from '@/types/chat'
 import {
   AGENT_1_BASE_PROMPT,
   AGENT_2_BASE_PROMPT,
@@ -232,6 +232,7 @@ export interface ChatResponse {
     total_tokens: number
   }
   model?: string
+  quota?: DailyQuota
 }
 
 export async function requestModelTurn(payload: {
@@ -239,6 +240,7 @@ export async function requestModelTurn(payload: {
   messages: ApiChatMessage[]
   maxTokens: number
   temperature?: number
+  isTitle?: boolean
 }): Promise<ChatResponse> {
   const res = await fetch('/api/chat', {
     method: 'POST',
@@ -277,7 +279,8 @@ export async function generateTalkTitle(promptText: string, model?: string): Pro
         }
       ],
       maxTokens: 25,
-      temperature: 0.5
+      temperature: 0.5,
+      isTitle: true
     })
 
     let title = res.content.trim()

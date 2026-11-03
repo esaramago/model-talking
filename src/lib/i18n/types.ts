@@ -6,6 +6,8 @@ export interface TranslationSchema {
     generatedMessagePlural: string
     totalTokens: string
     model: string
+    dailyMessages: string
+    unlimited: string
   }
   sidebar: {
     newChat: string

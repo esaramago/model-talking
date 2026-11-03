@@ -1,6 +1,7 @@
 import { json, type RequestHandler } from '@sveltejs/kit'
 import { env } from '$env/dynamic/private'
 import { MAX_INPUT_TOKENS, MAX_OUTPUT_TOKENS } from '@/lib/config'
+import { consumeQuota, getQuota, resolveRateLimitIdentifier } from '@/lib/server/rateLimit'
 
 interface ChatMessagePart {
   type: string
@@ -16,12 +17,20 @@ interface ChatRequestBody {
   }>
   maxTokens?: number
   temperature?: number
+  isTitle?: boolean
 }
 
-export const POST: RequestHandler = async ({ request }) => {
+export const GET: RequestHandler = async (event) => {
+  const identifier = resolveRateLimitIdentifier(event)
+  const quota = await getQuota(event.locals.pb, identifier)
+  return json(quota)
+}
+
+export const POST: RequestHandler = async (event) => {
+  const { request, locals } = event
   try {
     const body = (await request.json()) as ChatRequestBody
-    const { model, messages, maxTokens = MAX_OUTPUT_TOKENS, temperature = 0.7 } = body
+    const { model, messages, maxTokens = MAX_OUTPUT_TOKENS, temperature = 0.7, isTitle = false } = body
 
     const resolvedApiKey = env.OPENROUTER_API_KEY?.trim() || process.env.OPENROUTER_API_KEY?.trim()
 
@@ -40,6 +49,34 @@ export const POST: RequestHandler = async ({ request }) => {
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return json({ error: 'Conversation messages are required.' }, { status: 400 })
+    }
+
+    const identifier = resolveRateLimitIdentifier(event)
+
+    let currentQuota
+    if (isTitle) {
+      currentQuota = await getQuota(locals.pb, identifier)
+      if (!identifier.isAdmin && currentQuota.remaining <= 0) {
+        return json(
+          {
+            error: 'Daily message limit reached (20/20). Your messages will reset at 00:00 UTC.',
+            quota: currentQuota
+          },
+          { status: 429 }
+        )
+      }
+    } else {
+      const quotaResult = await consumeQuota(locals.pb, identifier)
+      currentQuota = quotaResult.quota
+      if (!quotaResult.allowed) {
+        return json(
+          {
+            error: 'Daily message limit reached (20/20). Your messages will reset at 00:00 UTC.',
+            quota: currentQuota
+          },
+          { status: 429 }
+        )
+      }
     }
 
     const totalEstimatedChars = messages.reduce((acc, m) => {
@@ -85,7 +122,7 @@ export const POST: RequestHandler = async ({ request }) => {
         errMessage = errText || errMessage
       }
 
-      return json({ error: errMessage }, { status: response.status })
+      return json({ error: errMessage, quota: currentQuota }, { status: response.status })
     }
 
     const data = await response.json()
@@ -100,7 +137,8 @@ export const POST: RequestHandler = async ({ request }) => {
     return json({
       content,
       usage,
-      model: data.model || model
+      model: data.model || model,
+      quota: currentQuota
     })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown server error'

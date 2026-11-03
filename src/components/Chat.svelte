@@ -152,7 +152,7 @@
   }
 
   onMount(() => {
-    const loaded = loadSettings(user?.id, user?.settings)
+    const loaded = loadSettings(user?.id, user)
     generalRules = user ? loaded.generalRules : DEFAULT_SETTINGS.generalRules
     language = loaded.language
 
@@ -237,7 +237,7 @@
     saveSettings(
       {
         initialTopic: currentTalkId
-          ? loadSettings(user?.id, user?.settings).initialTopic
+          ? loadSettings(user?.id, user).initialTopic
           : initialTopic,
         agent1Name,
         agent2Name,
@@ -345,6 +345,10 @@
         messages: apiMessages,
         maxTokens: currentMaxTokens,
       })
+
+      if (response.quota) {
+        stats.setQuota(response.quota)
+      }
 
       const turnNumber = messages.length + 1
       const pTokens = response.usage?.prompt_tokens ?? 0

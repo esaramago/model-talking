@@ -5,7 +5,9 @@ export const ptPT: TranslationSchema = {
     generatedMessageSingular: 'Mensagem Gerada',
     generatedMessagePlural: 'Mensagens Geradas',
     totalTokens: 'Tokens Total',
-    model: 'Modelo'
+    model: 'Modelo',
+    dailyMessages: 'Mensagens diárias',
+    unlimited: 'Ilimitado'
   },
   sidebar: {
     newChat: 'Nova conversa',

@@ -5,7 +5,9 @@ export const es: TranslationSchema = {
     generatedMessageSingular: 'Mensaje generado',
     generatedMessagePlural: 'Mensajes generados',
     totalTokens: 'Tokens totales',
-    model: 'Modelo'
+    model: 'Modelo',
+    dailyMessages: 'Mensajes diarios',
+    unlimited: 'Ilimitado'
   },
   sidebar: {
     newChat: 'Nueva conversación',

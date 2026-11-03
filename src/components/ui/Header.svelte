@@ -18,11 +18,14 @@
       </div>
     </Grid>
     <Grid align="center" gap="s">
-      <wa-badge variant="neutral">{t('header.model')}: {stats.model}</wa-badge>
-      <wa-badge variant="neutral">
-        {stats.generatedMessages} {stats.generatedMessages === 1 ? t('header.generatedMessageSingular') : t('header.generatedMessagePlural')}
-      </wa-badge>
       <wa-badge variant="brand">{stats.totalTokens} {t('header.totalTokens')}</wa-badge>
+      {#if stats.isUnlimited}
+        <wa-badge variant="success">{t('header.dailyMessages')}: {t('header.unlimited')}</wa-badge>
+      {:else}
+        <wa-badge variant={stats.dailyRemaining === 0 ? 'danger' : 'neutral'}>
+          {t('header.dailyMessages')}: {stats.dailyRemaining}/{stats.dailyTotal}
+        </wa-badge>
+      {/if}
     </Grid>
   </Grid>
 </header>

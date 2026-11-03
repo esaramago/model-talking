@@ -4,5 +4,6 @@ export type UserRole = 'admin' | 'free' | 'paid'
 
 export interface UserRecord extends RecordModel {
   role?: UserRole
-  settings?: Record<string, any>
+  language?: string
+  generalRules?: string
 }

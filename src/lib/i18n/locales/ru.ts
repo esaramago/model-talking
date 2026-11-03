@@ -5,7 +5,9 @@ export const ru: TranslationSchema = {
     generatedMessageSingular: 'Сгенерированное сообщение',
     generatedMessagePlural: 'Сгенерированные сообщения',
     totalTokens: 'Всего токенов',
-    model: 'Модель'
+    model: 'Модель',
+    dailyMessages: 'Дневные сообщения',
+    unlimited: 'Без ограничений'
   },
   sidebar: {
     newChat: 'Новый чат',

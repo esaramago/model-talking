@@ -33,9 +33,8 @@ cp .env.example .env
 | Variable | Default (Local) | Production (Coolify) | Description |
 | :--- | :--- | :--- | :--- |
 | `PORT` | `3000` | `3000` | SvelteKit production server port |
-| `POCKETBASE_PORT` | `8090` | `8090` | Host port mapped to the PocketBase container |
-| `POCKETBASE_URL` | `http://pocketbase:8090` | `http://pocketbase:8090` | Internal server-to-server URL used by SvelteKit SSR (`hooks.server.ts`) |
-| `VITE_POCKETBASE_URL` | `http://localhost:8090` | `https://api.yourdomain.com` | Public URL used by the client-side browser to contact PocketBase |
+| `POCKETBASE_PORT` | `8095` | `8090` | Host port mapped to the PocketBase container |
+| `VITE_POCKETBASE_URL` | `http://localhost:8095` | `https://api.yourdomain.com` | Public URL used by the client-side browser to contact PocketBase |
 
 ### 3. Start the Development Environment
 
@@ -50,8 +49,8 @@ pnpm dev
 Once started, the following services are available:
 
 - **Frontend App:** [http://localhost:5174](http://localhost:5174)
-- **PocketBase Admin UI:** [http://localhost:8090/_/](http://localhost:8090/_/)
-- **PocketBase API Endpoint:** [http://localhost:8090/api/](http://localhost:8090/api/)
+- **PocketBase Admin UI:** [http://localhost:8095/_/](http://localhost:8095/_/)
+- **PocketBase API Endpoint:** [http://localhost:8095/api/](http://localhost:8095/api/)
 
 When accessing the PocketBase Admin UI for the first time, you will be prompted to create your initial superuser administrator account.
 
@@ -149,7 +148,6 @@ When deploying to Coolify:
 2. **Persistent Storage:** Ensure the volume `pb_data` is mounted to `/pb_data` in the PocketBase container so database records and uploaded files persist across redeployments.
 3. **Environment Variables:** Set production values in Coolify:
    - `PORT`: `3000`
-   - `POCKETBASE_URL`: Internal network URL (e.g., `http://pocketbase:8090`)
    - `VITE_POCKETBASE_URL`: Public domain URL (e.g., `https://pb.yourdomain.com`)
 
 ---

@@ -5,7 +5,9 @@ export const ar: TranslationSchema = {
     generatedMessageSingular: 'رسالة مُنشأة',
     generatedMessagePlural: 'رسائل مُنشأة',
     totalTokens: 'إجمالي التوكنات',
-    model: 'النموذج'
+    model: 'النموذج',
+    dailyMessages: 'الرسائل اليومية',
+    unlimited: 'غير محدود'
   },
   sidebar: {
     newChat: 'محادثة جديدة',

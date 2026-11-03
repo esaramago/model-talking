@@ -5,7 +5,9 @@ export const fr: TranslationSchema = {
     generatedMessageSingular: 'Message généré',
     generatedMessagePlural: 'Messages générés',
     totalTokens: 'Total des tokens',
-    model: 'Modèle'
+    model: 'Modèle',
+    dailyMessages: 'Messages quotidiens',
+    unlimited: 'Illimité'
   },
   sidebar: {
     newChat: 'Nouvelle conversation',

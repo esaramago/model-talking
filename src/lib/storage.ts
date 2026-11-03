@@ -1,6 +1,6 @@
 import type { ChatSettings } from '@/types/chat'
 import { pb } from '@/lib/pocketbase'
-import { DEFAULT_SETTINGS, STORAGE_KEY_PREFIX } from '@/lib/config'
+import { DEFAULT_SETTINGS, STORAGE_KEY_PREFIX, GENERAL_RULES_MAX_CHARS } from '@/lib/config'
 import { i18n } from '@/lib/i18n/index.svelte'
 
 export { DEFAULT_SETTINGS, STORAGE_KEY_PREFIX }
@@ -49,7 +49,7 @@ export function sanitizeSettings(
         : DEFAULT_SETTINGS.systemPrompt2,
     generalRules:
       typeof settings.generalRules === 'string'
-        ? settings.generalRules.slice(0, 100)
+        ? settings.generalRules.slice(0, GENERAL_RULES_MAX_CHARS)
         : DEFAULT_SETTINGS.generalRules,
     language:
       typeof settings.language === 'string' && settings.language.trim()
@@ -61,19 +61,31 @@ export function sanitizeSettings(
 let guestSettings: ChatSettings = { ...DEFAULT_SETTINGS }
 const userSettingsCache = new Map<string, ChatSettings>()
 
-// Clean up any legacy localStorage entries once on client
-if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+function loadLocalSettings(userId?: string | null): Partial<ChatSettings> | null {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return null
+  }
   try {
-    const keysToRemove: string[] = []
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i)
-      if (k && (k.startsWith(STORAGE_KEY_PREFIX) || k === 'pocketbase_auth')) {
-        keysToRemove.push(k)
-      }
-    }
-    for (const k of keysToRemove) {
-      localStorage.removeItem(k)
-    }
+    const raw = localStorage.getItem(getStorageKey(userId))
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object') return null
+    return parsed
+  } catch {
+    return null
+  }
+}
+
+function saveLocalSettings(
+  settings: Partial<ChatSettings>,
+  userId?: string | null
+): void {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return
+  }
+  try {
+    const key = getStorageKey(userId)
+    localStorage.setItem(key, JSON.stringify(settings))
   } catch {
     // Fail silently
   }
@@ -81,49 +93,128 @@ if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
 
 export function loadSettings(
   userId?: string | null,
-  fallbackSettings?: Partial<ChatSettings> | null
+  userFallback?: { language?: string; generalRules?: string; settings?: Record<string, any>; [key: string]: any } | null
 ): ChatSettings {
+  // 1. Language & General Rules (stored in PocketBase for authenticated users)
+  let language = DEFAULT_SETTINGS.language
+  let generalRules = DEFAULT_SETTINGS.generalRules
+
   if (userId) {
-    const cached = userSettingsCache.get(userId)
-    if (cached) {
-      return cached
-    }
-  }
+    if (userFallback && typeof userFallback === 'object') {
+      if (typeof userFallback.language === 'string' && userFallback.language.trim()) {
+        language = userFallback.language.trim()
+      } else if (userFallback.settings && typeof userFallback.settings.language === 'string' && userFallback.settings.language.trim()) {
+        language = userFallback.settings.language.trim()
+      }
 
-  if (fallbackSettings && typeof fallbackSettings === 'object' && Object.keys(fallbackSettings).length > 0) {
-    const sanitized = sanitizeSettings(fallbackSettings)
-    if (userId) {
-      userSettingsCache.set(userId, sanitized)
-      return sanitized
+      if (typeof userFallback.generalRules === 'string') {
+        generalRules = userFallback.generalRules.slice(0, GENERAL_RULES_MAX_CHARS)
+      } else if (userFallback.settings && typeof userFallback.settings.generalRules === 'string') {
+        generalRules = userFallback.settings.generalRules.slice(0, GENERAL_RULES_MAX_CHARS)
+      }
+    } else if (typeof window !== 'undefined' && pb.authStore.record?.id === userId) {
+      const rec = pb.authStore.record
+      if (typeof rec.language === 'string' && rec.language.trim()) {
+        language = rec.language.trim()
+      }
+      if (typeof rec.generalRules === 'string') {
+        generalRules = rec.generalRules.slice(0, GENERAL_RULES_MAX_CHARS)
+      }
     }
-    return {
-      ...sanitized,
-      generalRules: DEFAULT_SETTINGS.generalRules
-    }
-  }
-
-  if (!userId) {
+  } else {
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
       try {
         const storedLang = localStorage.getItem('model_talks_lang')
         if (storedLang) {
-          guestSettings.language = storedLang
+          language = storedLang
         }
       } catch {
         // Fail silently
       }
     }
-    return {
-      ...guestSettings,
-      generalRules: DEFAULT_SETTINGS.generalRules
+  }
+
+  // 2. The rest (stored in localStorage)
+  const local = loadLocalSettings(userId)
+
+  let initialTopic = DEFAULT_SETTINGS.initialTopic
+  let agent1Name = DEFAULT_SETTINGS.agent1Name
+  let agent2Name = DEFAULT_SETTINGS.agent2Name
+  let systemPrompt1 = DEFAULT_SETTINGS.systemPrompt1
+  let systemPrompt2 = DEFAULT_SETTINGS.systemPrompt2
+
+  if (local) {
+    if (typeof local.initialTopic === 'string') initialTopic = local.initialTopic.slice(0, 200)
+    if (typeof local.agent1Name === 'string' && local.agent1Name.trim()) agent1Name = local.agent1Name
+    if (typeof local.agent2Name === 'string' && local.agent2Name.trim()) agent2Name = local.agent2Name
+    if (typeof local.systemPrompt1 === 'string') systemPrompt1 = local.systemPrompt1.slice(0, 200)
+    if (typeof local.systemPrompt2 === 'string') systemPrompt2 = local.systemPrompt2.slice(0, 200)
+    if (!userId && typeof local.language === 'string' && local.language.trim() && !language) {
+      language = local.language.trim()
+    }
+  } else if (userFallback && typeof userFallback === 'object') {
+    // Migrate any legacy agent settings from PocketBase into localStorage once
+    const legacyMigrated: Partial<ChatSettings> = {}
+    const legacy = userFallback.settings || userFallback
+
+    if (typeof legacy.initialTopic === 'string' && legacy.initialTopic) {
+      initialTopic = legacy.initialTopic.slice(0, 200)
+      legacyMigrated.initialTopic = initialTopic
+    }
+    if (typeof legacy.agent1Name === 'string' && legacy.agent1Name.trim()) {
+      agent1Name = legacy.agent1Name.trim()
+      legacyMigrated.agent1Name = agent1Name
+    }
+    if (typeof legacy.agent2Name === 'string' && legacy.agent2Name.trim()) {
+      agent2Name = legacy.agent2Name.trim()
+      legacyMigrated.agent2Name = agent2Name
+    }
+    if (typeof legacy.systemPrompt1 === 'string' && legacy.systemPrompt1) {
+      systemPrompt1 = legacy.systemPrompt1.slice(0, 200)
+      legacyMigrated.systemPrompt1 = systemPrompt1
+    }
+    if (typeof legacy.systemPrompt2 === 'string' && legacy.systemPrompt2) {
+      systemPrompt2 = legacy.systemPrompt2.slice(0, 200)
+      legacyMigrated.systemPrompt2 = systemPrompt2
+    }
+    if (Object.keys(legacyMigrated).length > 0) {
+      saveLocalSettings(legacyMigrated, userId)
     }
   }
 
-  return DEFAULT_SETTINGS
+  const result: ChatSettings = sanitizeSettings({
+    initialTopic,
+    agent1Name,
+    agent2Name,
+    systemPrompt1,
+    systemPrompt2,
+    generalRules,
+    language
+  })
+
+  if (userId) {
+    userSettingsCache.set(userId, result)
+  } else {
+    guestSettings = result
+  }
+
+  return result
 }
 
 export function saveSettings(settings: ChatSettings, userId?: string | null): void {
   const sanitized = sanitizeSettings(settings)
+
+  // 1. Save the rest in localStorage
+  saveLocalSettings(
+    {
+      initialTopic: sanitized.initialTopic,
+      agent1Name: sanitized.agent1Name,
+      agent2Name: sanitized.agent2Name,
+      systemPrompt1: sanitized.systemPrompt1,
+      systemPrompt2: sanitized.systemPrompt2
+    },
+    userId
+  )
 
   if (userId) {
     userSettingsCache.set(userId, sanitized)
@@ -143,20 +234,29 @@ export function saveSettings(settings: ChatSettings, userId?: string | null): vo
 
   i18n.setLanguage(sanitized.language)
 
+  // 2. Save language and generalRules directly to user fields in PocketBase
   const activeUserId = userId || (typeof window !== 'undefined' ? pb.authStore.record?.id : null)
   if (activeUserId && typeof window !== 'undefined' && pb.authStore.record?.id === activeUserId) {
-    pb.collection('users')
-      .update(activeUserId, {
-        settings: sanitized
-      })
-      .then((updatedUser) => {
-        if (pb.authStore.isValid && pb.authStore.token) {
-          pb.authStore.save(pb.authStore.token, updatedUser)
-        }
-      })
-      .catch(() => {
-        // Fail silently
-      })
+    const currentLang = pb.authStore.record?.language
+    const currentRules = pb.authStore.record?.generalRules
+
+    const hasChanged = currentLang !== sanitized.language || currentRules !== sanitized.generalRules
+
+    if (hasChanged) {
+      pb.collection('users')
+        .update(activeUserId, {
+          language: sanitized.language,
+          generalRules: sanitized.generalRules
+        })
+        .then((updatedUser) => {
+          if (pb.authStore.isValid && pb.authStore.token) {
+            pb.authStore.save(pb.authStore.token, updatedUser)
+          }
+        })
+        .catch(() => {
+          // Fail silently
+        })
+    }
   }
 }
 
@@ -165,6 +265,13 @@ export function clearSettings(userId?: string | null): void {
     userSettingsCache.delete(userId)
   } else {
     guestSettings = { ...DEFAULT_SETTINGS }
+  }
+  if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+    try {
+      localStorage.removeItem(getStorageKey(userId))
+    } catch {
+      // Fail silently
+    }
   }
 }
 

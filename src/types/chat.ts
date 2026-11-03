@@ -33,6 +33,13 @@ export interface ChatSettings {
   language: string
 }
 
+export interface DailyQuota {
+  remaining: number
+  total: number
+  isUnlimited: boolean
+  resetAt: string
+}
+
 export interface TalkRecord {
   id: string
   title: string

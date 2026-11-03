@@ -22,19 +22,18 @@
   }
 
   onMount(() => {
-    applySettings(user?.id, user?.settings)
+    applySettings(user?.id, user)
     lastSyncedUserId = user?.id ?? null
     isHydrated = true
   })
 
   $effect(() => {
     const currentUserId = user?.id ?? null
-    const userSettings = user?.settings ?? null
     if (lastSyncedUserId === undefined) {
       lastSyncedUserId = currentUserId
     } else if (lastSyncedUserId !== currentUserId) {
       lastSyncedUserId = currentUserId
-      applySettings(currentUserId, userSettings)
+      applySettings(currentUserId, user)
     }
   })
 
@@ -45,7 +44,7 @@
     if (!newLang) return
     language = newLang
     i18n.setLanguage(newLang)
-    const current = loadSettings(user?.id, user?.settings)
+    const current = loadSettings(user?.id, user)
     saveSettings({
       ...current,
       language: newLang
@@ -60,7 +59,7 @@
     }
     generalRules = target.value
     if (!isHydrated) return
-    const current = loadSettings(user?.id, user?.settings)
+    const current = loadSettings(user?.id, user)
     saveSettings({
       ...current,
       generalRules

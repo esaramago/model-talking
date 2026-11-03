@@ -5,7 +5,9 @@ export const tr: TranslationSchema = {
     generatedMessageSingular: 'Oluşturulan Mesaj',
     generatedMessagePlural: 'Oluşturulan Mesajlar',
     totalTokens: 'Toplam Token',
-    model: 'Model'
+    model: 'Model',
+    dailyMessages: 'Günlük mesajlar',
+    unlimited: 'Sınırsız'
   },
   sidebar: {
     newChat: 'Yeni sohbet',

@@ -19,6 +19,7 @@
   import Sidebar from '@/components/ui/Sidebar.svelte'
   import Footer from '@/components/ui/Footer.svelte'
   import { talksState } from '@/lib/state/talks.svelte'
+  import { stats } from '@/lib/state/stats.svelte'
   import { currentUser } from '@/lib/pocketbase'
   import { i18n } from '@/lib/i18n/index.svelte'
   import { loadSettings } from '@/lib/storage'
@@ -40,6 +41,12 @@
     currentUser.set(data.user ?? null)
   })
 
+  $effect(() => {
+    if (data.quota) {
+      stats.setQuota(data.quota)
+    }
+  })
+
   let lastUserId = $state<string | null | undefined>(undefined)
 
   $effect(() => {
@@ -48,13 +55,13 @@
       lastUserId = currentUserId
     } else if (lastUserId !== currentUserId) {
       lastUserId = currentUserId
-      const loaded = loadSettings(currentUserId, data.user?.settings)
+      const loaded = loadSettings(currentUserId, data.user)
       i18n.setLanguage(loaded.language)
     }
   })
 
   onMount(() => {
-    const loaded = loadSettings(data.user?.id, data.user?.settings)
+    const loaded = loadSettings(data.user?.id, data.user)
     i18n.setLanguage(loaded.language)
     talksState.subscribe()
     return () => {

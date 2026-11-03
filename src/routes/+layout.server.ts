@@ -1,13 +1,18 @@
 import type { LayoutServerLoad } from './$types'
 import type { TalkRecord } from '@/types/chat'
+import { getQuota, resolveRateLimitIdentifier } from '@/lib/server/rateLimit'
 
-export const load: LayoutServerLoad = async ({ locals }) => {
+export const load: LayoutServerLoad = async (event) => {
+  const { locals } = event
   const user = locals.user ? JSON.parse(JSON.stringify(locals.user)) : null
+  const identifier = resolveRateLimitIdentifier(event)
+  const quota = await getQuota(locals.pb, identifier)
 
   if (!user) {
     return {
       talks: [],
-      user: null
+      user: null,
+      quota
     }
   }
 
@@ -18,13 +23,15 @@ export const load: LayoutServerLoad = async ({ locals }) => {
     })
     return {
       talks: JSON.parse(JSON.stringify(talks)) as TalkRecord[],
-      user
+      user,
+      quota
     }
   } catch (err) {
     console.error('Error in layout load talks:', err)
     return {
       talks: [],
-      user
+      user,
+      quota
     }
   }
 }

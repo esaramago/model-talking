@@ -5,7 +5,7 @@ export const STORAGE_KEY_PREFIX = 'model_talks_settings'
 // MODELS
 // z-ai/glm-5.3-flash (https://openrouter.ai/z-ai/glm-5.3-flash)
 // mistralai/mistral-nemo (https://openrouter.ai/mistralai/mistral-nemo)
-export const MODEL = 'mistralai/mistral-nemo'
+export const MODEL = 'z-ai/glm-5.3-flash'
 
 export const MAX_OUTPUT_TOKENS = 1024
 export const MAX_INPUT_TOKENS = 8192

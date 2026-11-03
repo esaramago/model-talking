@@ -9,16 +9,16 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
-      - POCKETBASE_URL=http://pocketbase:8090
-      - VITE_POCKETBASE_URL=http://localhost:8090
+      - VITE_POCKETBASE_URL=http://localhost:8095
     depends_on:
       - pocketbase
 
   pocketbase:
     image: ghcr.io/muchobien/pocketbase:latest
     restart: unless-stopped
+    command: serve --http=0.0.0.0:8090 --dir=/pb_data --publicDir=/pb_public --hooksDir=/pb_hooks --migrationsDir=/pb_migrations
     ports:
-      - "${POCKETBASE_PORT:-8090}:8090"
+      - "${POCKETBASE_PORT:-8095}:8090"
     volumes:
       - pb_data:/pb_data
       - ./pb_migrations:/pb_migrations
