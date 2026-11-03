@@ -1,8 +1,9 @@
 import crypto from 'node:crypto'
 import type PocketBase from 'pocketbase'
 import type { RequestEvent } from '@sveltejs/kit'
+import { DAILY_MESSAGE_LIMIT, DAILY_TITLE_LIMIT } from '@/lib/config'
 
-export const DAILY_MESSAGE_LIMIT = 20
+export { DAILY_MESSAGE_LIMIT, DAILY_TITLE_LIMIT }
 export const INTERNAL_SECRET_KEY =
   process.env.INTERNAL_SECRET_KEY || 'mt_secret_daily_usage_key_8f3a1e'
 
@@ -332,4 +333,58 @@ export async function consumeQuota(
       resetAt
     }
   }
+}
+
+/**
+ * Consumes 1 title generation from a dedicated daily rate limit.
+ */
+export async function consumeTitleQuota(
+  pb: PocketBase | undefined,
+  identifier: RateLimitIdentifier
+): Promise<boolean> {
+  if (identifier.isAdmin) {
+    return true
+  }
+
+  const date = getUtcDateString()
+
+  if (identifier.userKey) {
+    const titleUserKey = `title:${identifier.userKey}`
+    const titleCookieKey = `title:${identifier.cookieKey}`
+    const [userCountData, cookieCountData] = await Promise.all([
+      fetchKeyCount(pb, titleUserKey, date),
+      fetchKeyCount(pb, titleCookieKey, date)
+    ])
+    const currentUsed = Math.max(userCountData.count, cookieCountData.count)
+
+    if (currentUsed >= DAILY_TITLE_LIMIT) {
+      return false
+    }
+
+    const nextUsed = currentUsed + 1
+    await Promise.all([
+      setKeyCount(pb, titleUserKey, date, nextUsed, userCountData.recordId),
+      setKeyCount(pb, titleCookieKey, date, nextUsed, cookieCountData.recordId)
+    ])
+    return true
+  }
+
+  const titleCookieKey = `title:${identifier.cookieKey}`
+  const titleIpKey = `title:${identifier.ipKey}`
+  const [cookieCountData, ipCountData] = await Promise.all([
+    fetchKeyCount(pb, titleCookieKey, date),
+    fetchKeyCount(pb, titleIpKey, date)
+  ])
+  const currentUsed = Math.max(cookieCountData.count, ipCountData.count)
+
+  if (currentUsed >= DAILY_TITLE_LIMIT) {
+    return false
+  }
+
+  const nextUsed = currentUsed + 1
+  await Promise.all([
+    setKeyCount(pb, titleCookieKey, date, nextUsed, cookieCountData.recordId),
+    setKeyCount(pb, titleIpKey, date, nextUsed, ipCountData.recordId)
+  ])
+  return true
 }

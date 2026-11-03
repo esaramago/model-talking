@@ -10,6 +10,9 @@ export const MODEL = 'z-ai/glm-5.3-flash'
 export const MAX_OUTPUT_TOKENS = 2048
 export const MAX_INPUT_TOKENS = 8192
 
+export const DAILY_MESSAGE_LIMIT = 20
+export const DAILY_TITLE_LIMIT = DAILY_MESSAGE_LIMIT
+
 export const GENERAL_RULES_MAX_CHARS = 150
 
 export const MESSAGE_MAX_CHARS_MIN = 100

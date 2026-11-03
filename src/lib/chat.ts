@@ -286,7 +286,7 @@ export async function generateTalkTitle(promptText: string, model?: string): Pro
           content: `Tópico: ${trimmedPrompt}`
         }
       ],
-      maxTokens: 250,
+      maxTokens: 50,
       temperature: 0.5,
       isTitle: true
     })

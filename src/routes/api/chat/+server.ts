@@ -1,7 +1,17 @@
 import { json, type RequestHandler } from '@sveltejs/kit'
 import { env } from '$env/dynamic/private'
-import { MAX_INPUT_TOKENS, MAX_OUTPUT_TOKENS } from '@/lib/config'
-import { consumeQuota, getQuota, resolveRateLimitIdentifier } from '@/lib/server/rateLimit'
+import { DAILY_MESSAGE_LIMIT, MAX_INPUT_TOKENS, MAX_OUTPUT_TOKENS, MODEL } from '@/lib/config'
+import {
+  consumeQuota,
+  consumeTitleQuota,
+  getQuota,
+  resolveRateLimitIdentifier
+} from '@/lib/server/rateLimit'
+
+const TITLE_SYSTEM_PROMPT =
+  'És um gerador de títulos concisos para conversas. O título DEVE ter no máximo 30 caracteres.'
+const TITLE_MAX_OUTPUT_TOKENS = 50
+const TITLE_MAX_INPUT_CHARS = 500
 
 interface ChatMessagePart {
   type: string
@@ -10,7 +20,7 @@ interface ChatMessagePart {
 }
 
 interface ChatRequestBody {
-  model: string
+  model?: string
   messages: Array<{
     role: 'system' | 'user' | 'assistant'
     content: string | ChatMessagePart[]
@@ -18,11 +28,6 @@ interface ChatRequestBody {
   maxTokens?: number
   temperature?: number
   isTitle?: boolean
-  reasoning?: {
-    effort?: 'low' | 'medium' | 'high' | 'max' | 'none'
-    max_tokens?: number
-    exclude?: boolean
-  }
 }
 
 export const GET: RequestHandler = async (event) => {
@@ -36,12 +41,10 @@ export const POST: RequestHandler = async (event) => {
   try {
     const body = (await request.json()) as ChatRequestBody
     const {
-      model,
       messages,
       maxTokens = MAX_OUTPUT_TOKENS,
       temperature = 0.7,
-      isTitle = false,
-      reasoning = { effort: 'low' }
+      isTitle = false
     } = body
 
     const resolvedApiKey = env.OPENROUTER_API_KEY?.trim() || process.env.OPENROUTER_API_KEY?.trim()
@@ -55,10 +58,6 @@ export const POST: RequestHandler = async (event) => {
       )
     }
 
-    if (!model) {
-      return json({ error: 'Model identifier is required.' }, { status: 400 })
-    }
-
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return json({ error: 'Conversation messages are required.' }, { status: 400 })
     }
@@ -66,57 +65,94 @@ export const POST: RequestHandler = async (event) => {
     const identifier = resolveRateLimitIdentifier(event)
 
     let currentQuota
+    let effectiveMessages = messages
+    let clampedTokens: number
+    let effectiveTemperature: number
+
     if (isTitle) {
       currentQuota = await getQuota(locals.pb, identifier)
       if (!identifier.isAdmin && currentQuota.remaining <= 0) {
         return json(
           {
-            error: 'Daily message limit reached (20/20). Your messages will reset at 00:00 UTC.',
+            error: `Daily message limit reached (${DAILY_MESSAGE_LIMIT}/${DAILY_MESSAGE_LIMIT}). Your messages will reset at 00:00 UTC.`,
             quota: currentQuota
           },
           { status: 429 }
         )
       }
+
+      const titleAllowed = await consumeTitleQuota(locals.pb, identifier)
+      if (!titleAllowed) {
+        return json(
+          {
+            error: 'Daily title generation limit reached. Your limit will reset at 00:00 UTC.',
+            quota: currentQuota
+          },
+          { status: 429 }
+        )
+      }
+
+      const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user')
+      const rawUserContent =
+        typeof lastUserMessage?.content === 'string'
+          ? lastUserMessage.content.trim()
+          : Array.isArray(lastUserMessage?.content)
+            ? lastUserMessage.content.map((p) => p.text || '').join('').trim()
+            : ''
+
+      if (!rawUserContent) {
+        return json({ error: 'Title prompt is required.' }, { status: 400 })
+      }
+
+      const truncatedUserContent = rawUserContent.slice(0, TITLE_MAX_INPUT_CHARS)
+
+      effectiveMessages = [
+        { role: 'system', content: TITLE_SYSTEM_PROMPT },
+        { role: 'user', content: truncatedUserContent }
+      ]
+      clampedTokens = TITLE_MAX_OUTPUT_TOKENS
+      effectiveTemperature = 0.5
     } else {
       const quotaResult = await consumeQuota(locals.pb, identifier)
       currentQuota = quotaResult.quota
       if (!quotaResult.allowed) {
         return json(
           {
-            error: 'Daily message limit reached (20/20). Your messages will reset at 00:00 UTC.',
+            error: `Daily message limit reached (${DAILY_MESSAGE_LIMIT}/${DAILY_MESSAGE_LIMIT}). Your messages will reset at 00:00 UTC.`,
             quota: currentQuota
           },
           { status: 429 }
         )
       }
-    }
 
-    const totalEstimatedChars = messages.reduce((acc, m) => {
-      if (typeof m.content === 'string') return acc + m.content.length
-      if (Array.isArray(m.content)) {
-        return acc + m.content.reduce((sum, p) => sum + (p.text?.length || 0), 0)
+      const totalEstimatedChars = messages.reduce((acc, m) => {
+        if (typeof m.content === 'string') return acc + m.content.length
+        if (Array.isArray(m.content)) {
+          return acc + m.content.reduce((sum, p) => sum + (p.text?.length || 0), 0)
+        }
+        return acc
+      }, 0)
+
+      if (totalEstimatedChars > MAX_INPUT_TOKENS * 4) {
+        return json(
+          { error: `Input exceeds the maximum allowed token limit (${MAX_INPUT_TOKENS}).` },
+          { status: 400 }
+        )
       }
-      return acc
-    }, 0)
 
-    if (totalEstimatedChars > MAX_INPUT_TOKENS * 4) {
-      return json(
-        { error: `Input exceeds the maximum allowed token limit (${MAX_INPUT_TOKENS}).` },
-        { status: 400 }
+      clampedTokens = Math.max(
+        10,
+        Math.min(Number(maxTokens) || MAX_OUTPUT_TOKENS, MAX_OUTPUT_TOKENS)
       )
+      effectiveTemperature = Math.max(0, Math.min(Number(temperature) || 0.7, 2))
     }
-
-    const clampedTokens = Math.max(10, Math.min(Number(maxTokens) || MAX_OUTPUT_TOKENS, MAX_OUTPUT_TOKENS))
 
     const requestPayload: Record<string, unknown> = {
-      model,
-      messages,
+      model: MODEL,
+      messages: effectiveMessages,
       max_tokens: clampedTokens,
-      temperature: Number(temperature) || 0.7
-    }
-
-    if (reasoning) {
-      requestPayload.reasoning = reasoning
+      temperature: effectiveTemperature,
+      reasoning: { effort: 'low' }
     }
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -155,7 +191,7 @@ export const POST: RequestHandler = async (event) => {
     return json({
       content,
       usage,
-      model: data.model || model,
+      model: data.model || MODEL,
       quota: currentQuota
     })
   } catch (err: unknown) {
