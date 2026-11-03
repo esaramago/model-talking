@@ -29,8 +29,8 @@ export const handle: Handle = async ({ event, resolve }) => {
 
   const response = await resolve(event)
 
-  // Update auth cookie in response
-  response.headers.set(
+  // Update auth cookie in response without overwriting other cookies set during the request
+  response.headers.append(
     'set-cookie',
     event.locals.pb.authStore.exportToCookie({
       httpOnly: false,

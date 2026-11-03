@@ -1,6 +1,7 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
   import Grid from '@/components/ui/Grid.svelte'
+  import { syncWebAwesomeFormData } from '@/lib/forms'
   import { t } from '@/lib/i18n/index.svelte'
   import type { ActionData } from './$types'
 
@@ -27,12 +28,7 @@
         method="POST"
         use:enhance={({ formElement, formData }) => {
           loading = true
-          const inputs = formElement.querySelectorAll('wa-input')
-          for (const input of inputs) {
-            if (input.name && input.value !== undefined && input.value !== null && !formData.has(input.name)) {
-              formData.append(input.name, String(input.value))
-            }
-          }
+          syncWebAwesomeFormData(formElement, formData)
           return async ({ update }) => {
             loading = false
             await update()

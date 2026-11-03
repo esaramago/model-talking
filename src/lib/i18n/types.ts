@@ -20,6 +20,7 @@ export interface TranslationSchema {
     cancel: string
     loginToSavePrefix: string
     loginToSaveSuffix: string
+    profile: string
     settings: string
     logout: string
     login: string
@@ -82,6 +83,15 @@ export interface TranslationSchema {
     submit: string
     noAccount: string
     registerLink: string
+    twoFactorTitle: string
+    twoFactorSubtitleEmail: string
+    twoFactorSubtitleAuth: string
+    twoFactorCodeLabel: string
+    twoFactorCodePlaceholder: string
+    verifyButton: string
+    backToLogin: string
+    invalidCode: string
+    codeExpired: string
   }
   register: {
     title: string
@@ -97,6 +107,62 @@ export interface TranslationSchema {
     submit: string
     hasAccount: string
     loginLink: string
+  }
+  profile: {
+    title: string
+    subtitle: string
+    nameTitle: string
+    nameLabel: string
+    namePlaceholder: string
+    saveName: string
+    nameUpdated: string
+    emailTitle: string
+    emailLabel: string
+    emailPlaceholder: string
+    emailHint: string
+    saveEmail: string
+    emailConfirmationSent: string
+    emailUnchanged: string
+    emailError: string
+    passwordTitle: string
+    currentPasswordLabel: string
+    currentPasswordPlaceholder: string
+    newPasswordLabel: string
+    newPasswordPlaceholder: string
+    confirmPasswordLabel: string
+    confirmPasswordPlaceholder: string
+    savePassword: string
+    passwordUpdated: string
+    passwordMinLength: string
+    passwordMismatch: string
+    currentPasswordIncorrect: string
+    passwordError: string
+    twoFactorTitle: string
+    twoFactorLabel: string
+    twoFactorHint: string
+    twoFactorNone: string
+    twoFactorEmail: string
+    twoFactorAuthenticator: string
+    saveTwoFactor: string
+    twoFactorUpdated: string
+    twoFactorEnabled: string
+    twoFactorDisabled: string
+    twoFactorCurrentStatus: string
+    setupAuthenticatorTitle: string
+    setupAuthenticatorStep1: string
+    setupAuthenticatorStep2: string
+    setupAuthenticatorStep3: string
+    secretKeyLabel: string
+    verifyAndActivate: string
+    sendTestEmailCode: string
+    emailCodeSent: string
+    emailCodeLabel: string
+    emailCodePlaceholder: string
+    disable2FA: string
+    fillRequired: string
+    invalidCode: string
+    codeExpired: string
+    updateError: string
   }
 }
 

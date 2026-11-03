@@ -1,10 +1,11 @@
 import type { LayoutServerLoad } from './$types'
 import type { TalkRecord } from '@/types/chat'
 import { getQuota, resolveRateLimitIdentifier } from '@/lib/server/rateLimit'
+import { sanitizeUser } from '@/lib/server/twoFactor'
 
 export const load: LayoutServerLoad = async (event) => {
   const { locals } = event
-  const user = locals.user ? JSON.parse(JSON.stringify(locals.user)) : null
+  const user = locals.user ? sanitizeUser(locals.user) : null
   const identifier = resolveRateLimitIdentifier(event)
   const quota = await getQuota(locals.pb, identifier)
 

@@ -16,6 +16,7 @@
   import '@awesome.me/webawesome/dist/components/avatar/avatar.js'
   import '@awesome.me/webawesome/dist/components/dialog/dialog.js'
   import '@awesome.me/webawesome/dist/components/slider/slider.js'
+  import '@awesome.me/webawesome/dist/components/qr-code/qr-code.js'
   import Header from '@/components/ui/Header.svelte'
   import Sidebar from '@/components/ui/Sidebar.svelte'
   import Footer from '@/components/ui/Footer.svelte'
