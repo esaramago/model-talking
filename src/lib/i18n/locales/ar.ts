@@ -7,7 +7,9 @@ export const ar: TranslationSchema = {
     totalTokens: 'إجمالي التوكنات',
     model: 'النموذج',
     dailyMessages: 'الرسائل اليومية',
-    unlimited: 'غير محدود'
+    unlimited: 'غير محدود',
+    about: 'حول {title}',
+    openMenu: 'فتح القائمة'
   },
   sidebar: {
     newChat: 'محادثة جديدة',

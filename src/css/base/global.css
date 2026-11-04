@@ -2,6 +2,8 @@ body {
   overflow: hidden;
 }
 main {
+  display: flex;
+  flex-direction: column;
   padding-inline: var(--wa-space-xl);
   overflow: auto;
   height: 100vh;

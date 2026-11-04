@@ -481,6 +481,15 @@
     <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
     <Grid wrap={true} align="center" justify="end" gap="s">
       <wa-button
+        href="/"
+        variant="neutral"
+        appearance="outlined"
+        disabled={isRunning}
+      >
+        {t('sidebar.newChat')}
+      </wa-button>
+
+      <wa-button
         role="button"
         tabindex="0"
         variant="neutral"

@@ -8,6 +8,8 @@ export interface TranslationSchema {
     model: string
     dailyMessages: string
     unlimited: string
+    about: string
+    openMenu: string
   }
   sidebar: {
     newChat: string

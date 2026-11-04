@@ -7,7 +7,9 @@ export const ru: TranslationSchema = {
     totalTokens: 'Всего токенов',
     model: 'Модель',
     dailyMessages: 'Дневные сообщения',
-    unlimited: 'Без ограничений'
+    unlimited: 'Без ограничений',
+    about: 'О {title}',
+    openMenu: 'Открыть меню'
   },
   sidebar: {
     newChat: 'Новый чат',

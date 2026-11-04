@@ -7,7 +7,9 @@ export const de: TranslationSchema = {
     totalTokens: 'Tokens insgesamt',
     model: 'Modell',
     dailyMessages: 'Tägliche Nachrichten',
-    unlimited: 'Unbegrenzt'
+    unlimited: 'Unbegrenzt',
+    about: 'Über {title}',
+    openMenu: 'Menü öffnen'
   },
   sidebar: {
     newChat: 'Neues Gespräch',

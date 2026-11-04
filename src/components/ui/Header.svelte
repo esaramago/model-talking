@@ -5,6 +5,7 @@
   import { stats } from '@/lib/state/stats.svelte'
   import { sidebar } from '@/lib/state/sidebar.svelte'
   import { t } from '@/lib/i18n/index.svelte'
+  import { PUBLIC_WEBSITE_TITLE } from '@/lib/config'
 
   const isAdmin = $derived(page.data?.user?.role === 'admin')
   const isConversationPage = $derived(
@@ -16,7 +17,7 @@
   <Grid wrap={true} justify="space-between" align="center" gap="s">
     <Grid align="center" gap="s">
       <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-      <wa-button role="button" tabindex="0" appearance="plain" onclick={() => sidebar.open()} class="is-hidden-desktop" pill>
+      <wa-button role="button" tabindex="0" appearance="plain" onclick={() => sidebar.open()} class="is-hidden-desktop" pill aria-label={t('header.openMenu')}>
         <wa-icon name="bars"></wa-icon>
       </wa-button>
       <div class="logo">
@@ -24,16 +25,16 @@
       </div>
     </Grid>
     <Grid align="center" gap="s">
-      <wa-button appearance="plain" href="/about">Acerca do Model Talking</wa-button>
+      <wa-button appearance="plain" href="/about" class="is-hidden-mobile">{t('header.about', { title: PUBLIC_WEBSITE_TITLE })}</wa-button>
       {#if isAdmin && isConversationPage}
         <wa-badge variant="brand">{stats.totalTokens} {t('header.totalTokens')}</wa-badge>
       {/if}
       {#if stats.isUnlimited}
-      <wa-badge variant="success">{t('header.dailyMessages')}: {t('header.unlimited')}</wa-badge>
+        <wa-badge variant="success">{t('header.dailyMessages')}: {t('header.unlimited')}</wa-badge>
       {:else}
-      <wa-badge variant={stats.dailyRemaining === 0 ? 'danger' : 'neutral'}>
-        {t('header.dailyMessages')}: {stats.dailyRemaining}/{stats.dailyTotal}
-      </wa-badge>
+        <wa-badge variant={stats.dailyRemaining === 0 ? 'danger' : 'neutral'}>
+          {t('header.dailyMessages')}: {stats.dailyRemaining}/{stats.dailyTotal}
+        </wa-badge>
       {/if}
     </Grid>
   </Grid>

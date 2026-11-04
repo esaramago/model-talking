@@ -89,7 +89,7 @@
   <Sidebar />
   <main>
     <Header />
-    <div class="container l-container">
+    <div class="content l-container">
       {@render children?.()}
     </div>
     <Footer />
@@ -103,8 +103,8 @@
     grid-template-columns: 28rem 1fr;
   }
 }
-.container {
-  min-height: 100vh;
+.content {
+  flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;

@@ -34,7 +34,7 @@ const user = $derived(page.data?.user ?? null)
     </wa-button>
     <History />
   </Grid>
-  <Grid direction="column" gap="s">
+  <Grid direction="column" gap="xs">
     {#if user}
       <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
       <wa-button role="button" tabindex="0" size="s" href="/profile" variant="neutral" appearance="plain" onclick={() => sidebar.close()}>
@@ -47,6 +47,11 @@ const user = $derived(page.data?.user ?? null)
     <wa-button role="button" tabindex="0" size="s" href="/settings" variant="neutral" appearance="plain" onclick={() => sidebar.close()}>
       <wa-icon slot="start" name="gear" variant="solid"></wa-icon>
       {t('sidebar.settings')}
+    </wa-button>
+    
+    <wa-button appearance="plain" href="/about" class="is-hidden-mobile">
+      <wa-icon slot="start" name="file-lines" variant="solid"></wa-icon>
+      Acerca
     </wa-button>
 
     {#if user}

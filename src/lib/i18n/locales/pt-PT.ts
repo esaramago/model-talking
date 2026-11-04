@@ -7,7 +7,9 @@ export const ptPT: TranslationSchema = {
     totalTokens: 'Tokens Total',
     model: 'Modelo',
     dailyMessages: 'Mensagens diárias',
-    unlimited: 'Ilimitado'
+    unlimited: 'Ilimitado',
+    about: 'Acerca do {title}',
+    openMenu: 'Abrir menu'
   },
   sidebar: {
     newChat: 'Nova conversa',
