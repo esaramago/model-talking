@@ -1,7 +1,6 @@
 import crypto from 'node:crypto'
 import type PocketBase from 'pocketbase'
 import type { RequestEvent } from '@sveltejs/kit'
-import { env } from '$env/dynamic/private'
 import {
   DAILY_MESSAGE_LIMIT,
   DAILY_TITLE_LIMIT,
@@ -9,6 +8,7 @@ import {
   DAILY_TITLE_IP_LIMIT
 } from '@/lib/config/limits'
 import { getAdminPocketBase } from '@/lib/server/pbAdmin'
+import { deriveServerKey } from '@/lib/server/twoFactor'
 
 export {
   DAILY_MESSAGE_LIMIT,
@@ -18,16 +18,10 @@ export {
 }
 
 const GUEST_COOKIE_NAME = 'mt_guest_token'
-const RUNTIME_COOKIE_SECRET = crypto.randomBytes(32).toString('hex')
+const MAX_MEMORY_USAGE_ENTRIES = 10_000
 
 function getCookieSecret(): string {
-  return (
-    env.RATE_LIMIT_SECRET ||
-    env.OPENROUTER_API_KEY ||
-    process.env.RATE_LIMIT_SECRET ||
-    process.env.OPENROUTER_API_KEY ||
-    RUNTIME_COOKIE_SECRET
-  )
+  return deriveServerKey('rate-limit-cookie')
 }
 
 export interface QuotaInfo {
@@ -189,15 +183,32 @@ export function isLoopbackIp(ip: string | undefined | null): boolean {
 }
 
 /**
+ * Determines whether IP-based limits are skipped for an address.
+ * Only local development is exempt: in production, loopback or unresolved addresses
+ * are never trusted, so a request cannot dodge IP limits by hiding its address.
+ */
+export function isIpLimitExempt(ip: string | undefined | null): boolean {
+  return process.env.NODE_ENV !== 'production' && isLoopbackIp(ip)
+}
+
+/**
+ * Resolves the client IP address, returning 'unknown' when it cannot be determined
+ * (for example, a missing ADDRESS_HEADER behind a reverse proxy).
+ */
+export function resolveClientIp(getClientAddress: () => string): string {
+  try {
+    return getClientAddress() || 'unknown'
+  } catch {
+    return 'unknown'
+  }
+}
+
+/**
  * Extracts the real client IP address from the SvelteKit request event.
  * Configure ADDRESS_HEADER / XFF_DEPTH in @sveltejs/adapter-node when behind a reverse proxy.
  */
 export function extractClientIp(event: RequestEvent): string {
-  try {
-    return event.getClientAddress()
-  } catch {
-    return '127.0.0.1'
-  }
+  return resolveClientIp(event.getClientAddress)
 }
 
 /**
@@ -224,13 +235,13 @@ export function resolveRateLimitIdentifier(event: RequestEvent): RateLimitIdenti
 
   // 2. Client IP
   const clientIp = extractClientIp(event)
-  const isLoopback = isLoopbackIp(clientIp)
+  const isExempt = isIpLimitExempt(clientIp)
 
   return {
     isAdmin,
     userKey: user ? `user:${user.id}` : undefined,
     cookieKey: `guest:c:${guestId}`,
-    ipKey: isLoopback ? undefined : `guest:ip:${clientIp}`,
+    ipKey: isExempt ? undefined : `guest:ip:${clientIp}`,
     clientIp
   }
 }
@@ -238,6 +249,18 @@ export function resolveRateLimitIdentifier(event: RequestEvent): RateLimitIdenti
 async function getEffectivePb(pb?: PocketBase): Promise<PocketBase | undefined> {
   const adminPb = await getAdminPocketBase()
   return adminPb || pb
+}
+
+function setMemoryUsageEntry(key: string, entry: MemoryUsageEntry): void {
+  if (memoryUsage.has(key)) {
+    memoryUsage.delete(key)
+  } else if (memoryUsage.size >= MAX_MEMORY_USAGE_ENTRIES) {
+    const oldestKey = memoryUsage.keys().next().value
+    if (oldestKey !== undefined) {
+      memoryUsage.delete(oldestKey)
+    }
+  }
+  memoryUsage.set(key, entry)
 }
 
 /**
@@ -263,14 +286,15 @@ async function fetchKeyCount(
       )
       const count = Number(record.count) || 0
       const effectiveCount = mem && mem.date === date ? Math.max(count, mem.count) : count
-      memoryUsage.set(key, { date, count: effectiveCount, recordId: record.id })
+      setMemoryUsageEntry(key, { date, count: effectiveCount, recordId: record.id })
       return { count: effectiveCount, recordId: record.id }
     } catch (err: unknown) {
       const errWithStatus = err as { status?: number }
       if (errWithStatus?.status === 404) {
-        const fallbackCount = mem && mem.date === date ? mem.count : 0
-        memoryUsage.set(key, { date, count: fallbackCount, recordId: mem?.recordId })
-        return { count: fallbackCount, recordId: mem?.recordId }
+        if (mem && mem.date === date && (mem.count > 0 || mem.recordId)) {
+          return { count: mem.count, recordId: mem.recordId }
+        }
+        return { count: 0, recordId: undefined }
       }
     }
   }
@@ -292,7 +316,7 @@ async function setKeyCount(
   const mem = memoryUsage.get(key)
   const effectiveRecordId = recordId || (mem?.date === date ? mem.recordId : undefined)
 
-  memoryUsage.set(key, { date, count, recordId: effectiveRecordId })
+  setMemoryUsageEntry(key, { date, count, recordId: effectiveRecordId })
 
   const client = await getEffectivePb(pb)
   if (!client) return
@@ -302,7 +326,7 @@ async function setKeyCount(
       await client.collection('daily_usage').update(effectiveRecordId, { count })
     } else {
       const created = await client.collection('daily_usage').create({ key, date, count })
-      memoryUsage.set(key, { date, count, recordId: created.id })
+      setMemoryUsageEntry(key, { date, count, recordId: created.id })
     }
   } catch {
     // If create fails (e.g. concurrent race condition or unique constraint hit), attempt update
@@ -311,7 +335,7 @@ async function setKeyCount(
         client.filter('key = {:key} && date = {:date}', { key, date })
       )
       await client.collection('daily_usage').update(existing.id, { count })
-      memoryUsage.set(key, { date, count, recordId: existing.id })
+      setMemoryUsageEntry(key, { date, count, recordId: existing.id })
     } catch {
       // In-memory update was already performed
     }

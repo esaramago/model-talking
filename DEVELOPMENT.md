@@ -41,6 +41,9 @@ cp .env.example .env
 | `INTERNAL_POCKETBASE_URL` | `http://127.0.0.1:8095` | `http://pocketbase:8090` | Internal PocketBase URL used by SvelteKit SSR and API reverse proxy |
 | `POCKETBASE_ADMIN_EMAIL` | _(empty)_ | `admin@example.com` | PocketBase superuser email for persisting rate limits and 2FA lockouts across restarts |
 | `POCKETBASE_ADMIN_PASSWORD`| _(empty)_ | `secret` | PocketBase superuser password |
+| `AUTH_SECRET` | _(empty, dev only)_ | `openssl rand -hex 32` | **Required in production.** Signs sessions and encrypts 2FA secrets. The app refuses to start without it (`RATE_LIMIT_SECRET` is still read as a legacy fallback) |
+| `POCKETBASE_PROXY_SECRET` | `openssl rand -hex 32` | `openssl rand -hex 32` | **Required in production.** Shared secret between SvelteKit and PocketBase; see `pb_hooks/proxy_guard.pb.js` |
+| `WEB_BIND_ADDRESS` | `127.0.0.1` | `127.0.0.1` | Host interface the web container binds to; keep it on loopback when a reverse proxy runs on the same host |
 
 ### 3. Start the Development Environment
 
@@ -170,8 +173,8 @@ When running behind a reverse proxy (such as Traefik, Caddy, Nginx, or Cloudflar
    - **Direct Internet Access Warning:** Do **not** set `ADDRESS_HEADER` if the Node container is exposed directly to the internet without a reverse proxy, as clients could send arbitrary header values.
 3. **Shared IP / Proxy DoS Protection:**
    - Logged-in users are rate-limited strictly by user account and device, never by shared IP.
-   - Guest rate limiting enforces a per-device quota (via signed cookie) alongside an aggregate IP ceiling. If the client IP is loopback (`127.0.0.1` / `::1`), the IP ceiling is bypassed to prevent local environments or misconfigured proxies from locking out all guests.
-   - Login rate-limiting throttles single accounts (5 attempts per email), while IP lockout uses a higher threshold (50 attempts) and ignores loopback IPs.
+   - Guest rate limiting enforces a per-device quota (via signed cookie) alongside an aggregate IP ceiling. IP limits are skipped for loopback addresses only when `NODE_ENV` is not `production`. In production, a loopback or unresolvable address (for example, a missing `ADDRESS_HEADER`) is limited like any other client (`unknown` is treated as a single shared address), so a request cannot avoid IP limits by hiding its address.
+   - Login rate-limiting throttles single accounts (5 attempts per email), while IP lockout uses a higher threshold (50 attempts).
 4. **Persistent Multi-Instance Counters:**
    - Daily quotas (`daily_usage`) and authentication attempts (`auth_attempts`) are stored in PocketBase when superuser credentials are configured, ensuring limits survive restarts and sync across multiple containers. Without superuser credentials, they automatically fall back to thread-safe in-memory maps.
 

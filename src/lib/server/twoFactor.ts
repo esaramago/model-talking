@@ -97,21 +97,100 @@ export function verifyOtpCode(expectedCode: string, providedCode: string): boole
  * Verifies a 6-digit TOTP token against a base32 secret in constant time.
  * Allows a clock drift window of ±1 step (30 seconds).
  */
-export function verifyTOTP(secret: string, token: string, windowSteps: number = 1): boolean {
-  if (!secret || !token) return false
+export function verifyTOTPWithStep(
+  secret: string,
+  token: string,
+  windowSteps: number = 1
+): { valid: boolean; step?: number } {
+  if (!secret || !token) return { valid: false }
   const cleanToken = token.replace(/\s+/g, '')
   if (cleanToken.length !== 6 || !/^\d{6}$/.test(cleanToken)) {
-    return false
+    return { valid: false }
   }
 
   const currentStep = Math.floor(Date.now() / 1000 / 30)
-  let matched = false
+  let matchedStep: number | undefined
   for (let step = currentStep - windowSteps; step <= currentStep + windowSteps; step++) {
     if (verifyOtpCode(generateTOTP(secret, step), cleanToken)) {
-      matched = true
+      matchedStep = step
     }
   }
-  return matched
+  return matchedStep !== undefined ? { valid: true, step: matchedStep } : { valid: false }
+}
+
+export function verifyTOTP(secret: string, token: string, windowSteps: number = 1): boolean {
+  return verifyTOTPWithStep(secret, token, windowSteps).valid
+}
+
+const usedTotpSteps = new Map<string, { step: number; expiresAt: number }>()
+
+function pruneExpiredTotpSteps(now: number): void {
+  if (usedTotpSteps.size < 500) return
+  for (const [key, entry] of usedTotpSteps) {
+    if (now >= entry.expiresAt) {
+      usedTotpSteps.delete(key)
+    }
+  }
+}
+
+/**
+ * Verifies a 6-digit TOTP token and consumes its time step for the user,
+ * preventing TOTP replay attacks within the ±1 step (90s) validity window.
+ */
+export async function verifyAndConsumeTOTP(
+  userId: string,
+  secret: string,
+  token: string,
+  windowSteps: number = 1
+): Promise<boolean> {
+  const { valid, step } = verifyTOTPWithStep(secret, token, windowSteps)
+  if (!valid || step === undefined) {
+    return false
+  }
+
+  const now = Date.now()
+  pruneExpiredTotpSteps(now)
+
+  const replayKey = `totp:replay:${userId}`
+  const windowDurationMs = (windowSteps * 2 + 2) * 30 * 1000
+  const expiresAt = now + windowDurationMs
+
+  const memEntry = usedTotpSteps.get(replayKey)
+  if (memEntry && now < memEntry.expiresAt && step <= memEntry.step) {
+    return false
+  }
+
+  try {
+    const adminPb = await getAdminPocketBase()
+    if (adminPb) {
+      try {
+        const record = await adminPb.collection('auth_attempts').getFirstListItem(
+          adminPb.filter('key = {:key}', { key: replayKey })
+        )
+        const lastStep = Number(record.count) || 0
+        const remoteExpiresAt = Number(record.expiresAt) || 0
+        if (now < remoteExpiresAt && step <= lastStep) {
+          usedTotpSteps.set(replayKey, { step: lastStep, expiresAt: remoteExpiresAt })
+          return false
+        }
+        await adminPb.collection('auth_attempts').update(record.id, {
+          count: step,
+          expiresAt
+        })
+      } catch {
+        await adminPb.collection('auth_attempts').create({
+          key: replayKey,
+          count: step,
+          expiresAt
+        })
+      }
+    }
+  } catch {
+    // Graceful in-memory fallback
+  }
+
+  usedTotpSteps.set(replayKey, { step, expiresAt })
+  return true
 }
 
 const MAX_AUTH_ATTEMPTS = 5
@@ -331,15 +410,150 @@ export function sanitizeUser<T extends Record<string, any> | null>(user: T): T {
 
 const RUNTIME_SERVER_SECRET = randomBytes(32).toString('hex')
 export const AUTH_SESSION_COOKIE_NAME = 'mt_auth_sig'
+export const PENDING_TOTP_COOKIE_NAME = 'mt_totp_pending'
+let warnedMissingSecret = false
+
+function readConfiguredSecret(): string | undefined {
+  const authSecret = (env.AUTH_SECRET || process.env.AUTH_SECRET)?.trim()
+  if (authSecret) return authSecret
+
+  // Legacy fallback kept so existing sessions and encrypted TOTP secrets stay valid
+  const legacySecret = (env.RATE_LIMIT_SECRET || process.env.RATE_LIMIT_SECRET)?.trim()
+  return legacySecret || undefined
+}
+
+/**
+ * Fails fast in production when no dedicated secret is configured. Without it, sessions would be
+ * invalidated on every restart and TOTP secrets encrypted at rest could become undecryptable.
+ */
+export function assertAuthSecretConfigured(): void {
+  if (readConfiguredSecret()) return
+
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'AUTH_SECRET is not set. Configure a long random value, e.g. "openssl rand -hex 32".'
+    )
+  }
+
+  if (!warnedMissingSecret) {
+    warnedMissingSecret = true
+    console.warn(
+      '[security] AUTH_SECRET is not set. Using a random per-process secret: sessions reset on restart.'
+    )
+  }
+}
+
+function getBaseServerSecret(): string {
+  return readConfiguredSecret() || RUNTIME_SERVER_SECRET
+}
+
+/**
+ * Derives a domain-separated cryptographic key from the base server secret
+ * so cookies, sessions, 2FA tokens, and DB encryption never share raw keys.
+ */
+export function deriveServerKey(domain: string): string {
+  return createHmac('sha256', getBaseServerSecret()).update(`domain:${domain}`).digest('hex')
+}
 
 function getServerSecret(): string {
-  return (
-    env.RATE_LIMIT_SECRET ||
-    env.OPENROUTER_API_KEY ||
-    process.env.RATE_LIMIT_SECRET ||
-    process.env.OPENROUTER_API_KEY ||
-    RUNTIME_SERVER_SECRET
-  )
+  return deriveServerKey('auth-session')
+}
+
+function getTotpEncryptionKey(): Buffer {
+  return createHash('sha256').update(deriveServerKey('totp-at-rest')).digest()
+}
+
+const ENCRYPTED_SECRET_PREFIX = 'enc:v1:'
+
+/**
+ * Encrypts a TOTP Base32 secret using AES-256-GCM before storing at rest in the database.
+ */
+export function encryptTwoFactorSecret(plainSecret: string): string {
+  if (!plainSecret) return ''
+  if (plainSecret.startsWith(ENCRYPTED_SECRET_PREFIX)) return plainSecret
+  const iv = randomBytes(12)
+  const cipher = createCipheriv('aes-256-gcm', getTotpEncryptionKey(), iv)
+  const encrypted = Buffer.concat([cipher.update(plainSecret, 'utf8'), cipher.final()])
+  const authTag = cipher.getAuthTag()
+  return `${ENCRYPTED_SECRET_PREFIX}${Buffer.concat([iv, authTag, encrypted]).toString('base64url')}`
+}
+
+/**
+ * Decrypts a TOTP secret stored in the database, with backwards compatibility for existing plaintext Base32 secrets.
+ */
+export function decryptTwoFactorSecret(storedValue: string | undefined | null): string {
+  if (!storedValue) return ''
+  if (!storedValue.startsWith(ENCRYPTED_SECRET_PREFIX)) {
+    return /^[A-Z2-7]+=*$/i.test(storedValue.trim()) ? storedValue.trim().toUpperCase() : ''
+  }
+  try {
+    const encoded = storedValue.slice(ENCRYPTED_SECRET_PREFIX.length)
+    const raw = Buffer.from(encoded, 'base64url')
+    if (raw.length < 28) return ''
+    const iv = raw.subarray(0, 12)
+    const authTag = raw.subarray(12, 28)
+    const encrypted = raw.subarray(28)
+    const decipher = createDecipheriv('aes-256-gcm', getTotpEncryptionKey(), iv)
+    decipher.setAuthTag(authTag)
+    return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString('utf8')
+  } catch {
+    return ''
+  }
+}
+
+export interface PendingTotpPayload {
+  userId: string
+  secret: string
+  timestamp: number
+}
+
+/**
+ * Creates a server-encrypted token holding the pending TOTP secret bound to the user ID.
+ */
+export function createPendingTotpToken(userId: string, secret: string): string {
+  const payload: PendingTotpPayload = {
+    userId,
+    secret,
+    timestamp: Date.now()
+  }
+  const iv = randomBytes(12)
+  const cipher = createCipheriv('aes-256-gcm', getPending2FAKey(), iv)
+  const encrypted = Buffer.concat([cipher.update(JSON.stringify(payload), 'utf8'), cipher.final()])
+  const authTag = cipher.getAuthTag()
+  return Buffer.concat([iv, authTag, encrypted]).toString('base64url')
+}
+
+/**
+ * Verifies and extracts the pending TOTP secret bound to the expected user ID.
+ */
+export function verifyPendingTotpToken(
+  token: string | undefined,
+  expectedUserId: string
+): string | null {
+  if (!token || !expectedUserId) return null
+  try {
+    const raw = Buffer.from(token, 'base64url')
+    if (raw.length < 28) return null
+    const iv = raw.subarray(0, 12)
+    const authTag = raw.subarray(12, 28)
+    const encrypted = raw.subarray(28)
+    const decipher = createDecipheriv('aes-256-gcm', getPending2FAKey(), iv)
+    decipher.setAuthTag(authTag)
+    const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]).toString('utf8')
+    const parsed = JSON.parse(decrypted) as PendingTotpPayload
+    if (
+      !parsed ||
+      parsed.userId !== expectedUserId ||
+      !parsed.secret ||
+      typeof parsed.timestamp !== 'number' ||
+      Date.now() - parsed.timestamp > 30 * 60 * 1000
+    ) {
+      return null
+    }
+    return parsed.secret
+  } catch {
+    return null
+  }
 }
 
 const AUTH_SESSION_MAX_AGE_SEC = 60 * 60 * 24 * 30

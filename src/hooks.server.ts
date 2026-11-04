@@ -1,21 +1,20 @@
-import PocketBase from 'pocketbase'
 import type { Handle } from '@sveltejs/kit'
-import { env } from '$env/dynamic/private'
+import {
+  assertProxySecretConfigured,
+  createServerPocketBase,
+  POCKETBASE_URL,
+  PROXY_SECRET_HEADER
+} from '@/lib/server/pocketbase'
 import {
   AUTH_SESSION_COOKIE_NAME,
+  assertAuthSecretConfigured,
   clearAuthSessionCookie,
   sanitizeUser,
   verifyAuthSession
 } from '@/lib/server/twoFactor'
 
-const POCKETBASE_URL =
-  env.INTERNAL_POCKETBASE_URL ||
-  process.env.INTERNAL_POCKETBASE_URL ||
-  env.POCKETBASE_URL ||
-  process.env.POCKETBASE_URL ||
-  env.VITE_POCKETBASE_URL ||
-  process.env.VITE_POCKETBASE_URL ||
-  'http://127.0.0.1:8095'
+assertAuthSecretConfigured()
+assertProxySecretConfigured()
 
 export const handle: Handle = async ({ event, resolve }) => {
   const pathname = event.url.pathname
@@ -149,7 +148,8 @@ export const handle: Handle = async ({ event, resolve }) => {
         lower === 'host' ||
         lower === 'connection' ||
         lower === 'keep-alive' ||
-        lower === 'transfer-encoding'
+        lower === 'transfer-encoding' ||
+        lower === PROXY_SECRET_HEADER
       ) {
         continue
       }
@@ -208,7 +208,7 @@ export const handle: Handle = async ({ event, resolve }) => {
     }
   }
 
-  event.locals.pb = new PocketBase(POCKETBASE_URL)
+  event.locals.pb = createServerPocketBase(POCKETBASE_URL)
 
   // Load auth state from request cookie
   event.locals.pb.authStore.loadFromCookie(

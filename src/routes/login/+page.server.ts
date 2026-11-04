@@ -1,10 +1,11 @@
 import { fail, redirect } from '@sveltejs/kit'
-import PocketBase from 'pocketbase'
 import type { Actions, PageServerLoad } from './$types'
 import { getPrivilegedPocketBase } from '@/lib/server/pbAdmin'
-import { isLoopbackIp } from '@/lib/server/rateLimit'
+import { createServerPocketBase } from '@/lib/server/pocketbase'
+import { isIpLimitExempt, resolveClientIp } from '@/lib/server/rateLimit'
 import {
-  verifyTOTP,
+  verifyAndConsumeTOTP,
+  decryptTwoFactorSecret,
   verifyOtpCode,
   createPending2FAToken,
   verifyPending2FAToken,
@@ -15,14 +16,6 @@ import {
   recordFailedAuthAttempt,
   clearAuthAttempts
 } from '@/lib/server/twoFactor'
-
-function safeGetClientIp(getClientAddress: () => string): string {
-  try {
-    return getClientAddress()
-  } catch {
-    return '127.0.0.1'
-  }
-}
 
 export const load: PageServerLoad = async ({ locals }) => {
   if (locals.user) {
@@ -43,8 +36,8 @@ export const actions: Actions = {
       })
     }
 
-    const clientIp = safeGetClientIp(getClientAddress)
-    const isLoopback = isLoopbackIp(clientIp)
+    const clientIp = resolveClientIp(getClientAddress)
+    const isLoopback = isIpLimitExempt(clientIp)
     const ipLimitKey = `login:ip:${clientIp}`
     const emailLimitKey = `login:email:${email.toLowerCase()}`
 
@@ -162,8 +155,8 @@ export const actions: Actions = {
       })
     }
 
-    const clientIp = safeGetClientIp(getClientAddress)
-    const isLoopback = isLoopbackIp(clientIp)
+    const clientIp = resolveClientIp(getClientAddress)
+    const isLoopback = isIpLimitExempt(clientIp)
     const userAttemptKey = `2fa:user:${pending.userId}`
     const ipAttemptKey = `2fa:ip:${clientIp}`
 
@@ -202,8 +195,8 @@ export const actions: Actions = {
     }
 
     if (pending.method === 'authenticator') {
-      const secret = user.twoFactorSecret || ''
-      if (!secret || !verifyTOTP(secret, code)) {
+      const secret = decryptTwoFactorSecret(user.twoFactorSecret)
+      if (!secret || !(await verifyAndConsumeTOTP(user.id, secret, code))) {
         const { locked } = await recordFailedAuthAttempt(userAttemptKey, 5)
         if (!isLoopback) {
           await recordFailedAuthAttempt(ipAttemptKey, 50)
@@ -226,7 +219,7 @@ export const actions: Actions = {
 
       if (pending.otpId) {
         try {
-          const authPb = new PocketBase(locals.pb.baseUrl)
+          const authPb = createServerPocketBase(locals.pb.baseUrl)
           const otpAuth = await authPb.collection('users').authWithOTP(pending.otpId, code)
           otpValid = otpAuth.record?.id === pending.userId
         } catch {

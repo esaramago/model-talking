@@ -1,11 +1,16 @@
 import { fail, redirect } from '@sveltejs/kit'
-import PocketBase from 'pocketbase'
 import type { Actions, PageServerLoad } from './$types'
 import type { TwoFactorMethod, UserRecord } from '@/types/user'
 import { getPrivilegedPocketBase } from '@/lib/server/pbAdmin'
+import { createServerPocketBase } from '@/lib/server/pocketbase'
 import {
   generateBase32Secret,
-  verifyTOTP,
+  verifyAndConsumeTOTP,
+  encryptTwoFactorSecret,
+  decryptTwoFactorSecret,
+  PENDING_TOTP_COOKIE_NAME,
+  createPendingTotpToken,
+  verifyPendingTotpToken,
   verifyOtpCode,
   buildOtpAuthUri,
   sanitizeUser,
@@ -17,32 +22,45 @@ import {
   clearAuthAttempts
 } from '@/lib/server/twoFactor'
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, cookies }) => {
   if (!locals.user) {
     throw redirect(303, '/login')
   }
 
   const privilegedPb = await getPrivilegedPocketBase(locals.pb)
-  let pendingSecret: string | undefined
+  let pendingSecret = ''
 
   try {
     const fullUser = await privilegedPb.collection('users').getOne(locals.user.id)
-    pendingSecret = fullUser.twoFactorPendingSecret as string | undefined
+    pendingSecret = decryptTwoFactorSecret(fullUser.twoFactorPendingSecret as string | undefined)
   } catch {
-    pendingSecret = locals.user.twoFactorPendingSecret as string | undefined
+    pendingSecret = decryptTwoFactorSecret(locals.user.twoFactorPendingSecret as string | undefined)
+  }
+
+  if (!pendingSecret) {
+    pendingSecret =
+      verifyPendingTotpToken(cookies.get(PENDING_TOTP_COOKIE_NAME), locals.user.id) || ''
   }
 
   if (!pendingSecret) {
     pendingSecret = generateBase32Secret()
     try {
       const updated = await privilegedPb.collection('users').update(locals.user.id, {
-        twoFactorPendingSecret: pendingSecret
+        twoFactorPendingSecret: encryptTwoFactorSecret(pendingSecret)
       })
       locals.user = sanitizeUser(updated)
     } catch (e) {
       console.error('Failed to save pending 2FA secret:', e)
     }
   }
+
+  cookies.set(PENDING_TOTP_COOKIE_NAME, createPendingTotpToken(locals.user.id, pendingSecret), {
+    path: '/',
+    httpOnly: true,
+    sameSite: 'lax',
+    maxAge: 60 * 30,
+    secure: process.env.NODE_ENV === 'production'
+  })
 
   const accountEmail = locals.user.email || 'user'
   const otpAuthUri = buildOtpAuthUri('ModelTalking', accountEmail, pendingSecret)
@@ -267,7 +285,7 @@ export const actions: Actions = {
 
     if (storedOtpId) {
       try {
-        const authPb = new PocketBase(locals.pb.baseUrl)
+        const authPb = createServerPocketBase(locals.pb.baseUrl)
         const otpAuth = await authPb.collection('users').authWithOTP(storedOtpId, code)
         verified = otpAuth.record?.id === locals.user.id
       } catch {
@@ -337,7 +355,6 @@ export const actions: Actions = {
 
     const formData = await request.formData()
     const code = (formData.get('code') as string)?.replace(/\s+/g, '') || ''
-    const formSecret = (formData.get('secret') as string)?.trim() || ''
 
     if (!code) {
       return fail(400, {
@@ -356,13 +373,19 @@ export const actions: Actions = {
 
     const privilegedPb = await getPrivilegedPocketBase(locals.pb)
     const user = await privilegedPb.collection('users').getOne(locals.user.id)
-    const dbPendingSecret = user.twoFactorPendingSecret || ''
+    const dbPendingSecret = decryptTwoFactorSecret(user.twoFactorPendingSecret)
+    const cookiePendingSecret =
+      verifyPendingTotpToken(cookies.get(PENDING_TOTP_COOKIE_NAME), locals.user.id) || ''
 
     let verifiedSecret = ''
-    if (dbPendingSecret && verifyTOTP(dbPendingSecret, code)) {
+    if (dbPendingSecret && (await verifyAndConsumeTOTP(locals.user.id, dbPendingSecret, code))) {
       verifiedSecret = dbPendingSecret
-    } else if (!dbPendingSecret && formSecret && verifyTOTP(formSecret, code)) {
-      verifiedSecret = formSecret
+    } else if (
+      !dbPendingSecret &&
+      cookiePendingSecret &&
+      (await verifyAndConsumeTOTP(locals.user.id, cookiePendingSecret, code))
+    ) {
+      verifiedSecret = cookiePendingSecret
     }
 
     if (!verifiedSecret) {
@@ -373,10 +396,12 @@ export const actions: Actions = {
       })
     }
 
+    cookies.delete(PENDING_TOTP_COOKIE_NAME, { path: '/' })
+
     try {
       const updated = await privilegedPb.collection('users').update(locals.user.id, {
         twoFactorMethod: 'authenticator',
-        twoFactorSecret: verifiedSecret,
+        twoFactorSecret: encryptTwoFactorSecret(verifiedSecret),
         twoFactorPendingSecret: ''
       })
       await clearAuthAttempts(attemptKey)
@@ -435,7 +460,7 @@ export const actions: Actions = {
 
     if (currentPassword && userEmail) {
       try {
-        const authPb = new PocketBase(locals.pb.baseUrl)
+        const authPb = createServerPocketBase(locals.pb.baseUrl)
         await authPb.collection('users').authWithPassword(userEmail, currentPassword)
         verified = true
       } catch {
@@ -444,8 +469,9 @@ export const actions: Actions = {
     }
 
     if (!verified && code) {
-      if (user.twoFactorMethod === 'authenticator' && user.twoFactorSecret) {
-        verified = verifyTOTP(String(user.twoFactorSecret), code)
+      const decryptedSecret = decryptTwoFactorSecret(user.twoFactorSecret)
+      if (user.twoFactorMethod === 'authenticator' && decryptedSecret) {
+        verified = await verifyAndConsumeTOTP(locals.user.id, decryptedSecret, code)
       } else if (
         user.twoFactorMethod === 'email' &&
         user.twoFactorEmailCode &&
@@ -465,6 +491,8 @@ export const actions: Actions = {
           : ('profile.invalidCode' as const)
       })
     }
+
+    cookies.delete(PENDING_TOTP_COOKIE_NAME, { path: '/' })
 
     try {
       const updated = await privilegedPb.collection('users').update(locals.user.id, {

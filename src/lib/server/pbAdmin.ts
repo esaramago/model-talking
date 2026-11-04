@@ -41,6 +41,7 @@ function getAdminPassword(): string | undefined {
 }
 
 let adminPbInstance: PocketBase | null = null
+let warnedMissingAdmin = false
 
 /**
  * Returns an authenticated PocketBase superuser/admin client.
@@ -51,6 +52,12 @@ export async function getAdminPocketBase(): Promise<PocketBase | null> {
   const password = getAdminPassword()
 
   if (!email || !password) {
+    if (!warnedMissingAdmin) {
+      warnedMissingAdmin = true
+      console.warn(
+        '[pbAdmin] POCKETBASE_ADMIN_EMAIL / POCKETBASE_ADMIN_PASSWORD not set. Privileged 2FA fields and persistent rate limits require superuser credentials.'
+      )
+    }
     return null
   }
 
@@ -61,16 +68,8 @@ export async function getAdminPocketBase(): Promise<PocketBase | null> {
   const pb = new PocketBase(POCKETBASE_URL)
 
   try {
-    // PocketBase 0.23+ uses _superusers collection, with fallback to admins
-    if (typeof pb.collection('_superusers')?.authWithPassword === 'function') {
-      try {
-        await pb.collection('_superusers').authWithPassword(email, password)
-      } catch {
-        await pb.admins.authWithPassword(email, password)
-      }
-    } else {
-      await pb.admins.authWithPassword(email, password)
-    }
+    // PocketBase 0.23+ uses the _superusers auth collection
+    await pb.collection('_superusers').authWithPassword(email, password)
 
     adminPbInstance = pb
     return adminPbInstance

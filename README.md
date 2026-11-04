@@ -75,6 +75,9 @@ When deploying the production container behind a reverse proxy (e.g. Coolify, Tr
 
 - **`ORIGIN`:** Set to your public app domain (e.g., `https://chat.yourdomain.com`). Required by `@sveltejs/adapter-node` for CSRF validation on form actions.
 - **`ADDRESS_HEADER` & `XFF_DEPTH`:** Set `ADDRESS_HEADER=X-Forwarded-For` and `XFF_DEPTH=1` so SvelteKit safely reads the real client IP appended by your trusted proxy, preventing IP spoofing.
+- **`AUTH_SECRET`:** Required in production. The app refuses to start without it. When migrating an existing deployment, set it to the current `RATE_LIMIT_SECRET` value so existing sessions and encrypted TOTP secrets stay valid.
+- **`POCKETBASE_PROXY_SECRET`:** Required in production. PocketBase (via `pb_hooks/proxy_guard.pb.js`) rejects user authentication, registration and batch requests that do not carry this secret, so 2FA and rate limits cannot be bypassed by reaching PocketBase directly. Mount `pb_hooks` into the PocketBase container and pass the same variable to both services.
+- **`WEB_BIND_ADDRESS`:** Defaults to `127.0.0.1` so the app is only reachable through your reverse proxy. Set it to `0.0.0.0` only if the app must be reachable directly.
 - **Persistent Rate Limiting:** Configure `POCKETBASE_ADMIN_EMAIL` and `POCKETBASE_ADMIN_PASSWORD` in production so usage limits and authentication lockouts persist in PocketBase and are shared across multiple instances.
 
 For more details, see [DEVELOPMENT.md](DEVELOPMENT.md).

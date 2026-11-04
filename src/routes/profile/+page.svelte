@@ -230,7 +230,6 @@
 
             <p class="u-text-small">{t('profile.setupAuthenticatorStep3')}</p>
             <form method="POST" action="?/enableAuthenticator2FA" use:enhance={createEnhance('enableAuthenticator2FA')}>
-              <input type="hidden" name="secret" value={data.authenticatorSetup?.secret ?? ''} />
               <Grid direction="column" gap="s">
                 <wa-input
                   name="code"

@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
-import { isLoopbackIp } from '@/lib/server/rateLimit'
+import { isIpLimitExempt, resolveClientIp } from '@/lib/server/rateLimit'
 import {
   isAuthRateLimited,
   recordFailedAuthAttempt,
@@ -8,14 +8,6 @@ import {
 } from '@/lib/server/twoFactor'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-function safeGetClientIp(getClientAddress: () => string): string {
-  try {
-    return getClientAddress()
-  } catch {
-    return '127.0.0.1'
-  }
-}
 
 export const load: PageServerLoad = async ({ locals }) => {
   // If already authenticated, redirect to home
@@ -26,8 +18,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 export const actions: Actions = {
   default: async ({ request, locals, cookies, getClientAddress }) => {
-    const clientIp = safeGetClientIp(getClientAddress)
-    const isLoopback = isLoopbackIp(clientIp)
+    const clientIp = resolveClientIp(getClientAddress)
+    const isLoopback = isIpLimitExempt(clientIp)
     const ipLimitKey = `register:ip:${clientIp}`
 
     // Throttle registration requests per IP to protect against bulk automated account creation (bypassed for loopback)
