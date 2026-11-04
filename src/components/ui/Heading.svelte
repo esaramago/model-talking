@@ -3,9 +3,9 @@
 </script>
 
 <div class="heading">
-  <h1 data-appearance="h2">{title}</h1>
+  <h1>{title}</h1>
   {#if subtitle}
-    <p>{subtitle}</p>
+    <p>{@html subtitle}</p>
   {/if}
 </div>
 

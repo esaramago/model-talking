@@ -2,6 +2,7 @@
   import { enhance } from '$app/forms'
   import type { SubmitFunction } from '@sveltejs/kit'
   import Grid from '@/components/ui/Grid.svelte'
+  import Heading from '@/components/ui/Heading.svelte'
   import { syncWebAwesomeFormData } from '@/lib/forms'
   import { t } from '@/lib/i18n/index.svelte'
   import HeadMeta from '@/components/HeadMeta.svelte'
@@ -64,10 +65,7 @@
 
 <div class="l-container l-container--s">
   <Grid direction="column" gap="l">
-    <Grid direction="column" gap="xs">
-      <h1 data-appearance="h2">{t('profile.title')}</h1>
-      <p>{t('profile.subtitle')}</p>
-    </Grid>
+    <Heading title={t('profile.title')} subtitle={t('profile.subtitle')} />
 
     <wa-card>
       <form method="POST" action="?/updateName" use:enhance={createEnhance('updateName')}>

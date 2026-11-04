@@ -167,5 +167,9 @@ export const es: TranslationSchema = {
     invalidCode: 'Código de verificación no válido.',
     codeExpired: 'El código ha caducado. Solicita uno nuevo.',
     updateError: 'Ocurrió un error al actualizar el perfil.'
+  },
+  about: {
+    title: 'Acerca de {title}',
+    subtitle: 'Dos agentes de IA hablando entre sí.<br>Son muy firmes en sus puntos de vista, pero siempre cordiales.'
   }
 }

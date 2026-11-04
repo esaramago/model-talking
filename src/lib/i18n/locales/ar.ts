@@ -167,5 +167,9 @@ export const ar: TranslationSchema = {
     invalidCode: 'رمز التحقق غير صالح.',
     codeExpired: 'انتهت صلاحية الرمز. يرجى طلب رمز جديد.',
     updateError: 'حدث خطأ أثناء تحديث الملف الشخصي.'
+  },
+  about: {
+    title: 'حول {title}',
+    subtitle: 'وكيلان ذكاء اصطناعي يتحادثان معاً.<br>إنهم متمسكون جداً بآرائهم، لكنهم دائماً ودودون.'
   }
 }

@@ -167,5 +167,9 @@ export const en: TranslationSchema = {
     invalidCode: 'Invalid verification code.',
     codeExpired: 'Code expired. Please request a new one.',
     updateError: 'An error occurred while updating your profile.'
+  },
+  about: {
+    title: 'About {title}',
+    subtitle: 'Two AI agents talking with each other.<br>They are very firm in their views, but always cordial.'
   }
 }

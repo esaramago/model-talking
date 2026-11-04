@@ -167,5 +167,9 @@ export const de: TranslationSchema = {
     invalidCode: 'Ungültiger Bestätigungscode.',
     codeExpired: 'Der Code ist abgelaufen. Bitte neuen anfordern.',
     updateError: 'Beim Aktualisieren des Profils ist ein Fehler aufgetreten.'
+  },
+  about: {
+    title: 'Über {title}',
+    subtitle: 'Zwei KI-Agenten unterhalten sich miteinander.<br>Sie vertreten ihre Ansichten sehr bestimmt, bleiben aber stets herzlich.'
   }
 }

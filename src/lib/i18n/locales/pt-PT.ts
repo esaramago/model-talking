@@ -167,5 +167,9 @@ export const ptPT: TranslationSchema = {
     invalidCode: 'Código de verificação inválido.',
     codeExpired: 'O código expirou. Solicita um novo código.',
     updateError: 'Ocorreu um erro ao atualizar o perfil.'
+  },
+  about: {
+    title: 'Sobre o {title}',
+    subtitle: 'Dois Agentes de IA conversando um com o outro.<br>São muito firmes nas suas opiniões, mas sempre cordiais.'
   }
 }

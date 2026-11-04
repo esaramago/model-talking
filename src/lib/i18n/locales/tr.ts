@@ -167,5 +167,9 @@ export const tr: TranslationSchema = {
     invalidCode: 'Geçersiz doğrulama kodu.',
     codeExpired: 'Kodun süresi doldu. Lütfen yenisini isteyin.',
     updateError: 'Profil güncellenirken bir hata oluştu.'
+  },
+  about: {
+    title: '{title} Hakkında',
+    subtitle: 'Birbiriyle konuşan iki yapay zeka ajanı.<br>Görüşlerinde çok kararlıdırlar, ancak her zaman naziktirler.'
   }
 }

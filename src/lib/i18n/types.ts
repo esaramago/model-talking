@@ -168,6 +168,10 @@ export interface TranslationSchema {
     codeExpired: string
     updateError: string
   }
+  about: {
+    title: string
+    subtitle: string
+  }
 }
 
 export type NestedKeyOf<ObjectType extends object> = {
