@@ -34,8 +34,94 @@ export interface RateLimitIdentifier {
   ipKey: string
 }
 
+interface MemoryUsageEntry {
+  date: string
+  count: number
+  recordId?: string
+}
+
 // In-memory fallback and cache to optimize reads and handle offline edge cases
-const memoryUsage = new Map<string, { date: string; count: number }>()
+const memoryUsage = new Map<string, MemoryUsageEntry>()
+
+// Key serialization queue to prevent TOCTOU race conditions across parallel requests
+const keyQueues = new Map<string, Promise<void>>()
+
+let lastCleanupDate = getUtcDateString()
+
+/**
+ * Clears stale in-memory usage entries for dates other than the specified (or current UTC) date.
+ */
+export function clearStaleMemoryUsage(currentDate: string = getUtcDateString()): number {
+  let evicted = 0
+  for (const [key, entry] of memoryUsage.entries()) {
+    if (entry.date !== currentDate) {
+      memoryUsage.delete(key)
+      evicted++
+    }
+  }
+  lastCleanupDate = currentDate
+  return evicted
+}
+
+function ensureFreshMemoryUsage(currentDate: string = getUtcDateString()): void {
+  if (currentDate !== lastCleanupDate) {
+    clearStaleMemoryUsage(currentDate)
+  }
+}
+
+// Setup background interval to periodically clear stale memory cache entries
+if (typeof setInterval !== 'undefined') {
+  const timer = setInterval(() => {
+    clearStaleMemoryUsage()
+  }, 1000 * 60 * 60)
+  if (typeof timer === 'object' && timer && 'unref' in timer && typeof timer.unref === 'function') {
+    timer.unref()
+  }
+}
+
+/**
+ * Serializes task execution for a specific key in memory using a FIFO promise queue.
+ */
+function withLock<T>(key: string, task: () => Promise<T>): Promise<T> {
+  const current = keyQueues.get(key) || Promise.resolve()
+
+  let release!: () => void
+  const next = new Promise<void>((resolve) => {
+    release = resolve
+  })
+
+  keyQueues.set(key, next)
+
+  return current
+    .catch(() => {})
+    .then(task)
+    .finally(() => {
+      if (keyQueues.get(key) === next) {
+        keyQueues.delete(key)
+      }
+      release()
+    })
+}
+
+/**
+ * Serializes task execution across multiple keys by acquiring locks in sorted order,
+ * completely preventing race conditions (TOCTOU) and avoiding deadlocks.
+ */
+function withKeysLock<T>(keys: (string | undefined)[], task: () => Promise<T>): Promise<T> {
+  const uniqueSortedKeys = [...new Set(keys.filter((k): k is string => Boolean(k)))].sort()
+  if (uniqueSortedKeys.length === 0) {
+    return task()
+  }
+
+  function acquire(index: number): Promise<T> {
+    if (index >= uniqueSortedKeys.length) {
+      return task()
+    }
+    return withLock(uniqueSortedKeys[index], () => acquire(index + 1))
+  }
+
+  return acquire(0)
+}
 
 export function getUtcDateString(date: Date = new Date()): string {
   return date.toISOString().slice(0, 10)
@@ -133,6 +219,13 @@ async function fetchKeyCount(
   key: string,
   date: string
 ): Promise<{ count: number; recordId?: string }> {
+  ensureFreshMemoryUsage(date)
+
+  const mem = memoryUsage.get(key)
+  if (mem && mem.date !== date) {
+    memoryUsage.delete(key)
+  }
+
   const client = await getEffectivePb(pb)
   if (client) {
     try {
@@ -140,20 +233,21 @@ async function fetchKeyCount(
         client.filter('key = {:key} && date = {:date}', { key, date })
       )
       const count = Number(record.count) || 0
-      memoryUsage.set(key, { date, count })
-      return { count, recordId: record.id }
+      const effectiveCount = mem && mem.date === date ? Math.max(count, mem.count) : count
+      memoryUsage.set(key, { date, count: effectiveCount, recordId: record.id })
+      return { count: effectiveCount, recordId: record.id }
     } catch (err: unknown) {
       const errWithStatus = err as { status?: number }
       if (errWithStatus?.status === 404) {
-        memoryUsage.set(key, { date, count: 0 })
-        return { count: 0 }
+        const fallbackCount = mem && mem.date === date ? mem.count : 0
+        memoryUsage.set(key, { date, count: fallbackCount, recordId: mem?.recordId })
+        return { count: fallbackCount, recordId: mem?.recordId }
       }
     }
   }
 
-  const mem = memoryUsage.get(key)
   const count = mem && mem.date === date ? mem.count : 0
-  return { count }
+  return { count, recordId: mem?.date === date ? mem.recordId : undefined }
 }
 
 /**
@@ -166,24 +260,29 @@ async function setKeyCount(
   count: number,
   recordId?: string
 ): Promise<void> {
-  memoryUsage.set(key, { date, count })
+  const mem = memoryUsage.get(key)
+  const effectiveRecordId = recordId || (mem?.date === date ? mem.recordId : undefined)
+
+  memoryUsage.set(key, { date, count, recordId: effectiveRecordId })
 
   const client = await getEffectivePb(pb)
   if (!client) return
 
   try {
-    if (recordId) {
-      await client.collection('daily_usage').update(recordId, { count })
+    if (effectiveRecordId) {
+      await client.collection('daily_usage').update(effectiveRecordId, { count })
     } else {
-      await client.collection('daily_usage').create({ key, date, count })
+      const created = await client.collection('daily_usage').create({ key, date, count })
+      memoryUsage.set(key, { date, count, recordId: created.id })
     }
   } catch {
-    // If create fails (e.g. concurrent race condition), attempt update
+    // If create fails (e.g. concurrent race condition or unique constraint hit), attempt update
     try {
       const existing = await client.collection('daily_usage').getFirstListItem(
         client.filter('key = {:key} && date = {:date}', { key, date })
       )
       await client.collection('daily_usage').update(existing.id, { count })
+      memoryUsage.set(key, { date, count, recordId: existing.id })
     } catch {
       // In-memory update was already performed
     }
@@ -208,6 +307,7 @@ export async function getQuota(
   }
 
   const date = getUtcDateString()
+  ensureFreshMemoryUsage(date)
 
   if (identifier.userKey) {
     // For logged-in users, compare account count and cookie count
@@ -240,6 +340,7 @@ export async function getQuota(
 
 /**
  * Consumes 1 message from the daily quota.
+ * Increments are serialized per key in memory to eliminate TOCTOU race conditions.
  */
 export async function consumeQuota(
   pb: PocketBase | undefined,
@@ -259,14 +360,56 @@ export async function consumeQuota(
   }
 
   const date = getUtcDateString()
+  ensureFreshMemoryUsage(date)
 
-  if (identifier.userKey) {
-    // Logged in user: sync user key and cookie key
-    const [userCountData, cookieCountData] = await Promise.all([
-      fetchKeyCount(pb, identifier.userKey, date),
-      fetchKeyCount(pb, identifier.cookieKey, date)
+  const keys = identifier.userKey
+    ? [identifier.userKey, identifier.cookieKey]
+    : [identifier.cookieKey, identifier.ipKey]
+
+  return withKeysLock(keys, async () => {
+    if (identifier.userKey) {
+      // Logged in user: sync user key and cookie key
+      const [userCountData, cookieCountData] = await Promise.all([
+        fetchKeyCount(pb, identifier.userKey, date),
+        fetchKeyCount(pb, identifier.cookieKey, date)
+      ])
+      const currentUsed = Math.max(userCountData.count, cookieCountData.count)
+
+      if (currentUsed >= DAILY_MESSAGE_LIMIT) {
+        return {
+          allowed: false,
+          quota: {
+            remaining: 0,
+            total: DAILY_MESSAGE_LIMIT,
+            isUnlimited: false,
+            resetAt
+          }
+        }
+      }
+
+      const nextUsed = currentUsed + 1
+      await Promise.all([
+        setKeyCount(pb, identifier.userKey, date, nextUsed, userCountData.recordId),
+        setKeyCount(pb, identifier.cookieKey, date, nextUsed, cookieCountData.recordId)
+      ])
+
+      return {
+        allowed: true,
+        quota: {
+          remaining: Math.max(0, DAILY_MESSAGE_LIMIT - nextUsed),
+          total: DAILY_MESSAGE_LIMIT,
+          isUnlimited: false,
+          resetAt
+        }
+      }
+    }
+
+    // Guest user: sync signed cookie key and IP key
+    const [cookieCountData, ipCountData] = await Promise.all([
+      fetchKeyCount(pb, identifier.cookieKey, date),
+      fetchKeyCount(pb, identifier.ipKey, date)
     ])
-    const currentUsed = Math.max(userCountData.count, cookieCountData.count)
+    const currentUsed = Math.max(cookieCountData.count, ipCountData.count)
 
     if (currentUsed >= DAILY_MESSAGE_LIMIT) {
       return {
@@ -282,8 +425,8 @@ export async function consumeQuota(
 
     const nextUsed = currentUsed + 1
     await Promise.all([
-      setKeyCount(pb, identifier.userKey, date, nextUsed, userCountData.recordId),
-      setKeyCount(pb, identifier.cookieKey, date, nextUsed, cookieCountData.recordId)
+      setKeyCount(pb, identifier.cookieKey, date, nextUsed, cookieCountData.recordId),
+      setKeyCount(pb, identifier.ipKey, date, nextUsed, ipCountData.recordId)
     ])
 
     return {
@@ -295,46 +438,12 @@ export async function consumeQuota(
         resetAt
       }
     }
-  }
-
-  // Guest user: sync signed cookie key and IP key
-  const [cookieCountData, ipCountData] = await Promise.all([
-    fetchKeyCount(pb, identifier.cookieKey, date),
-    fetchKeyCount(pb, identifier.ipKey, date)
-  ])
-  const currentUsed = Math.max(cookieCountData.count, ipCountData.count)
-
-  if (currentUsed >= DAILY_MESSAGE_LIMIT) {
-    return {
-      allowed: false,
-      quota: {
-        remaining: 0,
-        total: DAILY_MESSAGE_LIMIT,
-        isUnlimited: false,
-        resetAt
-      }
-    }
-  }
-
-  const nextUsed = currentUsed + 1
-  await Promise.all([
-    setKeyCount(pb, identifier.cookieKey, date, nextUsed, cookieCountData.recordId),
-    setKeyCount(pb, identifier.ipKey, date, nextUsed, ipCountData.recordId)
-  ])
-
-  return {
-    allowed: true,
-    quota: {
-      remaining: Math.max(0, DAILY_MESSAGE_LIMIT - nextUsed),
-      total: DAILY_MESSAGE_LIMIT,
-      isUnlimited: false,
-      resetAt
-    }
-  }
+  })
 }
 
 /**
  * Consumes 1 title generation from a dedicated daily rate limit.
+ * Increments are serialized per key in memory to eliminate TOCTOU race conditions.
  */
 export async function consumeTitleQuota(
   pb: PocketBase | undefined,
@@ -345,15 +454,43 @@ export async function consumeTitleQuota(
   }
 
   const date = getUtcDateString()
+  ensureFreshMemoryUsage(date)
 
   if (identifier.userKey) {
     const titleUserKey = `title:${identifier.userKey}`
     const titleCookieKey = `title:${identifier.cookieKey}`
-    const [userCountData, cookieCountData] = await Promise.all([
-      fetchKeyCount(pb, titleUserKey, date),
-      fetchKeyCount(pb, titleCookieKey, date)
+    const keys = [titleUserKey, titleCookieKey]
+
+    return withKeysLock(keys, async () => {
+      const [userCountData, cookieCountData] = await Promise.all([
+        fetchKeyCount(pb, titleUserKey, date),
+        fetchKeyCount(pb, titleCookieKey, date)
+      ])
+      const currentUsed = Math.max(userCountData.count, cookieCountData.count)
+
+      if (currentUsed >= DAILY_TITLE_LIMIT) {
+        return false
+      }
+
+      const nextUsed = currentUsed + 1
+      await Promise.all([
+        setKeyCount(pb, titleUserKey, date, nextUsed, userCountData.recordId),
+        setKeyCount(pb, titleCookieKey, date, nextUsed, cookieCountData.recordId)
+      ])
+      return true
+    })
+  }
+
+  const titleCookieKey = `title:${identifier.cookieKey}`
+  const titleIpKey = `title:${identifier.ipKey}`
+  const keys = [titleCookieKey, titleIpKey]
+
+  return withKeysLock(keys, async () => {
+    const [cookieCountData, ipCountData] = await Promise.all([
+      fetchKeyCount(pb, titleCookieKey, date),
+      fetchKeyCount(pb, titleIpKey, date)
     ])
-    const currentUsed = Math.max(userCountData.count, cookieCountData.count)
+    const currentUsed = Math.max(cookieCountData.count, ipCountData.count)
 
     if (currentUsed >= DAILY_TITLE_LIMIT) {
       return false
@@ -361,28 +498,9 @@ export async function consumeTitleQuota(
 
     const nextUsed = currentUsed + 1
     await Promise.all([
-      setKeyCount(pb, titleUserKey, date, nextUsed, userCountData.recordId),
-      setKeyCount(pb, titleCookieKey, date, nextUsed, cookieCountData.recordId)
+      setKeyCount(pb, titleCookieKey, date, nextUsed, cookieCountData.recordId),
+      setKeyCount(pb, titleIpKey, date, nextUsed, ipCountData.recordId)
     ])
     return true
-  }
-
-  const titleCookieKey = `title:${identifier.cookieKey}`
-  const titleIpKey = `title:${identifier.ipKey}`
-  const [cookieCountData, ipCountData] = await Promise.all([
-    fetchKeyCount(pb, titleCookieKey, date),
-    fetchKeyCount(pb, titleIpKey, date)
-  ])
-  const currentUsed = Math.max(cookieCountData.count, ipCountData.count)
-
-  if (currentUsed >= DAILY_TITLE_LIMIT) {
-    return false
-  }
-
-  const nextUsed = currentUsed + 1
-  await Promise.all([
-    setKeyCount(pb, titleCookieKey, date, nextUsed, cookieCountData.recordId),
-    setKeyCount(pb, titleIpKey, date, nextUsed, ipCountData.recordId)
-  ])
-  return true
+  })
 }

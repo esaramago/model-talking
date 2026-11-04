@@ -25,6 +25,9 @@ migrate((app) => {
         required: false,
       },
     ],
+    indexes: [
+      "CREATE UNIQUE INDEX `idx_daily_usage_key_date` ON `daily_usage` (`key`, `date`)",
+    ],
   });
 
   return app.save(collection);

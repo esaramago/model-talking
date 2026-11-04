@@ -8,17 +8,35 @@ const POCKETBASE_URL =
   process.env.VITE_POCKETBASE_URL ||
   'http://127.0.0.1:8095'
 
-const ADMIN_EMAIL =
-  env.POCKETBASE_ADMIN_EMAIL ||
-  env.PB_ADMIN_EMAIL ||
-  process.env.POCKETBASE_ADMIN_EMAIL ||
-  process.env.PB_ADMIN_EMAIL
+function cleanEnv(val?: string): string | undefined {
+  if (!val) return undefined
+  const trimmed = val.trim()
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    return trimmed.slice(1, -1)
+  }
+  return trimmed
+}
 
-const ADMIN_PASSWORD =
-  env.POCKETBASE_ADMIN_PASSWORD ||
-  env.PB_ADMIN_PASSWORD ||
-  process.env.POCKETBASE_ADMIN_PASSWORD ||
-  process.env.PB_ADMIN_PASSWORD
+function getAdminEmail(): string | undefined {
+  return cleanEnv(
+    env.POCKETBASE_ADMIN_EMAIL ||
+    env.PB_ADMIN_EMAIL ||
+    process.env.POCKETBASE_ADMIN_EMAIL ||
+    process.env.PB_ADMIN_EMAIL
+  )
+}
+
+function getAdminPassword(): string | undefined {
+  return cleanEnv(
+    env.POCKETBASE_ADMIN_PASSWORD ||
+    env.PB_ADMIN_PASSWORD ||
+    process.env.POCKETBASE_ADMIN_PASSWORD ||
+    process.env.PB_ADMIN_PASSWORD
+  )
+}
 
 let adminPbInstance: PocketBase | null = null
 
@@ -27,7 +45,10 @@ let adminPbInstance: PocketBase | null = null
  * Returns null if superuser credentials are not configured or authentication fails.
  */
 export async function getAdminPocketBase(): Promise<PocketBase | null> {
-  if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+  const email = getAdminEmail()
+  const password = getAdminPassword()
+
+  if (!email || !password) {
     return null
   }
 
@@ -41,12 +62,12 @@ export async function getAdminPocketBase(): Promise<PocketBase | null> {
     // PocketBase 0.23+ uses _superusers collection, with fallback to admins
     if (typeof pb.collection('_superusers')?.authWithPassword === 'function') {
       try {
-        await pb.collection('_superusers').authWithPassword(ADMIN_EMAIL, ADMIN_PASSWORD)
+        await pb.collection('_superusers').authWithPassword(email, password)
       } catch {
-        await pb.admins.authWithPassword(ADMIN_EMAIL, ADMIN_PASSWORD)
+        await pb.admins.authWithPassword(email, password)
       }
     } else {
-      await pb.admins.authWithPassword(ADMIN_EMAIL, ADMIN_PASSWORD)
+      await pb.admins.authWithPassword(email, password)
     }
 
     adminPbInstance = pb
