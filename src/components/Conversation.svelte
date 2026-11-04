@@ -19,11 +19,9 @@
   {/each}
 
   {#if activeThinkingSpeaker}
-    <wa-card>
-      <Grid align="center" gap="s">
-        <wa-spinner></wa-spinner>
-        <span>{t('chat.thinking', { speaker: activeThinkingSpeaker })}</span>
-      </Grid>
-    </wa-card>
+    <Grid align="center" gap="s">
+      <wa-spinner></wa-spinner>
+      <span>{t('chat.thinking', { speaker: activeThinkingSpeaker })}</span>
+    </Grid>
   {/if}
 </Grid>

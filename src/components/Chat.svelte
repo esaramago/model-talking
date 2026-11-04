@@ -4,6 +4,7 @@
   import { page } from '$app/state'
   import Grid from '@/components/ui/Grid.svelte'
   import Conversation from '@/components/Conversation.svelte'
+  import MessageCard from '@/components/MessageCard.svelte'
   import Agents from '@/components/Agents.svelte'
   import Confirmation from '@/components/Confirmation.svelte'
   import { stats } from '@/lib/state/stats.svelte'
@@ -508,8 +509,11 @@
       </wa-button>
     </Grid>
   {:else}
-    <div class="chat-item">
-      <wa-avatar image={agent1Avatar}></wa-avatar>
+    <MessageCard
+      speaker="agent1"
+      speakerName={getSpeakerName('agent1')}
+      avatar={agent1Avatar}
+    >
       <wa-textarea
         maxlength="200"
         value={initialTopic}
@@ -517,7 +521,7 @@
         rows="1"
         oninput={handleTopicInput}
       ></wa-textarea>
-    </div>
+    </MessageCard>
 
     {#if errorMessage}
       <wa-callout variant="danger">
@@ -568,13 +572,6 @@
 </Grid>
 
 <style>
-  .chat-item {
-    --avatar-size: 7.3rem;
-    display: grid;
-    align-items: end;
-    grid-template-columns: var(--avatar-size) 1fr;
-    gap: var(--wa-space-m);
-  }
   wa-textarea {
     &::part(textarea) {
       padding: var(--wa-space-l) var(--wa-space-xl);
@@ -583,10 +580,10 @@
     }
     &::part(base) {
       border-radius: var(--wa-border-radius-xl);
-      background-color: var(--wa-color-surface-lowered);
+      background-color: var(--wa-color-brand-30);
+      @media (prefers-color-scheme: light) {
+        background-color: var(--wa-color-brand-80);
+      }
     }
-  }
-  wa-avatar {
-    --size: var(--avatar-size);
   }
 </style>

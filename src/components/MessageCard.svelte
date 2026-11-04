@@ -1,29 +1,50 @@
 <script lang="ts">
+  import type { Snippet } from 'svelte'
   import { page } from '$app/state'
   import Grid from '@/components/ui/Grid.svelte'
   import { t } from '@/lib/i18n/index.svelte'
   import type { ChatMessage } from '@/types/chat'
 
-  let { message }: { message: ChatMessage } = $props()
+  let {
+    message,
+    speaker = 'agent1',
+    speakerName,
+    avatar: customAvatar,
+    children,
+  }: {
+    message?: ChatMessage
+    speaker?: 'agent1' | 'agent2'
+    speakerName?: string
+    avatar?: string
+    children?: Snippet
+  } = $props()
 
+  const currentSpeaker = $derived(message?.speaker ?? speaker)
+  const currentSpeakerName = $derived(message?.speakerName ?? speakerName ?? '')
   const isAdmin = $derived(page.data?.user?.role === 'admin')
-  const reversed = $derived(message.speaker === 'agent2')
+  const reversed = $derived(currentSpeaker === 'agent2')
   const avatar = $derived(
-    message.avatar || (message.speaker === 'agent1' ? '/img/personas/1.svg' : '/img/personas/2.svg')
+    message?.avatar ||
+      customAvatar ||
+      (currentSpeaker === 'agent1' ? '/img/personas/1.svg' : '/img/personas/2.svg')
   )
 </script>
 
 <div class={["chat-item", reversed ? 'chat-item--reversed' : '']}>
   <Grid justify={reversed ? 'end' : 'start'} align="end" gap="s">
-    <strong>{message.speakerName}</strong>
+    <strong>{currentSpeakerName}</strong>
     <wa-avatar image={avatar}></wa-avatar>
-    {#if isAdmin && message.totalTokens}
+    {#if isAdmin && message?.totalTokens}
       <wa-badge variant="neutral">{t('chat.tokens', { count: message.totalTokens })}</wa-badge>
     {/if}
   </Grid>
-  <wa-card>
-    <p>{message.content}</p>
-  </wa-card>
+  {#if children}
+    {@render children()}
+  {:else}
+    <wa-card>
+      <p>{message?.content}</p>
+    </wa-card>
+  {/if}
 </div>
 
 <style>
