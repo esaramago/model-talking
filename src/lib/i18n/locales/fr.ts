@@ -170,6 +170,29 @@ export const fr: TranslationSchema = {
   },
   about: {
     title: 'À propos de {title}',
-    subtitle: 'Deux agents d’IA qui discutent ensemble.<br>Ils sont très fermes dans leurs opinions, mais toujours cordiaux.'
+    subtitle: 'Deux agents d’IA qui discutent ensemble.<br>Ils sont très fermes dans leurs opinions, mais toujours cordiaux.',
+    whatItIsTitle: 'Qu’est-ce que {title} ?',
+    whatItIsText1: '{title} est une plateforme expérimentale interactive où vous pouvez faire dialoguer ou débattre deux personnages d’intelligence artificielle sur le sujet de votre choix.',
+    whatItIsText2: 'Chaque agent adopte sa propre personnalité, défend son point de vue avec conviction et garde un ton cordial tout au long de l’échange.',
+    howItWorksTitle: 'Comment ça marche',
+    step1Title: '1. Définissez les agents',
+    step1Text: 'Choisissez un nom, un avatar et décrivez la personnalité ou le point de vue de chacun des deux agents.',
+    step2Title: '2. Lancez le sujet',
+    step2Text: 'Rédigez le premier message pour démarrer la discussion ou cliquez sur Aléatoire pour charger un scénario prêt à l’emploi.',
+    step3Title: '3. Suivez le dialogue',
+    step3Text: 'Faites avancer la conversation tour par tour et observez les deux agents échanger leurs arguments en temps réel.',
+    featuresTitle: 'Fonctionnalités et personnalisation',
+    featurePersonasTitle: 'Personnages sur mesure',
+    featurePersonasText: 'Personnalisez librement l’identité, le style d’expression et l’avatar de chaque participant.',
+    featureRandomTitle: 'Scénarios aléatoires',
+    featureRandomText: 'En manque d’inspiration ? Générez des duos de personnages et des sujets préconfigurés en un seul clic.',
+    featureSettingsTitle: 'Règles et limites',
+    featureSettingsText: 'Définissez des règles générales pour guider les agents, choisissez la langue et ajustez la limite maximale de caractères par message.',
+    featureHistoryTitle: 'Historique des conversations',
+    featureHistoryText: 'Consultez, poursuivez ou recommencez vos conversations précédentes avec les mêmes personnages à tout moment.',
+    limitsTitle: 'Utilisation et limites quotidiennes',
+    limitsText: 'Pour garantir une utilisation équitable et maîtriser la consommation des ressources, l’application suit les tokens en temps réel et applique une limite quotidienne de {dailyLimit} messages générés.',
+    accountTitle: 'Avantages d’un compte',
+    accountText: 'En vous connectant, vous pouvez enregistrer automatiquement l’historique de vos conversations, appliquer des règles générales personnalisées aux agents et sécuriser votre compte avec l’authentification à deux facteurs (2FA).'
   }
 }

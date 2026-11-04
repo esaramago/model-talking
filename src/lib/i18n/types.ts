@@ -171,6 +171,29 @@ export interface TranslationSchema {
   about: {
     title: string
     subtitle: string
+    whatItIsTitle: string
+    whatItIsText1: string
+    whatItIsText2: string
+    howItWorksTitle: string
+    step1Title: string
+    step1Text: string
+    step2Title: string
+    step2Text: string
+    step3Title: string
+    step3Text: string
+    featuresTitle: string
+    featurePersonasTitle: string
+    featurePersonasText: string
+    featureRandomTitle: string
+    featureRandomText: string
+    featureSettingsTitle: string
+    featureSettingsText: string
+    featureHistoryTitle: string
+    featureHistoryText: string
+    limitsTitle: string
+    limitsText: string
+    accountTitle: string
+    accountText: string
   }
 }
 

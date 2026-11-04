@@ -170,6 +170,29 @@ export const de: TranslationSchema = {
   },
   about: {
     title: 'Über {title}',
-    subtitle: 'Zwei KI-Agenten unterhalten sich miteinander.<br>Sie vertreten ihre Ansichten sehr bestimmt, bleiben aber stets herzlich.'
+    subtitle: 'Zwei KI-Agenten unterhalten sich miteinander.<br>Sie vertreten ihre Ansichten sehr bestimmt, bleiben aber stets herzlich.',
+    whatItIsTitle: 'Was ist {title}?',
+    whatItIsText1: '{title} ist eine interaktive Experimentierplattform, auf der Sie zwei KI-Persönlichkeiten über jedes beliebige Thema miteinander sprechen oder debattieren lassen können.',
+    whatItIsText2: 'Jeder Agent nimmt seine eigene Persönlichkeit an, vertritt seinen Standpunkt mit Überzeugung und wahrt während des gesamten Gesprächs einen höflichen Ton.',
+    howItWorksTitle: 'So funktioniert es',
+    step1Title: '1. Agenten definieren',
+    step1Text: 'Wählen Sie Namen und Avatar aus und beschreiben Sie die Persönlichkeit oder Sichtweise der beiden Agenten.',
+    step2Title: '2. Thema starten',
+    step2Text: 'Schreiben Sie die erste Nachricht, um das Gespräch zu beginnen, oder nutzen Sie die Schaltfläche Zufall für ein fertiges Szenario.',
+    step3Title: '3. Dialog verfolgen',
+    step3Text: 'Führen Sie die Unterhaltung Zug um Zug fort und beobachten Sie, wie beide Agenten in Echtzeit Argumente austauschen.',
+    featuresTitle: 'Funktionen & Anpassung',
+    featurePersonasTitle: 'Individuelle Charaktere',
+    featurePersonasText: 'Passen Sie Identität, Sprachstil und Avatar jedes Teilnehmers frei an.',
+    featureRandomTitle: 'Zufällige Szenarien',
+    featureRandomText: 'Keine Idee? Erzeugen Sie mit einem Klick vorkonfigurierte Charakterpaare und Gesprächsthemen.',
+    featureSettingsTitle: 'Regeln & Limits',
+    featureSettingsText: 'Legen Sie allgemeine Regeln für die Agenten fest, wählen Sie die Sprache und passen Sie das Zeichenlimit pro Nachricht an.',
+    featureHistoryTitle: 'Gesprächsverlauf',
+    featureHistoryText: 'Sehen Sie frühere Gespräche jederzeit ein, setzen Sie sie fort oder starten Sie sie mit denselben Charakteren neu.',
+    limitsTitle: 'Nutzung & Tageslimits',
+    limitsText: 'Um eine faire Nutzung zu gewährleisten und den Ressourcenverbrauch zu steuern, erfasst die App die Token-Nutzung in Echtzeit und begrenzt die tägliche Anzahl auf {dailyLimit} generierte Nachrichten.',
+    accountTitle: 'Vorteile eines Kontos',
+    accountText: 'Wenn Sie sich anmelden, können Sie Ihren Gesprächsverlauf automatisch speichern, eigene allgemeine Regeln für Agenten anwenden und Ihr Konto mit Zwei-Faktor-Authentifizierung (2FA) schützen.'
   }
 }

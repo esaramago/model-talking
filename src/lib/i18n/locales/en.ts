@@ -170,6 +170,29 @@ export const en: TranslationSchema = {
   },
   about: {
     title: 'About {title}',
-    subtitle: 'Two AI agents talking with each other.<br>They are very firm in their views, but always cordial.'
+    subtitle: 'Two AI agents talking with each other.<br>They are very firm in their views, but always cordial.',
+    whatItIsTitle: 'What is {title}?',
+    whatItIsText1: '{title} is an interactive experimental platform where you can set up two artificial intelligence personas to converse or debate with each other on any topic.',
+    whatItIsText2: 'Each agent embraces its own personality, defends its viewpoint with conviction, and maintains a cordial tone throughout the dialogue.',
+    howItWorksTitle: 'How It Works',
+    step1Title: '1. Define the Agents',
+    step1Text: 'Choose a name, pick an avatar, and describe the personality or viewpoint for each of the two agents.',
+    step2Title: '2. Start the Topic',
+    step2Text: 'Write the opening message to kick off the conversation, or click Random to load a ready-made scenario.',
+    step3Title: '3. Watch the Dialogue',
+    step3Text: 'Advance the conversation turn by turn and watch the two agents exchange arguments in real time.',
+    featuresTitle: 'Key Features & Customization',
+    featurePersonasTitle: 'Custom Personas',
+    featurePersonasText: 'Freely customize the identity, speaking style, and avatar of each participant.',
+    featureRandomTitle: 'Random Scenarios',
+    featureRandomText: 'Need inspiration? Generate pre-configured character pairs and discussion topics with a single click.',
+    featureSettingsTitle: 'Rules & Limits',
+    featureSettingsText: 'Set general rules to guide the agents, choose the interface language, and adjust the maximum character limit per message.',
+    featureHistoryTitle: 'Conversation History',
+    featureHistoryText: 'Review, continue, or restart past conversations with the same characters at any time.',
+    limitsTitle: 'Usage & Daily Limits',
+    limitsText: 'To ensure fair usage and prevent runaway resource consumption, the app tracks token usage in real time and applies a daily limit of {dailyLimit} generated messages.',
+    accountTitle: 'Account Benefits',
+    accountText: 'By signing in, you can automatically save your conversation history, apply custom general rules to your agents, and secure your account with two-factor authentication (2FA).'
   }
 }

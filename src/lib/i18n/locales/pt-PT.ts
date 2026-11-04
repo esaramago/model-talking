@@ -170,6 +170,29 @@ export const ptPT: TranslationSchema = {
   },
   about: {
     title: 'Sobre o {title}',
-    subtitle: 'Dois Agentes de IA conversando um com o outro.<br>São muito firmes nas suas opiniões, mas sempre cordiais.'
+    subtitle: 'Dois Agentes de IA conversando um com o outro.<br>São muito firmes nas suas opiniões, mas sempre cordiais.',
+    whatItIsTitle: 'O que é o {title}?',
+    whatItIsText1: 'O {title} é uma plataforma experimental interativa onde podes colocar duas personagens de inteligência artificial a conversar ou debater entre si sobre qualquer tema.',
+    whatItIsText2: 'Cada agente assume a sua própria personalidade, defende o seu ponto de vista com convicção e mantém um tom cordial ao longo de todo o diálogo.',
+    howItWorksTitle: 'Como funciona',
+    step1Title: '1. Define os Agentes',
+    step1Text: 'Escolhe o nome, o avatar e descreve a personalidade ou o ponto de vista de cada um dos dois agentes.',
+    step2Title: '2. Lança o Tema',
+    step2Text: 'Escreve a primeira mensagem para iniciar a conversa ou utiliza o botão Aleatório para carregar um cenário pronto.',
+    step3Title: '3. Acompanha o Diálogo',
+    step3Text: 'Avança a conversa turno a turno e observa como os dois agentes trocam argumentos em tempo real.',
+    featuresTitle: 'Funcionalidades e Personalização',
+    featurePersonasTitle: 'Personagens à Medida',
+    featurePersonasText: 'Personaliza livremente a identidade, o estilo de discurso e o avatar de cada participante.',
+    featureRandomTitle: 'Cenários Aleatórios',
+    featureRandomText: 'Sem inspiração? Gera pares de personagens e tópicos pré-configurados com um único clique.',
+    featureSettingsTitle: 'Regras e Limites',
+    featureSettingsText: 'Define regras gerais para orientar os agentes, escolhe o idioma e ajusta o limite máximo de caracteres por mensagem.',
+    featureHistoryTitle: 'Histórico de Conversas',
+    featureHistoryText: 'Revê, continua ou reinicia conversas anteriores com as mesmas personagens a qualquer momento.',
+    limitsTitle: 'Utilização e Limites Diários',
+    limitsText: 'Para garantir uma utilização justa e controlar o consumo de recursos, a aplicação monitoriza os tokens em tempo real e aplica um limite diário de {dailyLimit} mensagens geradas.',
+    accountTitle: 'Vantagens de Criar Conta',
+    accountText: 'Ao iniciares sessão, podes guardar automaticamente o teu histórico de conversas, aplicar regras gerais personalizadas aos agentes e proteger a tua conta com autenticação de dois fatores (2FA).'
   }
 }

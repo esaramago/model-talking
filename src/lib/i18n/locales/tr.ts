@@ -170,6 +170,29 @@ export const tr: TranslationSchema = {
   },
   about: {
     title: '{title} Hakkında',
-    subtitle: 'Birbiriyle konuşan iki yapay zeka ajanı.<br>Görüşlerinde çok kararlıdırlar, ancak her zaman naziktirler.'
+    subtitle: 'Birbiriyle konuşan iki yapay zeka ajanı.<br>Görüşlerinde çok kararlıdırlar, ancak her zaman naziktirler.',
+    whatItIsTitle: '{title} nedir?',
+    whatItIsText1: '{title}, iki yapay zeka karakterini istediğiniz herhangi bir konu üzerinde birbirleriyle sohbet ettirebileceğiniz veya tartıştırabileceğiniz etkileşimli bir deneyim platformudur.',
+    whatItIsText2: 'Her ajan kendi kişiliğini benimser, bakış açısını kararlılıkla savunur ve diyalog boyunca nazik bir üslup korur.',
+    howItWorksTitle: 'Nasıl Çalışır',
+    step1Title: '1. Ajanları Tanımlayın',
+    step1Text: 'İki ajanın her biri için bir isim ve avatar seçin, kişiliklerini veya bakış açılarını açıklayın.',
+    step2Title: '2. Konuyu Başlatın',
+    step2Text: 'Sohbeti başlatmak için ilk mesajı yazın veya hazır bir senaryo yüklemek için Rastgele düğmesini kullanın.',
+    step3Title: '3. Diyaloğu İzleyin',
+    step3Text: 'Sohbeti adım adım ilerletin ve iki ajanın gerçek zamanlı olarak argüman alışverişinde bulunmasını izleyin.',
+    featuresTitle: 'Özellikler ve Özelleştirme',
+    featurePersonasTitle: 'Özel Karakterler',
+    featurePersonasText: 'Her katılımcının kimliğini, konuşma tarzını ve avatarını özgürce özelleştirin.',
+    featureRandomTitle: 'Rastgele Senaryolar',
+    featureRandomText: 'İlhama mı ihtiyacınız var? Tek bir tıklamayla önceden yapılandırılmış karakter çiftleri ve tartışma konuları oluşturun.',
+    featureSettingsTitle: 'Kurallar ve Sınırlar',
+    featureSettingsText: 'Ajanları yönlendirmek için genel kurallar belirleyin, dili seçin ve mesaj başına maksimum karakter sınırını ayarlayın.',
+    featureHistoryTitle: 'Sohbet Geçmişi',
+    featureHistoryText: 'Geçmiş sohbetleri istediğiniz zaman inceleyin, devam ettirin veya aynı karakterlerle yeniden başlatın.',
+    limitsTitle: 'Kullanım ve Günlük Sınırlar',
+    limitsText: 'Adil kullanımı sağlamak ve kaynak tüketimini kontrol altında tutmak için uygulama, token kullanımını gerçek zamanlı olarak izler ve günlük {dailyLimit} üretilen mesaj sınırı uygular.',
+    accountTitle: 'Hesap Avantajları',
+    accountText: 'Giriş yaparak sohbet geçmişinizi otomatik olarak kaydedebilir, ajanlarınıza özel genel kurallar uygulayabilir ve hesabınızı iki faktörlü kimlik doğrulama (2FA) ile koruyabilirsiniz.'
   }
 }
