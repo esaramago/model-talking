@@ -31,7 +31,9 @@ services:
           memory: 256M
 
   pocketbase:
-    image: ghcr.io/muchobien/pocketbase:0.40.6@sha256:9a0be68a80ca1348ba8d15f217b3f983be4c094b3c571a09b3ebdeb357259338
+    build:
+      context: .
+      dockerfile: Dockerfile.pb
     restart: unless-stopped
     command: serve --http=0.0.0.0:8090 --dir=/pb_data --publicDir=/pb_public --hooksDir=/pb_hooks --migrationsDir=/pb_migrations
     ports:
@@ -40,8 +42,6 @@ services:
       - POCKETBASE_PROXY_SECRET=${POCKETBASE_PROXY_SECRET:-}
     volumes:
       - pb_data:/pb_data
-      - ./pb_migrations:/pb_migrations
-      - ./pb_hooks:/pb_hooks
     deploy:
       resources:
         limits:
