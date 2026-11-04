@@ -342,26 +342,47 @@ function getServerSecret(): string {
   )
 }
 
+const AUTH_SESSION_MAX_AGE_SEC = 60 * 60 * 24 * 30
+const AUTH_SESSION_MAX_AGE_MS = AUTH_SESSION_MAX_AGE_SEC * 1000
+const PROFILE_OTP_MAX_AGE_MS = 10 * 60 * 1000
+
 /**
- * Signs an authenticated user ID to prove login/2FA passed through the server.
+ * Signs an authenticated user session with an expiration timestamp and random nonce
+ * to prove login/2FA passed through the server and prevent static signature replay.
  */
-export function signAuthSession(userId: string): string {
-  const hmac = createHmac('sha256', getServerSecret()).update(`auth:${userId}`).digest('hex')
-  return `${userId}.${hmac}`
+export function signAuthSession(userId: string, now: number = Date.now()): string {
+  const expiresAt = now + AUTH_SESSION_MAX_AGE_MS
+  const nonce = randomBytes(16).toString('hex')
+  const payload = `${userId}.${expiresAt}.${nonce}`
+  const hmac = createHmac('sha256', getServerSecret()).update(`auth:${payload}`).digest('hex')
+  return `${payload}.${hmac}`
 }
 
 /**
- * Verifies that the server-signed auth session cookie matches the active PocketBase user ID.
+ * Verifies that the server-signed auth session cookie is authentic, unexpired,
+ * and matches the active PocketBase user ID.
  */
 export function verifyAuthSession(
   cookieValue: string | undefined,
-  expectedUserId: string | undefined
+  expectedUserId: string | undefined,
+  now: number = Date.now()
 ): boolean {
-  if (!cookieValue || !expectedUserId || !cookieValue.includes('.')) return false
-  const [userId, signature] = cookieValue.split('.')
-  if (!userId || !signature || userId !== expectedUserId) return false
+  if (!cookieValue || !expectedUserId) return false
+  const parts = cookieValue.split('.')
+  if (parts.length !== 4) return false
 
-  const expected = createHmac('sha256', getServerSecret()).update(`auth:${userId}`).digest('hex')
+  const [userId, expiresAtStr, nonce, signature] = parts
+  if (!userId || !expiresAtStr || !nonce || !signature || userId !== expectedUserId) {
+    return false
+  }
+
+  const expiresAt = Number(expiresAtStr)
+  if (!Number.isFinite(expiresAt) || now >= expiresAt) {
+    return false
+  }
+
+  const payload = `${userId}.${expiresAtStr}.${nonce}`
+  const expected = createHmac('sha256', getServerSecret()).update(`auth:${payload}`).digest('hex')
   const sigBuffer = Buffer.from(signature)
   const expBuffer = Buffer.from(expected)
 
@@ -375,12 +396,67 @@ export function setAuthSessionCookie(cookies: Cookies, userId: string): void {
     httpOnly: true,
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 60 * 60 * 24 * 30
+    maxAge: AUTH_SESSION_MAX_AGE_SEC
   })
 }
 
 export function clearAuthSessionCookie(cookies: Cookies): void {
   cookies.delete(AUTH_SESSION_COOKIE_NAME, { path: '/' })
+}
+
+export interface ProfileOtpPayload {
+  userId: string
+  otpId: string
+  timestamp: number
+}
+
+/**
+ * Encrypts and authenticates a profile email 2FA setup OTP ID bound to a specific user ID.
+ */
+export function createProfileOtpToken(userId: string, otpId: string): string {
+  const payload: ProfileOtpPayload = {
+    userId,
+    otpId,
+    timestamp: Date.now()
+  }
+  const iv = randomBytes(12)
+  const cipher = createCipheriv('aes-256-gcm', getPending2FAKey(), iv)
+  const encrypted = Buffer.concat([cipher.update(JSON.stringify(payload), 'utf8'), cipher.final()])
+  const authTag = cipher.getAuthTag()
+  return Buffer.concat([iv, authTag, encrypted]).toString('base64url')
+}
+
+/**
+ * Verifies a profile email 2FA setup token and ensures it belongs to the expected user ID.
+ */
+export function verifyProfileOtpToken(
+  token: string | undefined,
+  expectedUserId: string
+): string | null {
+  if (!token || !expectedUserId) return null
+  try {
+    const raw = Buffer.from(token, 'base64url')
+    if (raw.length < 28) return null
+    const iv = raw.subarray(0, 12)
+    const authTag = raw.subarray(12, 28)
+    const encrypted = raw.subarray(28)
+    const decipher = createDecipheriv('aes-256-gcm', getPending2FAKey(), iv)
+    decipher.setAuthTag(authTag)
+    const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]).toString('utf8')
+    const parsed = JSON.parse(decrypted) as ProfileOtpPayload
+    if (
+      !parsed ||
+      parsed.userId !== expectedUserId ||
+      !parsed.otpId ||
+      typeof parsed.timestamp !== 'number' ||
+      Date.now() - parsed.timestamp > PROFILE_OTP_MAX_AGE_MS
+    ) {
+      return null
+    }
+    return parsed.otpId
+  } catch {
+    return null
+  }
 }
 
 function getPending2FAKey(): Buffer {

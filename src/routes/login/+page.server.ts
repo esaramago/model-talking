@@ -227,8 +227,8 @@ export const actions: Actions = {
       if (pending.otpId) {
         try {
           const authPb = new PocketBase(locals.pb.baseUrl)
-          await authPb.collection('users').authWithOTP(pending.otpId, code)
-          otpValid = true
+          const otpAuth = await authPb.collection('users').authWithOTP(pending.otpId, code)
+          otpValid = otpAuth.record?.id === pending.userId
         } catch {
           otpValid = false
         }

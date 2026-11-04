@@ -26,10 +26,11 @@ export const handle: Handle = async ({ event, resolve }) => {
     pathname.startsWith('/_/')
 
   if (isPocketBaseRequest) {
-    // PocketBase decodes percent-encoded paths, so match against the decoded path
-    let lowerPath: string
+    // PocketBase decodes percent-encoded paths, so match against the decoded and normalized path
+    let normalizedPath: string
     try {
-      lowerPath = decodeURIComponent(pathname).toLowerCase()
+      const decoded = decodeURIComponent(pathname).toLowerCase()
+      normalizedPath = decoded.replace(/\/+/g, '/').replace(/\/+$/, '') || '/'
     } catch {
       return new Response(JSON.stringify({ code: 400, message: 'Invalid request path.' }), {
         status: 400,
@@ -39,9 +40,12 @@ export const handle: Handle = async ({ event, resolve }) => {
 
     // Completely block direct PocketBase admin UI and superuser/admin authentication endpoints
     if (
-      lowerPath.startsWith('/_') ||
-      lowerPath.startsWith('/api/admins') ||
-      lowerPath.startsWith('/api/collections/_superusers')
+      normalizedPath === '/_' ||
+      normalizedPath.startsWith('/_/') ||
+      normalizedPath === '/api/admins' ||
+      normalizedPath.startsWith('/api/admins/') ||
+      normalizedPath === '/api/collections/_superusers' ||
+      normalizedPath.startsWith('/api/collections/_superusers/')
     ) {
       return new Response(
         JSON.stringify({
@@ -52,15 +56,19 @@ export const handle: Handle = async ({ event, resolve }) => {
       )
     }
 
-    // Completely block direct user authentication and OTP endpoints.
-    // All authentication must go through SvelteKit's /login and /register routes
+    // Completely block direct user authentication, OTP, and registration endpoints
+    // (whether addressed by collection name 'users' or internal ID '_pb_users_auth_').
+    // All authentication and registration must go through SvelteKit's /login and /register routes
     // where rate-limiting, password verification, and 2FA (TOTP/Email) are enforced.
-    if (
-      lowerPath === '/api/collections/users/auth-with-password' ||
-      lowerPath === '/api/collections/users/auth-with-otp' ||
-      lowerPath === '/api/collections/users/request-otp' ||
-      lowerPath === '/api/collections/users/auth-with-oauth2'
-    ) {
+    const isDirectAuthEndpoint =
+      /^\/api\/collections\/[^/]+\/(auth-with-password|auth-with-otp|request-otp|auth-with-oauth2)$/.test(
+        normalizedPath
+      )
+    const isDirectUserCreate =
+      event.request.method.toUpperCase() === 'POST' &&
+      /^\/api\/collections\/(users|_pb_users_auth_)\/records$/.test(normalizedPath)
+
+    if (isDirectAuthEndpoint || isDirectUserCreate) {
       return new Response(
         JSON.stringify({
           code: 403,
@@ -71,12 +79,12 @@ export const handle: Handle = async ({ event, resolve }) => {
     }
 
     // Verify 2FA auth session if an auth token is presented in Authorization header or pb_auth cookie
-    const authHeader = event.request.headers.get('authorization') || ''
+    const authHeader = (event.request.headers.get('authorization') || '').trim()
     let token = ''
-    if (authHeader.startsWith('Bearer ')) {
-      token = authHeader.slice(7).trim()
+    if (/^bearer\s+/i.test(authHeader)) {
+      token = authHeader.replace(/^bearer\s+/i, '').trim()
     } else if (authHeader) {
-      token = authHeader.trim()
+      token = authHeader
     }
 
     if (!token) {
@@ -101,7 +109,9 @@ export const handle: Handle = async ({ event, resolve }) => {
         const parts = token.split('.')
         if (parts.length === 3) {
           const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'))
-          tokenUserId = payload.id
+          if (typeof payload?.id === 'string' && payload.id) {
+            tokenUserId = payload.id
+          }
         }
       } catch {
         return new Response(
@@ -110,17 +120,22 @@ export const handle: Handle = async ({ event, resolve }) => {
         )
       }
 
-      if (tokenUserId) {
-        const sessionSig = event.cookies.get(AUTH_SESSION_COOKIE_NAME)
-        if (!verifyAuthSession(sessionSig, tokenUserId)) {
-          return new Response(
-            JSON.stringify({
-              code: 401,
-              message: 'Session requires two-factor verification. Please log in again.'
-            }),
-            { status: 401, headers: { 'content-type': 'application/json' } }
-          )
-        }
+      if (!tokenUserId) {
+        return new Response(
+          JSON.stringify({ code: 401, message: 'Invalid authentication token.' }),
+          { status: 401, headers: { 'content-type': 'application/json' } }
+        )
+      }
+
+      const sessionSig = event.cookies.get(AUTH_SESSION_COOKIE_NAME)
+      if (!verifyAuthSession(sessionSig, tokenUserId)) {
+        return new Response(
+          JSON.stringify({
+            code: 401,
+            message: 'Session requires two-factor verification. Please log in again.'
+          }),
+          { status: 401, headers: { 'content-type': 'application/json' } }
+        )
       }
     }
 

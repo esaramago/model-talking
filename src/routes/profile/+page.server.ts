@@ -10,6 +10,8 @@ import {
   buildOtpAuthUri,
   sanitizeUser,
   setAuthSessionCookie,
+  createProfileOtpToken,
+  verifyProfileOtpToken,
   isAuthRateLimited,
   recordFailedAuthAttempt,
   clearAuthAttempts
@@ -195,12 +197,21 @@ export const actions: Actions = {
       throw redirect(303, '/login')
     }
 
+    const sendAttemptKey = `profile2fa:send:${locals.user.id}`
+    if (await isAuthRateLimited(sendAttemptKey, 5)) {
+      return fail(429, {
+        action: 'sendEmail2FACode' as const,
+        errorKey: 'profile.updateError' as const
+      })
+    }
+
     try {
-      await clearAuthAttempts(`profile2fa:email:${locals.user.id}`)
+      await recordFailedAuthAttempt(sendAttemptKey, 5)
       const otpResponse = await locals.pb.collection('users').requestOTP(locals.user.email)
 
       if (otpResponse?.otpId) {
-        cookies.set('mt_profile_otp_id', otpResponse.otpId, {
+        const signedOtpToken = createProfileOtpToken(locals.user.id, otpResponse.otpId)
+        cookies.set('mt_profile_otp_id', signedOtpToken, {
           path: '/',
           httpOnly: true,
           sameSite: 'lax',
@@ -239,6 +250,7 @@ export const actions: Actions = {
     }
 
     const attemptKey = `profile2fa:email:${locals.user.id}`
+    const sendAttemptKey = `profile2fa:send:${locals.user.id}`
     const privilegedPb = await getPrivilegedPocketBase(locals.pb)
 
     if (await isAuthRateLimited(attemptKey)) {
@@ -249,14 +261,15 @@ export const actions: Actions = {
       })
     }
 
-    const storedOtpId = cookies.get('mt_profile_otp_id')
+    const storedOtpToken = cookies.get('mt_profile_otp_id')
+    const storedOtpId = verifyProfileOtpToken(storedOtpToken, locals.user.id)
     let verified = false
 
     if (storedOtpId) {
       try {
         const authPb = new PocketBase(locals.pb.baseUrl)
-        await authPb.collection('users').authWithOTP(storedOtpId, code)
-        verified = true
+        const otpAuth = await authPb.collection('users').authWithOTP(storedOtpId, code)
+        verified = otpAuth.record?.id === locals.user.id
       } catch {
         verified = false
       }
@@ -299,7 +312,9 @@ export const actions: Actions = {
         twoFactorEmailExpires: 0
       })
       await clearAuthAttempts(attemptKey)
+      await clearAuthAttempts(sendAttemptKey)
       locals.user = sanitizeUser(updated)
+      setAuthSessionCookie(cookies, locals.user.id)
 
       return {
         action: 'enableEmail2FA' as const,
@@ -315,7 +330,7 @@ export const actions: Actions = {
     }
   },
 
-  enableAuthenticator2FA: async ({ request, locals }) => {
+  enableAuthenticator2FA: async ({ request, locals, cookies }) => {
     if (!locals.user) {
       throw redirect(303, '/login')
     }
@@ -366,6 +381,7 @@ export const actions: Actions = {
       })
       await clearAuthAttempts(attemptKey)
       locals.user = sanitizeUser(updated)
+      setAuthSessionCookie(cookies, locals.user.id)
 
       return {
         action: 'enableAuthenticator2FA' as const,
@@ -381,7 +397,7 @@ export const actions: Actions = {
     }
   },
 
-  disable2FA: async ({ request, locals }) => {
+  disable2FA: async ({ request, locals, cookies }) => {
     if (!locals.user) {
       throw redirect(303, '/login')
     }
@@ -460,6 +476,7 @@ export const actions: Actions = {
       })
       await clearAuthAttempts(attemptKey)
       locals.user = sanitizeUser(updated)
+      setAuthSessionCookie(cookies, locals.user.id)
 
       return {
         action: 'disable2FA' as const,
