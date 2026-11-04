@@ -2,6 +2,8 @@ import PocketBase from 'pocketbase'
 import { env } from '$env/dynamic/private'
 
 const POCKETBASE_URL =
+  env.INTERNAL_POCKETBASE_URL ||
+  process.env.INTERNAL_POCKETBASE_URL ||
   env.POCKETBASE_URL ||
   env.VITE_POCKETBASE_URL ||
   process.env.POCKETBASE_URL ||

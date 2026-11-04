@@ -59,7 +59,6 @@ export const actions: Actions = {
 
       clearAuthAttempts(ipLimitKey)
       clearAuthAttempts(emailLimitKey)
-      clearAuthAttempts(`2fa:user:${user.id}`)
 
       const twoFactorMethod = user.twoFactorMethod || 'none'
 

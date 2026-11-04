@@ -33,8 +33,8 @@ cp .env.example .env
 | Variable | Default (Local) | Production (Coolify) | Description |
 | :--- | :--- | :--- | :--- |
 | `PORT` | `3000` | `3000` | SvelteKit production server port |
-| `POCKETBASE_PORT` | `8095` | `8090` | Host port mapped to the PocketBase container |
-| `VITE_POCKETBASE_URL` | `http://localhost:8095` | `https://api.yourdomain.com` | Public URL used by the client-side browser to contact PocketBase |
+| `POCKETBASE_PORT` | `8095` | `8095` | Local host loopback port mapped to the PocketBase container (127.0.0.1) |
+| `INTERNAL_POCKETBASE_URL` | `http://127.0.0.1:8095` | `http://pocketbase:8090` | Internal PocketBase URL used by SvelteKit SSR and API reverse proxy |
 
 ### 3. Start the Development Environment
 
@@ -148,7 +148,7 @@ When deploying to Coolify:
 2. **Persistent Storage:** Ensure the volume `pb_data` is mounted to `/pb_data` in the PocketBase container so database records and uploaded files persist across redeployments.
 3. **Environment Variables:** Set production values in Coolify:
    - `PORT`: `3000`
-   - `VITE_POCKETBASE_URL`: Public domain URL (e.g., `https://pb.yourdomain.com`)
+   - `INTERNAL_POCKETBASE_URL`: `http://pocketbase:8090` (internal Docker network URL)
 
 ---
 
