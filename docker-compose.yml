@@ -12,6 +12,14 @@ services:
       - VITE_POCKETBASE_URL=http://localhost:8095
     depends_on:
       - pocketbase
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
 
   pocketbase:
     image: ghcr.io/muchobien/pocketbase:latest
@@ -22,6 +30,14 @@ services:
     volumes:
       - pb_data:/pb_data
       - ./pb_migrations:/pb_migrations
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+        reservations:
+          cpus: "0.1"
+          memory: 128M
 
 volumes:
   pb_data:
