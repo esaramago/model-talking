@@ -1,4 +1,4 @@
-import type { ChatSettings, LanguageOption } from '@/types/chat'
+import type { AgentDraft, ChatSettings, LanguageOption } from '@/types/chat'
 import { MESSAGE_MAX_CHARS_DEFAULT } from './limits'
 
 // MODELS
@@ -19,14 +19,17 @@ export const SUPPORTED_LANGUAGES: LanguageOption[] = [
 ]
 
 export const DEFAULT_SETTINGS: ChatSettings = {
+  generalRules: '',
+  language: SUPPORTED_LANGUAGES[0].value,
+  maxChars: MESSAGE_MAX_CHARS_DEFAULT
+}
+
+export const DEFAULT_AGENT_DRAFT: AgentDraft = {
   initialTopic: '',
   agent1Name: '',
   agent2Name: '',
   systemPrompt1: '',
-  systemPrompt2: '',
-  generalRules: '',
-  language: SUPPORTED_LANGUAGES[0].value,
-  maxChars: MESSAGE_MAX_CHARS_DEFAULT
+  systemPrompt2: ''
 }
 
 export const AVAILABLE_PERSONAS = ['1', '2', '3', '4', '5', '6', '7', '8', '9']

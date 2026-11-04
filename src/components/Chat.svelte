@@ -14,14 +14,12 @@
     requestModelTurn,
     generateTalkTitle,
   } from '@/lib/chat'
-  import { MAX_OUTPUT_TOKENS, MODEL } from '@/lib/config'
+  import { DEFAULT_AGENT_DRAFT, DEFAULT_SETTINGS, MAX_OUTPUT_TOKENS, MODEL } from '@/lib/config'
   import {
-    DEFAULT_SETTINGS,
     clearAgentDraft,
     loadAgentDraft,
     loadSettings,
     saveAgentDraft,
-    saveSettings,
   } from '@/lib/storage'
   import {
     getRandomConversation,
@@ -38,16 +36,16 @@
   const user = $derived(page.data?.user ?? null)
 
   let currentTalkId = $state('')
-  let initialTopic = $state(DEFAULT_SETTINGS.initialTopic)
+  let initialTopic = $state(DEFAULT_AGENT_DRAFT.initialTopic)
   let maxTokens = $state(MAX_OUTPUT_TOKENS)
 
   let model = $state(MODEL)
-  let agent1Name = $state(DEFAULT_SETTINGS.agent1Name)
-  let agent2Name = $state(DEFAULT_SETTINGS.agent2Name)
+  let agent1Name = $state(DEFAULT_AGENT_DRAFT.agent1Name)
+  let agent2Name = $state(DEFAULT_AGENT_DRAFT.agent2Name)
   let agent1Avatar = $state('/img/personas/1.svg')
   let agent2Avatar = $state('/img/personas/2.svg')
-  let systemPrompt1 = $state(DEFAULT_SETTINGS.systemPrompt1)
-  let systemPrompt2 = $state(DEFAULT_SETTINGS.systemPrompt2)
+  let systemPrompt1 = $state(DEFAULT_AGENT_DRAFT.systemPrompt1)
+  let systemPrompt2 = $state(DEFAULT_AGENT_DRAFT.systemPrompt2)
   let generalRules = $state(DEFAULT_SETTINGS.generalRules)
   let language = $state(DEFAULT_SETTINGS.language)
   let maxChars = $state(DEFAULT_SETTINGS.maxChars)
@@ -228,26 +226,6 @@
     if (!props.talkId) {
       language = i18n.currentLanguage
     }
-  })
-
-  $effect(() => {
-    if (!isHydrated) return
-
-    saveSettings(
-      {
-        initialTopic: currentTalkId
-          ? loadSettings(user?.id, user).initialTopic
-          : initialTopic,
-        agent1Name,
-        agent2Name,
-        systemPrompt1,
-        systemPrompt2,
-        generalRules,
-        language,
-        maxChars,
-      },
-      user?.id,
-    )
   })
 
   $effect(() => {

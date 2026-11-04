@@ -24,14 +24,17 @@ export interface LanguageOption {
 }
 
 export interface ChatSettings {
+  generalRules: string
+  language: string
+  maxChars: number
+}
+
+export interface AgentDraft {
   initialTopic: string
   agent1Name: string
   agent2Name: string
   systemPrompt1: string
   systemPrompt2: string
-  generalRules: string
-  language: string
-  maxChars: number
 }
 
 export interface DailyQuota {

@@ -21,7 +21,7 @@
     <Grid direction="column" gap="s">
       <Grid justify="space-between" align="center">
         <Grid align="center" gap="s">
-          <wa-badge variant={message.speaker === 'agent1' ? 'brand' : 'success'}>
+          <wa-badge variant={message.speaker === 'agent1' ? 'brand' : 'secondary'}>
             {message.speakerName}
           </wa-badge>
         </Grid>

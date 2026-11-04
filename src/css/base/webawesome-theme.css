@@ -5,10 +5,21 @@
   --wa-border-radius-scale: 3;
 
   --wa-border-radius-xl: 3.6rem;
+
+  --wa-color-brand-50: #7738dd;
+
+
+  --wa-color-secondary-50: #c1c117;
 }
 
 wa-button {
   &::part(base) {
     border-radius: var(--wa-border-radius-pill);
+  }
+}
+
+wa-badge {
+  &[variant="secondary"] {
+    --wa-color-fill-loud: var(--wa-color-secondary-50);
   }
 }

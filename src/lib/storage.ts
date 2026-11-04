@@ -1,7 +1,8 @@
-import type { ChatSettings } from '@/types/chat'
+import type { ChatSettings, AgentDraft } from '@/types/chat'
 import { pb } from '@/lib/pocketbase'
 import {
   DEFAULT_SETTINGS,
+  DEFAULT_AGENT_DRAFT,
   STORAGE_KEY_PREFIX,
   GENERAL_RULES_MAX_CHARS,
   MESSAGE_MAX_CHARS_MIN,
@@ -10,16 +11,9 @@ import {
 import { i18n } from '@/lib/i18n/index.svelte'
 
 export { DEFAULT_SETTINGS, STORAGE_KEY_PREFIX }
+export type { AgentDraft }
 
 export const DRAFT_STORAGE_KEY = 'model_talks_draft'
-
-export interface AgentDraft {
-  initialTopic: string
-  agent1Name: string
-  agent2Name: string
-  systemPrompt1: string
-  systemPrompt2: string
-}
 
 export function getStorageKey(userId?: string | null): string {
   return userId ? `${STORAGE_KEY_PREFIX}_${userId}` : `${STORAGE_KEY_PREFIX}_guest`
@@ -33,26 +27,6 @@ export function sanitizeSettings(
   settings: Partial<ChatSettings>
 ): ChatSettings {
   return {
-    initialTopic:
-      typeof settings.initialTopic === 'string'
-        ? settings.initialTopic.slice(0, 200)
-        : DEFAULT_SETTINGS.initialTopic,
-    agent1Name:
-      typeof settings.agent1Name === 'string' && settings.agent1Name.trim()
-        ? settings.agent1Name
-        : DEFAULT_SETTINGS.agent1Name,
-    agent2Name:
-      typeof settings.agent2Name === 'string' && settings.agent2Name.trim()
-        ? settings.agent2Name
-        : DEFAULT_SETTINGS.agent2Name,
-    systemPrompt1:
-      typeof settings.systemPrompt1 === 'string'
-        ? settings.systemPrompt1.slice(0, 200)
-        : DEFAULT_SETTINGS.systemPrompt1,
-    systemPrompt2:
-      typeof settings.systemPrompt2 === 'string'
-        ? settings.systemPrompt2.slice(0, 200)
-        : DEFAULT_SETTINGS.systemPrompt2,
     generalRules:
       typeof settings.generalRules === 'string'
         ? settings.generalRules.slice(0, GENERAL_RULES_MAX_CHARS)
@@ -181,21 +155,10 @@ export function loadSettings(
     }
   }
 
-  // 2. The rest (stored in localStorage)
+  // 2. Check localStorage for local cached settings
   const local = loadLocalSettings(effectiveUserId)
 
-  let initialTopic = DEFAULT_SETTINGS.initialTopic
-  let agent1Name = DEFAULT_SETTINGS.agent1Name
-  let agent2Name = DEFAULT_SETTINGS.agent2Name
-  let systemPrompt1 = DEFAULT_SETTINGS.systemPrompt1
-  let systemPrompt2 = DEFAULT_SETTINGS.systemPrompt2
-
   if (local) {
-    if (typeof local.initialTopic === 'string') initialTopic = local.initialTopic.slice(0, 200)
-    if (typeof local.agent1Name === 'string' && local.agent1Name.trim()) agent1Name = local.agent1Name
-    if (typeof local.agent2Name === 'string' && local.agent2Name.trim()) agent2Name = local.agent2Name
-    if (typeof local.systemPrompt1 === 'string') systemPrompt1 = local.systemPrompt1.slice(0, 200)
-    if (typeof local.systemPrompt2 === 'string') systemPrompt2 = local.systemPrompt2.slice(0, 200)
     if (typeof local.generalRules === 'string' && (!generalRules || generalRules === DEFAULT_SETTINGS.generalRules)) {
       generalRules = local.generalRules.slice(0, GENERAL_RULES_MAX_CHARS)
     }
@@ -205,42 +168,9 @@ export function loadSettings(
     if (typeof local.maxChars === 'number' && local.maxChars >= MESSAGE_MAX_CHARS_MIN && local.maxChars <= MESSAGE_MAX_CHARS_MAX && maxChars === DEFAULT_SETTINGS.maxChars) {
       maxChars = local.maxChars
     }
-  } else if (effectiveFallback && typeof effectiveFallback === 'object') {
-    // Migrate any legacy agent settings from PocketBase into localStorage once
-    const legacyMigrated: Partial<ChatSettings> = {}
-    const legacy = effectiveFallback.settings || effectiveFallback
-
-    if (typeof legacy.initialTopic === 'string' && legacy.initialTopic) {
-      initialTopic = legacy.initialTopic.slice(0, 200)
-      legacyMigrated.initialTopic = initialTopic
-    }
-    if (typeof legacy.agent1Name === 'string' && legacy.agent1Name.trim()) {
-      agent1Name = legacy.agent1Name.trim()
-      legacyMigrated.agent1Name = agent1Name
-    }
-    if (typeof legacy.agent2Name === 'string' && legacy.agent2Name.trim()) {
-      agent2Name = legacy.agent2Name.trim()
-      legacyMigrated.agent2Name = agent2Name
-    }
-    if (typeof legacy.systemPrompt1 === 'string' && legacy.systemPrompt1) {
-      systemPrompt1 = legacy.systemPrompt1.slice(0, 200)
-      legacyMigrated.systemPrompt1 = systemPrompt1
-    }
-    if (typeof legacy.systemPrompt2 === 'string' && legacy.systemPrompt2) {
-      systemPrompt2 = legacy.systemPrompt2.slice(0, 200)
-      legacyMigrated.systemPrompt2 = systemPrompt2
-    }
-    if (Object.keys(legacyMigrated).length > 0) {
-      saveLocalSettings(legacyMigrated, effectiveUserId)
-    }
   }
 
   const result: ChatSettings = sanitizeSettings({
-    initialTopic,
-    agent1Name,
-    agent2Name,
-    systemPrompt1,
-    systemPrompt2,
     generalRules,
     language,
     maxChars
@@ -261,11 +191,6 @@ export function saveSettings(settings: ChatSettings, userId?: string | null): vo
   // 1. Save all settings in localStorage
   saveLocalSettings(
     {
-      initialTopic: sanitized.initialTopic,
-      agent1Name: sanitized.agent1Name,
-      agent2Name: sanitized.agent2Name,
-      systemPrompt1: sanitized.systemPrompt1,
-      systemPrompt2: sanitized.systemPrompt2,
       generalRules: sanitized.generalRules,
       language: sanitized.language,
       maxChars: sanitized.maxChars
@@ -356,19 +281,19 @@ export function loadAgentDraft(userId?: string | null): AgentDraft | null {
       initialTopic:
         typeof parsed.initialTopic === 'string'
           ? parsed.initialTopic.slice(0, 200)
-          : '',
+          : DEFAULT_AGENT_DRAFT.initialTopic,
       agent1Name:
-        typeof parsed.agent1Name === 'string' ? parsed.agent1Name.slice(0, 40) : '',
+        typeof parsed.agent1Name === 'string' ? parsed.agent1Name.slice(0, 40) : DEFAULT_AGENT_DRAFT.agent1Name,
       agent2Name:
-        typeof parsed.agent2Name === 'string' ? parsed.agent2Name.slice(0, 40) : '',
+        typeof parsed.agent2Name === 'string' ? parsed.agent2Name.slice(0, 40) : DEFAULT_AGENT_DRAFT.agent2Name,
       systemPrompt1:
         typeof parsed.systemPrompt1 === 'string'
           ? parsed.systemPrompt1.slice(0, 200)
-          : '',
+          : DEFAULT_AGENT_DRAFT.systemPrompt1,
       systemPrompt2:
         typeof parsed.systemPrompt2 === 'string'
           ? parsed.systemPrompt2.slice(0, 200)
-          : ''
+          : DEFAULT_AGENT_DRAFT.systemPrompt2
     }
   } catch {
     return null
