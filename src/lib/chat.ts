@@ -238,10 +238,16 @@ export interface ChatResponse {
   quota?: DailyQuota
 }
 
-export async function requestModelTurn(payload: {
-  model: string
-  messages: ApiChatMessage[]
-  maxTokens: number
+export interface ChatTurnPayload {
+  model?: string
+  messages: ChatMessage[] | ApiChatMessage[]
+  targetSpeaker?: 'agent1' | 'agent2'
+  systemPrompt?: string
+  generalRules?: string
+  agentName?: string
+  language?: string
+  maxChars?: number
+  maxTokens?: number
   temperature?: number
   isTitle?: boolean
   reasoning?: {
@@ -249,7 +255,9 @@ export async function requestModelTurn(payload: {
     max_tokens?: number
     exclude?: boolean
   }
-}): Promise<ChatResponse> {
+}
+
+export async function requestModelTurn(payload: ChatTurnPayload): Promise<ChatResponse> {
   const res = await fetch('/api/chat', {
     method: 'POST',
     headers: {
@@ -276,11 +284,6 @@ export async function generateTalkTitle(promptText: string, model?: string): Pro
     const res = await requestModelTurn({
       model: model || MODEL,
       messages: [
-        {
-          role: 'system',
-          content:
-            'És um gerador de títulos concisos para conversas. O título DEVE ter no máximo 30 caracteres.'
-        },
         {
           role: 'user',
           content: `Tópico: ${trimmedPrompt}`

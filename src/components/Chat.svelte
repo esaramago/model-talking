@@ -11,7 +11,6 @@
   import { talksState } from '@/lib/state/talks.svelte'
   import { pb } from '@/lib/pocketbase'
   import {
-    buildMessagesForModel,
     requestModelTurn,
     generateTalkTitle,
   } from '@/lib/chat'
@@ -303,27 +302,21 @@
     const currentGeneralRules = user
       ? generalRules
       : DEFAULT_SETTINGS.generalRules
-    const currentMaxTokens = maxTokens || MAX_OUTPUT_TOKENS
 
     activeThinkingSpeaker = speakerName
     statusMessage = t('chat.thinking', { speaker: speakerName })
     errorMessage = ''
 
     try {
-      const apiMessages = buildMessagesForModel(
-        messages,
-        targetSpeaker,
-        currentSystemPrompt,
-        currentGeneralRules,
-        currentAgentName,
-        language,
-        maxChars,
-      )
-
       const response = await requestModelTurn({
         model: currentModel,
-        messages: apiMessages,
-        maxTokens: currentMaxTokens,
+        messages,
+        targetSpeaker,
+        systemPrompt: currentSystemPrompt,
+        generalRules: currentGeneralRules,
+        agentName: currentAgentName,
+        language,
+        maxChars,
       })
 
       if (response.quota) {

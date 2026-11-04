@@ -1,30 +1,38 @@
 import { json, type RequestHandler } from '@sveltejs/kit'
 import { env } from '$env/dynamic/private'
-import { DAILY_MESSAGE_LIMIT, MAX_INPUT_TOKENS, MAX_OUTPUT_TOKENS, MODEL } from '@/lib/config'
+import {
+  DAILY_MESSAGE_LIMIT,
+  DEFAULT_SETTINGS,
+  GENERAL_RULES_MAX_CHARS,
+  MAX_INPUT_TOKENS,
+  MESSAGE_MAX_CHARS_DEFAULT,
+  MESSAGE_MAX_CHARS_MAX,
+  MESSAGE_MAX_CHARS_MIN,
+  MODEL
+} from '@/lib/config'
 import {
   consumeQuota,
   consumeTitleQuota,
   getQuota,
   resolveRateLimitIdentifier
 } from '@/lib/server/rateLimit'
+import { buildMessagesForModel, type ApiChatMessage } from '@/lib/chat'
+import type { ChatMessage } from '@/types/chat'
 
 const TITLE_SYSTEM_PROMPT =
   'És um gerador de títulos concisos para conversas. O título DEVE ter no máximo 30 caracteres.'
 const TITLE_MAX_OUTPUT_TOKENS = 50
 const TITLE_MAX_INPUT_CHARS = 500
 
-interface ChatMessagePart {
-  type: string
-  text?: string
-  cache_control?: { type: 'ephemeral' }
-}
-
 interface ChatRequestBody {
   model?: string
-  messages: Array<{
-    role: 'system' | 'user' | 'assistant'
-    content: string | ChatMessagePart[]
-  }>
+  messages: Array<Record<string, unknown>>
+  targetSpeaker?: 'agent1' | 'agent2'
+  systemPrompt?: string
+  generalRules?: string
+  agentName?: string
+  language?: string
+  maxChars?: number
   maxTokens?: number
   temperature?: number
   isTitle?: boolean
@@ -42,7 +50,13 @@ export const POST: RequestHandler = async (event) => {
     const body = (await request.json()) as ChatRequestBody
     const {
       messages,
-      maxTokens = MAX_OUTPUT_TOKENS,
+      targetSpeaker,
+      systemPrompt,
+      generalRules,
+      agentName,
+      language,
+      maxChars,
+      maxTokens,
       temperature = 0.7,
       isTitle = false
     } = body
@@ -65,7 +79,7 @@ export const POST: RequestHandler = async (event) => {
     const identifier = resolveRateLimitIdentifier(event)
 
     let currentQuota
-    let effectiveMessages = messages
+    let effectiveMessages: ApiChatMessage[]
     let clampedTokens: number
     let effectiveTemperature: number
 
@@ -92,12 +106,12 @@ export const POST: RequestHandler = async (event) => {
         )
       }
 
-      const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user')
+      const lastUserMessage = [...messages].reverse().find((m) => m && (m.role === 'user' || m.speaker))
       const rawUserContent =
         typeof lastUserMessage?.content === 'string'
           ? lastUserMessage.content.trim()
           : Array.isArray(lastUserMessage?.content)
-            ? lastUserMessage.content.map((p) => p.text || '').join('').trim()
+            ? lastUserMessage.content.map((p: any) => p?.text || '').join('').trim()
             : ''
 
       if (!rawUserContent) {
@@ -125,7 +139,102 @@ export const POST: RequestHandler = async (event) => {
         )
       }
 
-      const totalEstimatedChars = messages.reduce((acc, m) => {
+      // Reject any client-injected system or developer role messages
+      const hasUnauthorizedRole = messages.some(
+        (m) =>
+          m &&
+          typeof m === 'object' &&
+          'role' in m &&
+          (m.role === 'system' || m.role === 'developer')
+      )
+      if (hasUnauthorizedRole) {
+        return json(
+          { error: 'System roles are not permitted. Persona prompts are constructed on the server.' },
+          { status: 400 }
+        )
+      }
+
+      if (targetSpeaker !== 'agent1' && targetSpeaker !== 'agent2') {
+        return json(
+          { error: 'Invalid or missing targetSpeaker. Must be "agent1" or "agent2".' },
+          { status: 400 }
+        )
+      }
+
+      const clampedMaxChars = Math.min(
+        MESSAGE_MAX_CHARS_MAX,
+        Math.max(
+          MESSAGE_MAX_CHARS_MIN,
+          Math.round(Number(maxChars) || MESSAGE_MAX_CHARS_DEFAULT)
+        )
+      )
+
+      const safeSystemPrompt =
+        typeof systemPrompt === 'string' ? systemPrompt.trim().slice(0, 2000) : ''
+      const safeGeneralRules =
+        typeof generalRules === 'string'
+          ? generalRules.trim().slice(0, GENERAL_RULES_MAX_CHARS)
+          : DEFAULT_SETTINGS.generalRules
+      const safeAgentName =
+        typeof agentName === 'string' ? agentName.trim().slice(0, 50) : undefined
+      const safeLanguage =
+        typeof language === 'string' ? language.trim().slice(0, 20) : undefined
+
+      const otherSpeaker = targetSpeaker === 'agent1' ? 'agent2' : 'agent1'
+      const chatMessages: ChatMessage[] = []
+
+      for (let i = 0; i < messages.length; i++) {
+        const m = messages[i]
+        if (!m || typeof m !== 'object') continue
+
+        let content = ''
+        if (typeof m.content === 'string') {
+          content = m.content
+        } else if (Array.isArray(m.content)) {
+          content = m.content.map((p: any) => p?.text || '').join('')
+        }
+
+        let speaker: 'agent1' | 'agent2'
+        if (m.speaker === 'agent1' || m.speaker === 'agent2') {
+          speaker = m.speaker
+        } else if (m.role === 'assistant') {
+          speaker = targetSpeaker
+        } else {
+          speaker = otherSpeaker
+        }
+
+        chatMessages.push({
+          id: typeof m.id === 'string' ? m.id : `msg-${i}`,
+          speaker,
+          speakerName:
+            typeof m.speakerName === 'string'
+              ? m.speakerName.slice(0, 50)
+              : speaker === 'agent1'
+                ? 'Agent 1'
+                : 'Agent 2',
+          model: MODEL,
+          content: content.slice(0, 4000),
+          turn: typeof m.turn === 'number' ? m.turn : i + 1,
+          timestamp: typeof m.timestamp === 'number' ? m.timestamp : Date.now()
+        })
+      }
+
+      if (chatMessages.length === 0) {
+        return json({ error: 'Valid conversation messages are required.' }, { status: 400 })
+      }
+
+      // Build authoritative system prompt and alternating context on the server
+      effectiveMessages = buildMessagesForModel(
+        chatMessages,
+        targetSpeaker,
+        safeSystemPrompt,
+        safeGeneralRules,
+        safeAgentName,
+        safeLanguage,
+        clampedMaxChars
+      )
+
+      const totalEstimatedChars = effectiveMessages.reduce((acc, m) => {
         if (typeof m.content === 'string') return acc + m.content.length
         if (Array.isArray(m.content)) {
           return acc + m.content.reduce((sum, p) => sum + (p.text?.length || 0), 0)
@@ -140,9 +249,11 @@ export const POST: RequestHandler = async (event) => {
         )
       }
 
-      clampedTokens = Math.max(
-        10,
-        Math.min(Number(maxTokens) || MAX_OUTPUT_TOKENS, MAX_OUTPUT_TOKENS)
+      // Strictly enforce output token limits derived from maxChars (including low-effort reasoning headroom)
+      const tokenCeilingFromChars = Math.min(800, Math.ceil(clampedMaxChars * 1.5) + 200)
+      clampedTokens = Math.min(
+        tokenCeilingFromChars,
+        Math.max(20, Number(maxTokens) || tokenCeilingFromChars)
       )
       effectiveTemperature = Math.max(0, Math.min(Number(temperature) || 0.7, 2))
     }
