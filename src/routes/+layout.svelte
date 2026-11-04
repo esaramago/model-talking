@@ -28,6 +28,8 @@
   import type { LayoutData } from './$types'
   import type { Snippet } from 'svelte'
   import { onMount } from 'svelte'
+  import { dev } from '$app/environment'
+  import { PUBLIC_UMAMI_URL, PUBLIC_UMAMI_WEBSITE_ID } from '@/lib/config'
 
   let { data, children }: { data: LayoutData; children?: Snippet } = $props()
 
@@ -71,6 +73,16 @@
     }
   })
 </script>
+
+<svelte:head>
+  {#if !dev && PUBLIC_UMAMI_URL && PUBLIC_UMAMI_WEBSITE_ID}
+    <script
+      defer
+      src="{PUBLIC_UMAMI_URL}/script.js"
+      data-website-id={PUBLIC_UMAMI_WEBSITE_ID}
+    ></script>
+  {/if}
+</svelte:head>
 
 <div class="wrapper">
   <Sidebar />

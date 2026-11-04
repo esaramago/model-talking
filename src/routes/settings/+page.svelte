@@ -12,6 +12,7 @@
   } from '@/lib/config'
   import { loadSettings, saveSettings } from '@/lib/storage'
   import { i18n, t } from '@/lib/i18n/index.svelte'
+  import HeadMeta from '@/components/HeadMeta.svelte'
 
   const user = $derived(page.data?.user ?? null)
   const initialSettings = loadSettings(page.data?.user?.id, page.data?.user)
@@ -130,6 +131,11 @@
     persistCurrentSettings()
   }
 </script>
+
+<HeadMeta
+  title={t('settings.title')}
+  description={t('settings.subtitle')}
+/>
 
 <div class="l-container l-container--s">
   <Grid direction="column" gap="l">

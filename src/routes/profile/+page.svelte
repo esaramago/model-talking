@@ -4,6 +4,7 @@
   import Grid from '@/components/ui/Grid.svelte'
   import { syncWebAwesomeFormData } from '@/lib/forms'
   import { t } from '@/lib/i18n/index.svelte'
+  import HeadMeta from '@/components/HeadMeta.svelte'
   import type { ActionData, PageData } from './$types'
 
   let { data, form }: { data: PageData; form: ActionData } = $props()
@@ -35,6 +36,11 @@
     }
   }
 </script>
+
+<HeadMeta
+  title={t('profile.title')}
+  description={t('profile.subtitle')}
+/>
 
 {#snippet feedback(actionName: string)}
   {#if form?.action === actionName}

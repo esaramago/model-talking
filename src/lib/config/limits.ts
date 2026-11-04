@@ -1,0 +1,12 @@
+export const MAX_OUTPUT_TOKENS = 2048
+export const MAX_INPUT_TOKENS = 8192
+
+export const DAILY_MESSAGE_LIMIT = 20
+export const DAILY_TITLE_LIMIT = 25
+
+export const GENERAL_RULES_MAX_CHARS = 150
+
+export const MESSAGE_MAX_CHARS_MIN = 100
+export const MESSAGE_MAX_CHARS_MAX = 500
+export const MESSAGE_MAX_CHARS_DEFAULT = 250
+export const MESSAGE_MAX_CHARS_STEP = 50

@@ -1,25 +1,3 @@
-import type { ChatSettings, LanguageOption } from '@/types/chat'
-
-export const STORAGE_KEY_PREFIX = 'model_talks_settings'
-
-// MODELS
-// z-ai/glm-5.3-flash (https://openrouter.ai/z-ai/glm-5.3-flash)
-// mistralai/mistral-nemo (https://openrouter.ai/mistralai/mistral-nemo)
-export const MODEL = 'z-ai/glm-5.3-flash'
-
-export const MAX_OUTPUT_TOKENS = 2048
-export const MAX_INPUT_TOKENS = 8192
-
-export const DAILY_MESSAGE_LIMIT = 20
-export const DAILY_TITLE_LIMIT = DAILY_MESSAGE_LIMIT
-
-export const GENERAL_RULES_MAX_CHARS = 150
-
-export const MESSAGE_MAX_CHARS_MIN = 100
-export const MESSAGE_MAX_CHARS_MAX = 500
-export const MESSAGE_MAX_CHARS_DEFAULT = 250
-export const MESSAGE_MAX_CHARS_STEP = 50
-
 /**
  * Static base system prompt sent in every conversation to establish context
  * and maximize prefix prompt caching across agents and turns.
@@ -75,27 +53,3 @@ export const AGENT_1_BASE_PROMPT =
 export const AGENT_2_BASE_PROMPT =
   'ROLE: AGENT 2 (CONVERSATION COUNTERPART & CRITICAL RESPONDENT)\nYou are Agent 2 in this exchange. Your role is to evaluate, challenge, nuance, or expand upon the perspectives presented by Agent 1. Offer counterarguments, reveal alternative dimensions, and enrich the dialogue with constructive friction.'
   
-export const SUPPORTED_LANGUAGES: LanguageOption[] = [
-  { value: 'pt-PT', label: 'Português' },
-  { value: 'en', label: 'English' },
-  { value: 'es', label: 'Español' },
-  { value: 'fr', label: 'Français' },
-  { value: 'de', label: 'Deutsch' },
-  { value: 'it', label: 'Italiano' },
-  { value: 'tr', label: 'Türkçe' },
-  { value: 'ru', label: 'Русский' },
-  { value: 'ar', label: 'العربية' }
-]
-
-export const DEFAULT_SETTINGS: ChatSettings = {
-  initialTopic: '',
-  agent1Name: '',
-  agent2Name: '',
-  systemPrompt1: '',
-  systemPrompt2: '',
-  generalRules: '',
-  language: SUPPORTED_LANGUAGES[0].value,
-  maxChars: MESSAGE_MAX_CHARS_DEFAULT
-}
-
-export const AVAILABLE_PERSONAS = ['1', '2', '3', '4', '5', '6', '7', '8', '9']

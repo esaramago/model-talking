@@ -3,11 +3,17 @@
   import Grid from '@/components/ui/Grid.svelte'
   import { syncWebAwesomeFormData } from '@/lib/forms'
   import { t } from '@/lib/i18n/index.svelte'
+  import HeadMeta from '@/components/HeadMeta.svelte'
   import type { ActionData } from './$types'
 
   let { form }: { form: ActionData } = $props()
   let loading = $state(false)
 </script>
+
+<HeadMeta
+  title={t('login.title')}
+  description={t('login.subtitle')}
+/>
 
 <div class="l-container l-container--s">
   <Grid direction="column" gap="l">
