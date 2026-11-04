@@ -71,4 +71,4 @@ To prevent runaway API costs, conversations are bounded by strict turn limits an
 
 ## 📄 License
 
-Distributed under the [MIT](LICENSE) License.
+Distributed under the [AGPL](LICENSE) License.
