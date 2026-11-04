@@ -6,7 +6,7 @@ migrate((app) => {
   settings.rateLimits.enabled = true;
   settings.rateLimits.rules = [
     {
-      label: "*:auth",
+      label: "users:auth",
       duration: 60,
       maxRequests: 10
     },

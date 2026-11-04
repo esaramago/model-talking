@@ -1,10 +1,6 @@
 import PocketBase from 'pocketbase'
 import { env } from '$env/dynamic/private'
-
-const POCKETBASE_URL =
-  env.INTERNAL_POCKETBASE_URL ||
-  process.env.INTERNAL_POCKETBASE_URL ||
-  'http://127.0.0.1:8095'
+import { createServerPocketBase, POCKETBASE_URL } from '@/lib/server/pocketbase'
 
 function cleanEnv(val?: string): string | undefined {
   if (!val) return undefined
@@ -37,7 +33,10 @@ function getAdminPassword(): string | undefined {
 }
 
 let adminPbInstance: PocketBase | null = null
+let adminAuthPromise: Promise<PocketBase | null> | null = null
 let warnedMissingAdmin = false
+let lastAuthFailureTime = 0
+let failureCooldownMs = 15000
 
 /**
  * Returns an authenticated PocketBase superuser/admin client.
@@ -61,18 +60,39 @@ export async function getAdminPocketBase(): Promise<PocketBase | null> {
     return adminPbInstance
   }
 
-  const pb = new PocketBase(POCKETBASE_URL)
+  if (adminAuthPromise) {
+    return adminAuthPromise
+  }
 
-  try {
-    // PocketBase 0.23+ uses the _superusers auth collection
-    await pb.collection('_superusers').authWithPassword(email, password)
-
-    adminPbInstance = pb
-    return adminPbInstance
-  } catch (err) {
-    console.warn('[pbAdmin] Superuser authentication failed:', err)
+  // Prevent spamming auth requests after a failure (especially when rate limited)
+  if (Date.now() - lastAuthFailureTime < failureCooldownMs) {
     return null
   }
+
+  adminAuthPromise = (async () => {
+    try {
+      const pb = createServerPocketBase(POCKETBASE_URL)
+
+      // PocketBase 0.23+ uses the _superusers auth collection
+      await pb.collection('_superusers').authWithPassword(email, password)
+
+      adminPbInstance = pb
+      lastAuthFailureTime = 0
+      failureCooldownMs = 15000
+      return adminPbInstance
+    } catch (err: any) {
+      const status = err?.status || err?.response?.status
+      // If rate limited (429), back off for 60 seconds to allow the rate limit window to expire
+      failureCooldownMs = status === 429 ? 60000 : 15000
+      lastAuthFailureTime = Date.now()
+      console.warn(`[pbAdmin] Superuser authentication failed (${status || 'network error'}):`, err?.message || err)
+      return null
+    } finally {
+      adminAuthPromise = null
+    }
+  })()
+
+  return adminAuthPromise
 }
 
 /**

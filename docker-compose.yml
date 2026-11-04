@@ -34,10 +34,12 @@ services:
       context: .
       dockerfile: Dockerfile.pb
     restart: unless-stopped
-    command: serve --http=0.0.0.0:8090 --dir=/pb_data --publicDir=/pb_public --hooksDir=/pb_hooks --migrationsDir=/pb_migrations
+    command: --migrationsDir=/pb_migrations
     ports:
       - "127.0.0.1:${POCKETBASE_PORT:-8095}:8090"
     environment:
+      - PB_ADMIN_EMAIL=${POCKETBASE_ADMIN_EMAIL:-}
+      - PB_ADMIN_PASSWORD=${POCKETBASE_ADMIN_PASSWORD:-}
       - POCKETBASE_PROXY_SECRET=${POCKETBASE_PROXY_SECRET:-}
     volumes:
       - pb_data:/pb_data
