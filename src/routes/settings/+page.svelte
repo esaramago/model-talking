@@ -2,6 +2,7 @@
   import { onMount } from 'svelte'
   import { page } from '$app/state'
   import Grid from '@/components/ui/Grid.svelte'
+  import Heading from '@/components/ui/Heading.svelte'
   import {
     DEFAULT_SETTINGS,
     SUPPORTED_LANGUAGES,
@@ -139,10 +140,8 @@
 
 <div class="l-container l-container--s">
   <Grid direction="column" gap="l">
-    <Grid direction="column" gap="xs">
-      <h1 data-appearance="h2">{t('settings.title')}</h1>
-      <p>{t('settings.subtitle')}</p>
-    </Grid>
+
+    <Heading title={t('settings.title')} subtitle={t('settings.subtitle')} />
 
     <wa-card>
       <Grid direction="column" gap="s">

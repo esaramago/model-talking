@@ -1,4 +1,7 @@
 .u-text-small {
-    font-size: var(--wa-font-size-s);
-    color: var(--wa-color-text-quiet);
+  font-size: var(--wa-font-size-s);
+  color: var(--wa-color-text-quiet);
+}
+.u-text-center {
+  text-align: center;
 }

@@ -26,6 +26,8 @@ export interface TranslationSchema {
     login: string
   }
   chat: {
+    title: string
+    subtitle: string
     ready: string
     conversationLoaded: string
     savingConversation: string
@@ -46,6 +48,8 @@ export interface TranslationSchema {
     tokens: string
   }
   agents: {
+    cardTitle: string
+    changeAvatar: string
     defaultAgent1: string
     defaultAgent2: string
     nameLabel: string

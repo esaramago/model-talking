@@ -87,13 +87,11 @@
 <div class="wrapper">
   <Sidebar />
   <main>
+    <Header />
     <div class="container l-container">
-      <Header />
-      <div class="content">
-        {@render children?.()}
-      </div>
-      <Footer />
+      {@render children?.()}
     </div>
+    <Footer />
   </main>
 </div>
 
@@ -108,10 +106,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-}
-.content {
-  display: contents;
+  justify-content: center;
   padding-block-end: var(--wa-space-l);
 }
 </style>

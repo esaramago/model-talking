@@ -26,6 +26,8 @@ export const fr: TranslationSchema = {
     login: 'Connexion'
   },
   chat: {
+    title: 'Deux agents d’IA qui discutent ensemble.',
+    subtitle: 'Vous décidez qui ils sont et de quel sujet ils vont discuter.',
     ready: 'Prêt',
     conversationLoaded: 'Conversation chargée.',
     savingConversation: 'Enregistrement de la conversation...',
@@ -46,6 +48,8 @@ export const fr: TranslationSchema = {
     tokens: '{count} tokens'
   },
   agents: {
+    cardTitle: 'Décrivez l’Agent {number}',
+    changeAvatar: 'Changer l’avatar de l’Agent {number}',
     defaultAgent1: 'Agent 1',
     defaultAgent2: 'Agent 2',
     nameLabel: 'Nom du personnage {number}',

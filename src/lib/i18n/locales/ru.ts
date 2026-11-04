@@ -26,6 +26,8 @@ export const ru: TranslationSchema = {
     login: 'Войти'
   },
   chat: {
+    title: 'Два ИИ-агента общаются друг с другом.',
+    subtitle: 'Вы решаете, кто они и какую тему будут обсуждать.',
     ready: 'Готово',
     conversationLoaded: 'Диалог загружен.',
     savingConversation: 'Сохранение диалога...',
@@ -46,6 +48,8 @@ export const ru: TranslationSchema = {
     tokens: '{count} токенов'
   },
   agents: {
+    cardTitle: 'Опишите Агента {number}',
+    changeAvatar: 'Изменить аватар Агента {number}',
     defaultAgent1: 'Агент 1',
     defaultAgent2: 'Агент 2',
     nameLabel: 'Имя персонажа {number}',

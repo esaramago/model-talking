@@ -3,6 +3,7 @@
   import { goto } from '$app/navigation'
   import { page } from '$app/state'
   import Grid from '@/components/ui/Grid.svelte'
+  import Heading from '@/components/ui/Heading.svelte'
   import Conversation from '@/components/Conversation.svelte'
   import MessageCard from '@/components/MessageCard.svelte'
   import Agents from '@/components/Agents.svelte'
@@ -461,7 +462,9 @@
   }
 </script>
 
-<Grid direction="column" gap="xl" justify="stretch">
+<Grid direction="column" gap="3xl" justify="stretch">
+
+  <Heading title={t('chat.title')} subtitle={t('chat.subtitle')} />
 
   <Agents
     readonly={!!messages.length}

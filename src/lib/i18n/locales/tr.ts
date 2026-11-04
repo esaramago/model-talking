@@ -26,6 +26,8 @@ export const tr: TranslationSchema = {
     login: 'Giriş yap'
   },
   chat: {
+    title: 'Birbiriyle konuşan iki yapay zeka ajanı.',
+    subtitle: 'Kimin kim olduğuna ve hangi konuyu tartışacaklarına siz karar verin.',
     ready: 'Hazır',
     conversationLoaded: 'Sohbet yüklendi.',
     savingConversation: 'Sohbet kaydediliyor...',
@@ -46,6 +48,8 @@ export const tr: TranslationSchema = {
     tokens: '{count} token'
   },
   agents: {
+    cardTitle: 'Ajan {number} tanımlayın',
+    changeAvatar: 'Ajan {number} avatarını değiştir',
     defaultAgent1: 'Ajan 1',
     defaultAgent2: 'Ajan 2',
     nameLabel: 'Karakter adı {number}',

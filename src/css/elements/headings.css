@@ -5,7 +5,7 @@ h1,
 }
 h2,
 [data-appearance="h2"] {
-  font-size: var(--wa-font-size-xl);
+  font-size: var(--wa-font-size-2xl);
   line-height: 1.25;
 }
 legend,

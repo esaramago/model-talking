@@ -26,6 +26,8 @@ export const ar: TranslationSchema = {
     login: 'تسجيل الدخول'
   },
   chat: {
+    title: 'وكيلان ذكاء اصطناعي يتحادثان معاً.',
+    subtitle: 'أنت تقرر من هما والموضوع الذي سيناقشانه.',
     ready: 'جاهز',
     conversationLoaded: 'تم تحميل المحادثة.',
     savingConversation: 'جارٍ حفظ المحادثة...',
@@ -46,6 +48,8 @@ export const ar: TranslationSchema = {
     tokens: '{count} توكن'
   },
   agents: {
+    cardTitle: 'صف الوكيل {number}',
+    changeAvatar: 'تغيير الصورة الرمزية للوكيل {number}',
     defaultAgent1: 'الوكيل 1',
     defaultAgent2: 'الوكيل 2',
     nameLabel: 'اسم الشخصية {number}',

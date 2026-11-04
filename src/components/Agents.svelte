@@ -5,8 +5,8 @@
 
   let {
     readonly = false,
-    agent1Name = $bindable('Agente 1'),
-    agent2Name = $bindable('Agente 2'),
+    agent1Name = $bindable(t('agents.defaultAgent1')),
+    agent2Name = $bindable(t('agents.defaultAgent2')),
     agent1Avatar = $bindable('/img/personas/1.svg'),
     agent2Avatar = $bindable('/img/personas/2.svg'),
     systemPrompt1 = $bindable(),
@@ -80,6 +80,7 @@
 <Grid wrap={true} break="small" fullWidth>
   {#each configs as config, index (config.id)}
     <wa-card class={config.id === 'agent1' ? '--brand' : ''}>
+
       <Grid direction="column" gap="s">
 
         {#if readonly}
@@ -91,11 +92,12 @@
             </Grid>
           </div>
         {:else}
+          <h3 data-appearance="h4">{t('agents.cardTitle', { number: index + 1 })}</h3>
           <div class="avatar">
             <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
             <button
               type="button"
-              title={`Alterar avatar do Agente ${index + 1}`}
+              title={t('agents.changeAvatar', { number: index + 1 })}
               onclick={() => openAvatarPicker(config.id)}
               class="avatar-button"
             >

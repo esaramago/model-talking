@@ -5,6 +5,7 @@
   import { t } from '@/lib/i18n/index.svelte'
   import HeadMeta from '@/components/HeadMeta.svelte'
   import type { ActionData } from './$types'
+  import Heading from '@/components/ui/Heading.svelte'
 
   let { form }: { form: ActionData } = $props()
   let loading = $state(false)
@@ -18,16 +19,7 @@
 <div class="l-container l-container--s">
   <Grid direction="column" gap="l">
     {#if form?.step === 'twoFactor'}
-      <Grid direction="column" gap="xs">
-        <h1 data-appearance="h2">{t('login.twoFactorTitle')}</h1>
-        <p>
-          {#if form.twoFactorMethod === 'email'}
-            {t('login.twoFactorSubtitleEmail')}
-          {:else}
-            {t('login.twoFactorSubtitleAuth')}
-          {/if}
-        </p>
-      </Grid>
+      <Heading title={t('login.twoFactorTitle')} subtitle={form?.twoFactorMethod === 'email' ? t('login.twoFactorSubtitleEmail') : t('login.twoFactorSubtitleAuth')} />
 
       {#if form?.errorKey}
         <wa-callout variant="danger">
@@ -75,10 +67,7 @@
         </wa-button>
       </form>
     {:else}
-      <Grid direction="column" gap="xs">
-        <h1 data-appearance="h2">{t('login.title')}</h1>
-        <p>{t('login.subtitle')}</p>
-      </Grid>
+      <Heading title={t('login.title')} subtitle={t('login.subtitle')} />
 
       {#if form?.error}
         <wa-callout variant="danger">

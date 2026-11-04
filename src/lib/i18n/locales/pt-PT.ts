@@ -26,6 +26,8 @@ export const ptPT: TranslationSchema = {
     login: 'Iniciar sessão'
   },
   chat: {
+    title: 'Dois Agentes de IA conversando um com o outro.',
+    subtitle: 'Tu decides quem são e sobre que tema vão falar.',
     ready: 'Pronto',
     conversationLoaded: 'Conversa carregada.',
     savingConversation: 'A guardar conversa...',
@@ -46,6 +48,8 @@ export const ptPT: TranslationSchema = {
     tokens: '{count} tokens'
   },
   agents: {
+    cardTitle: 'Descreve o Agente {number}',
+    changeAvatar: 'Alterar avatar do Agente {number}',
     defaultAgent1: 'Agente 1',
     defaultAgent2: 'Agente 2',
     nameLabel: 'Nome da personagem {number}',
