@@ -12,7 +12,7 @@ migrate((app) => {
 
   talks.listRule = "@request.auth.id != '' && user = @request.auth.id";
   talks.viewRule = "@request.auth.id != '' && user = @request.auth.id";
-  talks.updateRule = "@request.auth.id != '' && user = @request.auth.id";
+  talks.updateRule = "@request.auth.id != '' && user = @request.auth.id && (@request.body.user:isset = false || @request.body.user = @request.auth.id)";
   talks.deleteRule = "@request.auth.id != '' && user = @request.auth.id";
   talks.createRule = "@request.auth.id != '' && user = @request.auth.id";
 

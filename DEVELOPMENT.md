@@ -12,7 +12,7 @@ Ensure you have the following installed on your machine:
 - **Node.js** (v20+ or v22+ LTS recommended)
 - **PNPM** (v9+):
   ```bash
-  corepack enable && corepack prepare pnpm@latest --activate
+  corepack enable && corepack prepare pnpm@11.25.0 --activate
   ```
 - **Docker & Docker Compose** (required to run the local PocketBase container)
 
@@ -33,8 +33,14 @@ cp .env.example .env
 | Variable | Default (Local) | Production (Coolify) | Description |
 | :--- | :--- | :--- | :--- |
 | `PORT` | `3000` | `3000` | SvelteKit production server port |
+| `ORIGIN` | `http://localhost:3000` | Auto (`${COOLIFY_URL}`) | Public application URL required for CSRF validation on form actions |
+| `PUBLIC_BASE_URL` | `http://localhost:5174` | Auto (`${COOLIFY_URL}`) | Public base URL used for canonical and OpenGraph links |
+| `ADDRESS_HEADER` | _(empty)_ | `X-Forwarded-For` | Reverse proxy header containing the real client IP address |
+| `XFF_DEPTH` | `1` | `1` | Number of trusted reverse proxies; prevents client IP spoofing |
 | `POCKETBASE_PORT` | `8095` | `8095` | Local host loopback port mapped to the PocketBase container (127.0.0.1) |
 | `INTERNAL_POCKETBASE_URL` | `http://127.0.0.1:8095` | `http://pocketbase:8090` | Internal PocketBase URL used by SvelteKit SSR and API reverse proxy |
+| `POCKETBASE_ADMIN_EMAIL` | _(empty)_ | `admin@example.com` | PocketBase superuser email for persisting rate limits and 2FA lockouts across restarts |
+| `POCKETBASE_ADMIN_PASSWORD`| _(empty)_ | `secret` | PocketBase superuser password |
 
 ### 3. Start the Development Environment
 
@@ -149,6 +155,25 @@ When deploying to Coolify:
 3. **Environment Variables:** Set production values in Coolify:
    - `PORT`: `3000`
    - `INTERNAL_POCKETBASE_URL`: `http://pocketbase:8090` (internal Docker network URL)
+   - `ORIGIN` & `PUBLIC_BASE_URL`: Automatically picked up from Coolify's built-in `COOLIFY_URL` (no need to manually set unless overriding)
+   - `POCKETBASE_ADMIN_EMAIL` & `POCKETBASE_ADMIN_PASSWORD`: Superuser credentials for persisting rate limits and 2FA lockout counters across restarts and instances.
+
+### 🛡️ Reverse Proxy & Rate Limiting Security
+
+When running behind a reverse proxy (such as Traefik, Caddy, Nginx, or Cloudflare):
+
+1. **CSRF Validation (`ORIGIN`):**
+   `@sveltejs/adapter-node` checks form action submissions against the `ORIGIN` environment variable. In production, this must match the public domain (e.g., `https://chat.yourdomain.com`).
+2. **Real Client IP Resolution (`ADDRESS_HEADER` & `XFF_DEPTH`):**
+   - By default, Node.js only sees the IP of the incoming connection (the reverse proxy or container gateway). Setting `ADDRESS_HEADER=X-Forwarded-For` instructs SvelteKit to extract the client IP.
+   - **Preventing IP Spoofing:** To prevent malicious clients from spoofing their IP via forged `X-Forwarded-For` headers, `XFF_DEPTH=1` ensures the IP is read from the right side of the header chain (the IP appended by the trusted proxy).
+   - **Direct Internet Access Warning:** Do **not** set `ADDRESS_HEADER` if the Node container is exposed directly to the internet without a reverse proxy, as clients could send arbitrary header values.
+3. **Shared IP / Proxy DoS Protection:**
+   - Logged-in users are rate-limited strictly by user account and device, never by shared IP.
+   - Guest rate limiting enforces a per-device quota (via signed cookie) alongside an aggregate IP ceiling. If the client IP is loopback (`127.0.0.1` / `::1`), the IP ceiling is bypassed to prevent local environments or misconfigured proxies from locking out all guests.
+   - Login rate-limiting throttles single accounts (5 attempts per email), while IP lockout uses a higher threshold (50 attempts) and ignores loopback IPs.
+4. **Persistent Multi-Instance Counters:**
+   - Daily quotas (`daily_usage`) and authentication attempts (`auth_attempts`) are stored in PocketBase when superuser credentials are configured, ensuring limits survive restarts and sync across multiple containers. Without superuser credentials, they automatically fall back to thread-safe in-memory maps.
 
 ---
 

@@ -11,7 +11,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
   try {
     const talk = await locals.pb.collection('talks').getOne<TalkRecord>(talkId)
-    if (talk.user && talk.user !== locals.user.id) {
+    if (talk.user !== locals.user.id) {
       throw error(404, 'Conversa não encontrada')
     }
     return {

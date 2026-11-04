@@ -196,7 +196,7 @@ export const actions: Actions = {
     }
 
     try {
-      clearAuthAttempts(`profile2fa:email:${locals.user.id}`)
+      await clearAuthAttempts(`profile2fa:email:${locals.user.id}`)
       const otpResponse = await locals.pb.collection('users').requestOTP(locals.user.email)
 
       if (otpResponse?.otpId) {
@@ -241,7 +241,7 @@ export const actions: Actions = {
     const attemptKey = `profile2fa:email:${locals.user.id}`
     const privilegedPb = await getPrivilegedPocketBase(locals.pb)
 
-    if (isAuthRateLimited(attemptKey)) {
+    if (await isAuthRateLimited(attemptKey)) {
       cookies.delete('mt_profile_otp_id', { path: '/' })
       return fail(429, {
         action: 'enableEmail2FA' as const,
@@ -276,7 +276,7 @@ export const actions: Actions = {
     }
 
     if (!verified) {
-      const { locked } = recordFailedAuthAttempt(attemptKey)
+      const { locked } = await recordFailedAuthAttempt(attemptKey)
       if (locked) {
         cookies.delete('mt_profile_otp_id', { path: '/' })
         return fail(429, {
@@ -298,7 +298,7 @@ export const actions: Actions = {
         twoFactorEmailCode: '',
         twoFactorEmailExpires: 0
       })
-      clearAuthAttempts(attemptKey)
+      await clearAuthAttempts(attemptKey)
       locals.user = sanitizeUser(updated)
 
       return {
@@ -332,7 +332,7 @@ export const actions: Actions = {
     }
 
     const attemptKey = `profile2fa:totp:${locals.user.id}`
-    if (isAuthRateLimited(attemptKey)) {
+    if (await isAuthRateLimited(attemptKey)) {
       return fail(429, {
         action: 'enableAuthenticator2FA' as const,
         errorKey: 'profile.invalidCode' as const
@@ -351,7 +351,7 @@ export const actions: Actions = {
     }
 
     if (!verifiedSecret) {
-      recordFailedAuthAttempt(attemptKey)
+      await recordFailedAuthAttempt(attemptKey)
       return fail(400, {
         action: 'enableAuthenticator2FA' as const,
         errorKey: 'profile.invalidCode' as const
@@ -364,7 +364,7 @@ export const actions: Actions = {
         twoFactorSecret: verifiedSecret,
         twoFactorPendingSecret: ''
       })
-      clearAuthAttempts(attemptKey)
+      await clearAuthAttempts(attemptKey)
       locals.user = sanitizeUser(updated)
 
       return {
@@ -402,7 +402,7 @@ export const actions: Actions = {
     }
 
     const attemptKey = `profile2fa:disable:${locals.user.id}`
-    if (isAuthRateLimited(attemptKey)) {
+    if (await isAuthRateLimited(attemptKey)) {
       return fail(429, {
         action: 'disable2FA' as const,
         errorKey: currentPassword
@@ -441,7 +441,7 @@ export const actions: Actions = {
     }
 
     if (!verified) {
-      recordFailedAuthAttempt(attemptKey)
+      await recordFailedAuthAttempt(attemptKey)
       return fail(400, {
         action: 'disable2FA' as const,
         errorKey: currentPassword
@@ -458,7 +458,7 @@ export const actions: Actions = {
         twoFactorEmailCode: '',
         twoFactorEmailExpires: 0
       })
-      clearAuthAttempts(attemptKey)
+      await clearAuthAttempts(attemptKey)
       locals.user = sanitizeUser(updated)
 
       return {

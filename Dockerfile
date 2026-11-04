@@ -5,7 +5,7 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@11.25.0 --activate
 
 COPY package.json pnpm-lock.yaml* .npmrc* pnpm-workspace.yaml* ./
 RUN pnpm install --frozen-lockfile || pnpm install
@@ -25,6 +25,8 @@ ENV PORT=3000
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/build ./build
+
+USER node
 
 EXPOSE 3000
 

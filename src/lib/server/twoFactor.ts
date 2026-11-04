@@ -9,6 +9,7 @@ import {
 } from 'crypto'
 import type { Cookies } from '@sveltejs/kit'
 import { env } from '$env/dynamic/private'
+import { getAdminPocketBase } from '@/lib/server/pbAdmin'
 
 /**
  * Base32 RFC 4648 alphabet.
@@ -115,7 +116,7 @@ export function verifyTOTP(secret: string, token: string, windowSteps: number = 
 
 const MAX_AUTH_ATTEMPTS = 5
 const AUTH_LOCKOUT_WINDOW_MS = 10 * 60 * 1000
-const authAttempts = new Map<string, { count: number; expiresAt: number }>()
+const authAttempts = new Map<string, { count: number; expiresAt: number; recordId?: string }>()
 
 function pruneExpiredAuthAttempts(now: number): void {
   if (authAttempts.size < 500) return
@@ -126,41 +127,114 @@ function pruneExpiredAuthAttempts(now: number): void {
   }
 }
 
-export function isAuthRateLimited(
+export async function isAuthRateLimited(
   key: string,
   maxAttempts: number = MAX_AUTH_ATTEMPTS
-): boolean {
+): Promise<boolean> {
   const now = Date.now()
   const entry = authAttempts.get(key)
-  if (!entry) return false
-  if (now >= entry.expiresAt) {
-    authAttempts.delete(key)
-    return false
+  if (entry) {
+    if (now >= entry.expiresAt) {
+      authAttempts.delete(key)
+    } else if (entry.count >= maxAttempts) {
+      return true
+    }
   }
-  return entry.count >= maxAttempts
+
+  // Check persistent store if available
+  try {
+    const adminPb = await getAdminPocketBase()
+    if (adminPb) {
+      const record = await adminPb.collection('auth_attempts').getFirstListItem(
+        adminPb.filter('key = {:key}', { key })
+      )
+      const count = Number(record.count) || 0
+      const expiresAt = Number(record.expiresAt) || 0
+      if (now < expiresAt) {
+        authAttempts.set(key, { count, expiresAt, recordId: record.id })
+        return count >= maxAttempts
+      } else {
+        authAttempts.delete(key)
+        adminPb.collection('auth_attempts').delete(record.id).catch(() => {})
+        return false
+      }
+    }
+  } catch {
+    // Graceful in-memory fallback
+  }
+
+  return Boolean(entry && now < entry.expiresAt && entry.count >= maxAttempts)
 }
 
-export function recordFailedAuthAttempt(
+export async function recordFailedAuthAttempt(
   key: string,
   maxAttempts: number = MAX_AUTH_ATTEMPTS,
   windowMs: number = AUTH_LOCKOUT_WINDOW_MS
-): { attempts: number; locked: boolean } {
+): Promise<{ attempts: number; locked: boolean }> {
   const now = Date.now()
   pruneExpiredAuthAttempts(now)
 
   const existing = authAttempts.get(key)
-  const count = existing && now < existing.expiresAt ? existing.count + 1 : 1
-  const expiresAt = existing && now < existing.expiresAt ? existing.expiresAt : now + windowMs
+  let count = existing && now < existing.expiresAt ? existing.count + 1 : 1
+  let expiresAt = existing && now < existing.expiresAt ? existing.expiresAt : now + windowMs
+  let recordId = existing?.recordId
 
-  authAttempts.set(key, { count, expiresAt })
+  try {
+    const adminPb = await getAdminPocketBase()
+    if (adminPb) {
+      if (!recordId) {
+        try {
+          const remote = await adminPb.collection('auth_attempts').getFirstListItem(
+            adminPb.filter('key = {:key}', { key })
+          )
+          recordId = remote.id
+          if (now < Number(remote.expiresAt)) {
+            count = Math.max(count, (Number(remote.count) || 0) + 1)
+            expiresAt = Number(remote.expiresAt)
+          }
+        } catch {
+          // Record doesn't exist yet
+        }
+      }
+
+      if (recordId) {
+        await adminPb.collection('auth_attempts').update(recordId, { count, expiresAt })
+      } else {
+        const created = await adminPb.collection('auth_attempts').create({ key, count, expiresAt })
+        recordId = created.id
+      }
+    }
+  } catch {
+    // Graceful in-memory fallback
+  }
+
+  authAttempts.set(key, { count, expiresAt, recordId })
   return {
     attempts: count,
     locked: count >= maxAttempts
   }
 }
 
-export function clearAuthAttempts(key: string): void {
+export async function clearAuthAttempts(key: string): Promise<void> {
+  const existing = authAttempts.get(key)
+  const recordId = existing?.recordId
   authAttempts.delete(key)
+
+  try {
+    const adminPb = await getAdminPocketBase()
+    if (adminPb) {
+      if (recordId) {
+        await adminPb.collection('auth_attempts').delete(recordId)
+      } else {
+        const record = await adminPb.collection('auth_attempts').getFirstListItem(
+          adminPb.filter('key = {:key}', { key })
+        )
+        await adminPb.collection('auth_attempts').delete(record.id)
+      }
+    }
+  } catch {
+    // Graceful fallback
+  }
 }
 
 /**

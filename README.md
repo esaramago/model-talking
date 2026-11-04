@@ -69,6 +69,18 @@ To prevent runaway API costs, conversations are bounded by strict turn limits an
 
 ---
 
+## 🔒 Production & Reverse Proxy Deployment
+
+When deploying the production container behind a reverse proxy (e.g. Coolify, Traefik, Caddy, Nginx, Cloudflare):
+
+- **`ORIGIN`:** Set to your public app domain (e.g., `https://chat.yourdomain.com`). Required by `@sveltejs/adapter-node` for CSRF validation on form actions.
+- **`ADDRESS_HEADER` & `XFF_DEPTH`:** Set `ADDRESS_HEADER=X-Forwarded-For` and `XFF_DEPTH=1` so SvelteKit safely reads the real client IP appended by your trusted proxy, preventing IP spoofing.
+- **Persistent Rate Limiting:** Configure `POCKETBASE_ADMIN_EMAIL` and `POCKETBASE_ADMIN_PASSWORD` in production so usage limits and authentication lockouts persist in PocketBase and are shared across multiple instances.
+
+For more details, see [DEVELOPMENT.md](DEVELOPMENT.md).
+
+---
+
 ## 📄 License
 
 Distributed under the [AGPL](LICENSE) License.

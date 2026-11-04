@@ -26,7 +26,16 @@ export const handle: Handle = async ({ event, resolve }) => {
     pathname.startsWith('/_/')
 
   if (isPocketBaseRequest) {
-    const lowerPath = pathname.toLowerCase()
+    // PocketBase decodes percent-encoded paths, so match against the decoded path
+    let lowerPath: string
+    try {
+      lowerPath = decodeURIComponent(pathname).toLowerCase()
+    } catch {
+      return new Response(JSON.stringify({ code: 400, message: 'Invalid request path.' }), {
+        status: 400,
+        headers: { 'content-type': 'application/json' }
+      })
+    }
 
     // Completely block direct PocketBase admin UI and superuser/admin authentication endpoints
     if (

@@ -1,6 +1,21 @@
 import { fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
-import { setAuthSessionCookie } from '@/lib/server/twoFactor'
+import { isLoopbackIp } from '@/lib/server/rateLimit'
+import {
+  isAuthRateLimited,
+  recordFailedAuthAttempt,
+  setAuthSessionCookie
+} from '@/lib/server/twoFactor'
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+function safeGetClientIp(getClientAddress: () => string): string {
+  try {
+    return getClientAddress()
+  } catch {
+    return '127.0.0.1'
+  }
+}
 
 export const load: PageServerLoad = async ({ locals }) => {
   // If already authenticated, redirect to home
@@ -10,7 +25,20 @@ export const load: PageServerLoad = async ({ locals }) => {
 }
 
 export const actions: Actions = {
-  default: async ({ request, locals, cookies }) => {
+  default: async ({ request, locals, cookies, getClientAddress }) => {
+    const clientIp = safeGetClientIp(getClientAddress)
+    const isLoopback = isLoopbackIp(clientIp)
+    const ipLimitKey = `register:ip:${clientIp}`
+
+    // Throttle registration requests per IP to protect against bulk automated account creation (bypassed for loopback)
+    if (!isLoopback && (await isAuthRateLimited(ipLimitKey, 10))) {
+      return fail(429, {
+        name: '',
+        email: '',
+        error: 'Demasiadas tentativas de registo. Por favor aguarda alguns minutos.'
+      })
+    }
+
     const formData = await request.formData()
     const name = (formData.get('name') as string)?.trim() || ''
     const email = (formData.get('email') as string)?.trim() || ''
@@ -22,6 +50,14 @@ export const actions: Actions = {
         name,
         email,
         error: 'Por favor preenche todos os campos obrigatórios.'
+      })
+    }
+
+    if (!EMAIL_REGEX.test(email)) {
+      return fail(400, {
+        name,
+        email,
+        error: 'Por favor introduz um endereço de email válido.'
       })
     }
 
@@ -41,6 +77,11 @@ export const actions: Actions = {
       })
     }
 
+    // Record attempt to throttle automated registration bursts (skipped for loopback)
+    if (!isLoopback) {
+      await recordFailedAuthAttempt(ipLimitKey, 10, 15 * 60 * 1000)
+    }
+
     try {
       const createData: Record<string, string> = {
         email,
@@ -53,19 +94,26 @@ export const actions: Actions = {
       }
 
       await locals.pb.collection('users').create(createData)
+
+      // Request email verification if PocketBase mailer is configured
+      try {
+        await locals.pb.collection('users').requestVerification(email)
+      } catch {
+        // Safe to ignore if mailer is unconfigured
+      }
+
       const authData = await locals.pb.collection('users').authWithPassword(email, password)
       setAuthSessionCookie(cookies, authData.record.id)
     } catch (err: any) {
       console.error('Registration error:', err)
-      let message = 'Não foi possível criar a conta. Tenta novamente.'
+      let message = 'Não foi possível concluir o registo. Por favor tenta novamente.'
 
       const pbErrors = err?.response?.data
-      if (pbErrors?.email?.message) {
-        message = 'Este email já se encontra registado ou é inválido.'
+      if (pbErrors?.email) {
+        // Prevent email enumeration by returning a generic non-leaking message
+        message = 'Não foi possível concluir o registo. Por favor verifica os dados introduzidos ou tenta iniciar sessão.'
       } else if (pbErrors?.password?.message) {
         message = 'A palavra-passe não cumpre os requisitos mínimos.'
-      } else if (err?.message) {
-        message = err.message
       }
 
       return fail(400, {

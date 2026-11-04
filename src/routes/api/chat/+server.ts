@@ -279,15 +279,12 @@ export const POST: RequestHandler = async (event) => {
 
     if (!response.ok) {
       const errText = await response.text()
-      let errMessage = `OpenRouter error (${response.status})`
-      try {
-        const parsed = JSON.parse(errText)
-        errMessage = parsed.error?.message || parsed.message || errText
-      } catch {
-        errMessage = errText || errMessage
-      }
-
-      return json({ error: errMessage, quota: currentQuota }, { status: response.status })
+      console.error('OpenRouter error:', response.status, errText)
+      const error =
+        response.status === 429
+          ? 'AI provider rate limit reached. Please try again later.'
+          : 'Failed to generate response from AI provider.'
+      return json({ error, quota: currentQuota }, { status: response.status === 429 ? 429 : 502 })
     }
 
     const data = await response.json()
@@ -306,7 +303,7 @@ export const POST: RequestHandler = async (event) => {
       quota: currentQuota
     })
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown server error'
-    return json({ error: message }, { status: 500 })
+    console.error('Chat API error:', err)
+    return json({ error: 'Internal server error' }, { status: 500 })
   }
 }

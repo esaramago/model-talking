@@ -2,6 +2,7 @@ import { fail, redirect } from '@sveltejs/kit'
 import PocketBase from 'pocketbase'
 import type { Actions, PageServerLoad } from './$types'
 import { getPrivilegedPocketBase } from '@/lib/server/pbAdmin'
+import { isLoopbackIp } from '@/lib/server/rateLimit'
 import {
   verifyTOTP,
   verifyOtpCode,
@@ -43,10 +44,14 @@ export const actions: Actions = {
     }
 
     const clientIp = safeGetClientIp(getClientAddress)
+    const isLoopback = isLoopbackIp(clientIp)
     const ipLimitKey = `login:ip:${clientIp}`
     const emailLimitKey = `login:email:${email.toLowerCase()}`
 
-    if (isAuthRateLimited(ipLimitKey, 10) || isAuthRateLimited(emailLimitKey, 5)) {
+    const ipLimited = !isLoopback && (await isAuthRateLimited(ipLimitKey, 50))
+    const emailLimited = await isAuthRateLimited(emailLimitKey, 5)
+
+    if (ipLimited || emailLimited) {
       return fail(429, {
         email,
         error: 'Demasiadas tentativas. Por favor aguarda alguns minutos.'
@@ -57,8 +62,10 @@ export const actions: Actions = {
       const authData = await locals.pb.collection('users').authWithPassword(email, password)
       const user = authData.record
 
-      clearAuthAttempts(ipLimitKey)
-      clearAuthAttempts(emailLimitKey)
+      if (!isLoopback) {
+        await clearAuthAttempts(ipLimitKey)
+      }
+      await clearAuthAttempts(emailLimitKey)
 
       const twoFactorMethod = user.twoFactorMethod || 'none'
 
@@ -114,8 +121,10 @@ export const actions: Actions = {
         throw err
       }
 
-      recordFailedAuthAttempt(ipLimitKey, 10)
-      recordFailedAuthAttempt(emailLimitKey, 5)
+      if (!isLoopback) {
+        await recordFailedAuthAttempt(ipLimitKey, 50)
+      }
+      await recordFailedAuthAttempt(emailLimitKey, 5)
 
       console.error('Login error:', err)
       return fail(400, {
@@ -154,10 +163,14 @@ export const actions: Actions = {
     }
 
     const clientIp = safeGetClientIp(getClientAddress)
+    const isLoopback = isLoopbackIp(clientIp)
     const userAttemptKey = `2fa:user:${pending.userId}`
     const ipAttemptKey = `2fa:ip:${clientIp}`
 
-    if (isAuthRateLimited(userAttemptKey) || isAuthRateLimited(ipAttemptKey, 10)) {
+    const ipLimited = !isLoopback && (await isAuthRateLimited(ipAttemptKey, 50))
+    const userLimited = await isAuthRateLimited(userAttemptKey, 5)
+
+    if (userLimited || ipLimited) {
       cookies.delete('mt_2fa_pending', { path: '/' })
       return fail(429, {
         step: 'twoFactor' as const,
@@ -191,8 +204,10 @@ export const actions: Actions = {
     if (pending.method === 'authenticator') {
       const secret = user.twoFactorSecret || ''
       if (!secret || !verifyTOTP(secret, code)) {
-        const { locked } = recordFailedAuthAttempt(userAttemptKey)
-        recordFailedAuthAttempt(ipAttemptKey, 10)
+        const { locked } = await recordFailedAuthAttempt(userAttemptKey, 5)
+        if (!isLoopback) {
+          await recordFailedAuthAttempt(ipAttemptKey, 50)
+        }
         if (locked) {
           cookies.delete('mt_2fa_pending', { path: '/' })
           return fail(429, {
@@ -227,8 +242,10 @@ export const actions: Actions = {
       }
 
       if (!otpValid) {
-        const { locked } = recordFailedAuthAttempt(userAttemptKey)
-        recordFailedAuthAttempt(ipAttemptKey, 10)
+        const { locked } = await recordFailedAuthAttempt(userAttemptKey, 5)
+        if (!isLoopback) {
+          await recordFailedAuthAttempt(ipAttemptKey, 50)
+        }
         if (locked) {
           cookies.delete('mt_2fa_pending', { path: '/' })
           return fail(429, {
@@ -268,8 +285,10 @@ export const actions: Actions = {
       })
     }
 
-    clearAuthAttempts(userAttemptKey)
-    clearAuthAttempts(ipAttemptKey)
+    await clearAuthAttempts(userAttemptKey)
+    if (!isLoopback) {
+      await clearAuthAttempts(ipAttemptKey)
+    }
     cookies.delete('mt_2fa_pending', { path: '/' })
     setAuthSessionCookie(cookies, user.id)
 
