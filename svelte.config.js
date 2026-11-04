@@ -5,6 +5,7 @@ const pocketbaseUrl = process.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8095'
 const connectSrc = Array.from(
   new Set([
     'self',
+    'data:',
     'https://analytics.emanuelsaramago.com',
     'https://ka-f.fontawesome.com',
     'https://ka-p.fontawesome.com',
