@@ -4,10 +4,6 @@ import { env } from '$env/dynamic/private'
 const POCKETBASE_URL =
   env.INTERNAL_POCKETBASE_URL ||
   process.env.INTERNAL_POCKETBASE_URL ||
-  env.POCKETBASE_URL ||
-  env.VITE_POCKETBASE_URL ||
-  process.env.POCKETBASE_URL ||
-  process.env.VITE_POCKETBASE_URL ||
   'http://127.0.0.1:8095'
 
 function cleanEnv(val?: string): string | undefined {

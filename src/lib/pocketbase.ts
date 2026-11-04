@@ -6,7 +6,7 @@ import { writable } from 'svelte/store'
 const POCKETBASE_URL =
 	typeof window !== 'undefined'
 		? window.location.origin
-		: import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8095'
+		: import.meta.env.INTERNAL_POCKETBASE_URL || 'http://127.0.0.1:8095'
 
 export const pb = new PocketBase(POCKETBASE_URL, new BaseAuthStore())
 

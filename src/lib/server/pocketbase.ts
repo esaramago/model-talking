@@ -4,10 +4,6 @@ import { env } from '$env/dynamic/private'
 export const POCKETBASE_URL =
   env.INTERNAL_POCKETBASE_URL ||
   process.env.INTERNAL_POCKETBASE_URL ||
-  env.POCKETBASE_URL ||
-  process.env.POCKETBASE_URL ||
-  env.VITE_POCKETBASE_URL ||
-  process.env.VITE_POCKETBASE_URL ||
   'http://127.0.0.1:8095'
 
 export const PROXY_SECRET_HEADER = 'x-mt-proxy-secret'
