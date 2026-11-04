@@ -1,0 +1,55 @@
+<svg width="823" xmlns="http://www.w3.org/2000/svg" height="154" id="screenshot-8433f556-bc08-8008-8008-e50d1bad4f84" viewBox="0 0 823 154" xmlns:xlink="http://www.w3.org/1999/xlink" fill="none" version="1.1"><style>/* cyrillic-ext */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+  src: url(https://design.penpot.app/internal/gfonts/font/ubuntu/v21/4iCv6KVjbNBYlgoCjC3jvWyNL4U.woff2) format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+  src: url(https://design.penpot.app/internal/gfonts/font/ubuntu/v21/4iCv6KVjbNBYlgoCjC3jtGyNL4U.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+  src: url(https://design.penpot.app/internal/gfonts/font/ubuntu/v21/4iCv6KVjbNBYlgoCjC3jvGyNL4U.woff2) format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+  src: url(https://design.penpot.app/internal/gfonts/font/ubuntu/v21/4iCv6KVjbNBYlgoCjC3js2yNL4U.woff2) format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+  src: url(https://design.penpot.app/internal/gfonts/font/ubuntu/v21/4iCv6KVjbNBYlgoCjC3jvmyNL4U.woff2) format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+  src: url(https://design.penpot.app/internal/gfonts/font/ubuntu/v21/4iCv6KVjbNBYlgoCjC3jsGyN.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+</style><g id="shape-8433f556-bc08-8008-8008-e50d1bad4f84"><defs><clipPath id="frame-clip-8433f556-bc08-8008-8008-e50d1bad4f84-render-1" class="frame-clip frame-clip-def"><rect rx="0" ry="0" x="0" y="0" width="823" height="154" transform="matrix(1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000)"/></clipPath></defs><g class="frame-container-wrapper"><g class="frame-container-blur"><g class="frame-container-shadows"><g clip-path="url(#frame-clip-8433f556-bc08-8008-8008-e50d1bad4f84-render-1)" fill="none"><g class="fills" id="fills-8433f556-bc08-8008-8008-e50d1bad4f84"><rect rx="0" ry="0" x="0" y="0" width="823" height="154" transform="matrix(1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000)" class="frame-background"/></g><g class="frame-children"><g id="shape-8433f556-bc08-8008-8008-e50d1bad4f85"><g class="fills" id="fills-8433f556-bc08-8008-8008-e50d1bad4f85"><path d="M-0.000030517578125,77.035400390625C-0.10833740234375,25.32373046875,50.30804443359375,-11.811767578125,99.81793212890625,3.46826171875C162.7861328125,23.60595703125,173.6474609375,106.94580078125,117.69732666015625,142.41748046875C105.16729736328125,150.1259765625,91.54641723632812,153.98388671875,76.83831787109375,153.9912109375C56.249847412109375,153.994873046875,35.661407470703125,153.994873046875,15.07293701171875,153.994873046875C9.66937255859375,154.1318359375,5.623870849609375,151.558837890625,3.521697998046875,146.593017578125C-0.455108642578125,136.24267578125,14.112091064453125,125.347412109375,10.6771240234375,116.3974609375C3.60479736328125,103.737548828125,0.02166748046875,91.647705078125,-0.000030517578125,77.035400390625ZM46.237396240234375,61.51708984375C46.25543212890625,64.42236328125,47.49072265625,66.659912109375,49.94683837890625,68.22607421875C53.81536865234375,70.44189453125,64.49246215820312,68.91162109375,69.25308227539062,69.36279296875C77.11642456054688,68.940673828125,79.9049072265625,59.701904296875,73.49359130859375,55.18359375C69.7587890625,52.769287109375,58.4676513671875,54.4365234375,53.721435546875,53.942138671875C49.53515625,54.136962890625,46.291534423828125,57.283935546875,46.237396240234375,61.51708984375ZM46.237396240234375,92.5537109375C46.30963134765625,96.5556640625,49.1016845703125,99.475341796875,52.9990234375,100.0888671875C68.53070068359375,100.13232421875,84.06234741210938,100.146728515625,99.593994140625,100.13232421875C109.39337158203125,100.525634765625,111.0657958984375,86.414794921875,100.96295166015625,84.78369140625C85.45657348632812,84.7041015625,69.9501953125,84.67529296875,54.44384765625,84.70068359375C49.849395751953125,84.62109375,46.1904296875,87.87646484375,46.237396240234375,92.5537109375Z" style="shape-rendering: geometricprecision; text-rendering: geometricprecision; fill-rule: evenodd; clip-rule: evenodd; fill: rgb(154, 115, 247); fill-opacity: 1;"/></g></g><g id="shape-8433f556-bc08-8008-8008-e50d1bad4f86"><g transform="matrix(1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000)" class="text-container" x="186" y="16" width="637" height="122" rx="0" ry="0"><defs><pattern patternUnits="objectBoundingBox" width="623.015625" height="113" id="fill-0-render-3-0"><g><rect width="623.015625" height="113" style="fill: rgb(207, 194, 255); fill-opacity: 1;"/></g></pattern><pattern patternUnits="objectBoundingBox" width="623.015625" height="113" id="fill-1-render-3-0"><g><rect width="623.015625" height="113" style="fill: rgb(154, 115, 247); fill-opacity: 1;"/></g></pattern></defs><g class="fills" id="fills-8433f556-bc08-8008-8008-e50d1bad4f86"><text x="186" y="133" dominant-baseline="ideographic" textLength="295.359375" lengthAdjust="spacingAndGlyphs" style="text-transform: none; font-family: Ubuntu; letter-spacing: normal; font-style: normal; font-weight: 500; white-space: pre; font-size: 100.923px; text-decoration: none; direction: ltr; fill: rgb(207, 194, 255); fill-opacity: 1;">model</text></g><defs><pattern patternUnits="objectBoundingBox" width="623.015625" height="113" id="fill-0-render-3-1"><g><rect width="623.015625" height="113" style="fill: rgb(207, 194, 255); fill-opacity: 1;"/></g></pattern><pattern patternUnits="objectBoundingBox" width="623.015625" height="113" id="fill-1-render-3-1"><g><rect width="623.015625" height="113" style="fill: rgb(154, 115, 247); fill-opacity: 1;"/></g></pattern></defs><g class="fills" id="fills-8433f556-bc08-8008-8008-e50d1bad4f86"><text x="481.359375" y="133" dominant-baseline="ideographic" textLength="327.65625" lengthAdjust="spacingAndGlyphs" style="text-transform: none; font-family: Ubuntu; letter-spacing: normal; font-style: normal; font-weight: 500; white-space: pre; font-size: 100.923px; text-decoration: none; direction: ltr; fill: rgb(154, 115, 247); fill-opacity: 1;">talking</text></g></g></g></g></g></g></g></g></g></svg>
