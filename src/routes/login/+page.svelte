@@ -49,7 +49,6 @@
             }
           }}
         >
-          <input type="hidden" name="pendingToken" value={form.pendingToken ?? ''} />
           <Grid direction="column">
             <wa-input
               name="code"

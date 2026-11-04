@@ -1,12 +1,18 @@
 import { fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
 import type { TwoFactorMethod, UserRecord } from '@/types/user'
+import { getPrivilegedPocketBase } from '@/lib/server/pbAdmin'
 import {
   generateBase32Secret,
   verifyTOTP,
+  verifyOtpCode,
   buildOtpAuthUri,
   generateEmailOtp,
-  sanitizeUser
+  sanitizeUser,
+  setAuthSessionCookie,
+  isAuthRateLimited,
+  recordFailedAuthAttempt,
+  clearAuthAttempts
 } from '@/lib/server/twoFactor'
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -14,14 +20,23 @@ export const load: PageServerLoad = async ({ locals }) => {
     throw redirect(303, '/login')
   }
 
-  let pendingSecret = locals.user.twoFactorPendingSecret as string | undefined
+  const privilegedPb = await getPrivilegedPocketBase(locals.pb)
+  let pendingSecret: string | undefined
+
+  try {
+    const fullUser = await privilegedPb.collection('users').getOne(locals.user.id)
+    pendingSecret = fullUser.twoFactorPendingSecret as string | undefined
+  } catch {
+    pendingSecret = locals.user.twoFactorPendingSecret as string | undefined
+  }
+
   if (!pendingSecret) {
     pendingSecret = generateBase32Secret()
     try {
-      const updated = await locals.pb.collection('users').update(locals.user.id, {
+      const updated = await privilegedPb.collection('users').update(locals.user.id, {
         twoFactorPendingSecret: pendingSecret
       })
-      locals.user = updated
+      locals.user = sanitizeUser(updated)
     } catch (e) {
       console.error('Failed to save pending 2FA secret:', e)
     }
@@ -109,7 +124,7 @@ export const actions: Actions = {
     }
   },
 
-  updatePassword: async ({ request, locals }) => {
+  updatePassword: async ({ request, locals, cookies }) => {
     if (!locals.user) {
       throw redirect(303, '/login')
     }
@@ -149,7 +164,8 @@ export const actions: Actions = {
 
       if (locals.user.email) {
         const authData = await locals.pb.collection('users').authWithPassword(locals.user.email, password)
-        locals.user = authData.record
+        locals.user = sanitizeUser(authData.record)
+        setAuthSessionCookie(cookies, authData.record.id)
       }
 
       return {
@@ -181,13 +197,15 @@ export const actions: Actions = {
 
     const code = generateEmailOtp()
     const expires = Date.now() + 10 * 60 * 1000 // 10 minutes
+    const privilegedPb = await getPrivilegedPocketBase(locals.pb)
 
     try {
-      await locals.pb.collection('users').update(locals.user.id, {
+      await privilegedPb.collection('users').update(locals.user.id, {
         twoFactorEmailCode: code,
         twoFactorEmailExpires: expires
       })
 
+      clearAuthAttempts(`profile2fa:email:${locals.user.id}`)
       console.info(`[2FA Email Code for ${locals.user.email}]: ${code}`)
 
       return {
@@ -219,7 +237,21 @@ export const actions: Actions = {
       })
     }
 
-    const user = await locals.pb.collection('users').getOne(locals.user.id)
+    const attemptKey = `profile2fa:email:${locals.user.id}`
+    const privilegedPb = await getPrivilegedPocketBase(locals.pb)
+
+    if (isAuthRateLimited(attemptKey)) {
+      await privilegedPb.collection('users').update(locals.user.id, {
+        twoFactorEmailCode: '',
+        twoFactorEmailExpires: 0
+      })
+      return fail(429, {
+        action: 'enableEmail2FA' as const,
+        errorKey: 'profile.codeExpired' as const
+      })
+    }
+
+    const user = await privilegedPb.collection('users').getOne(locals.user.id)
     if (!user.twoFactorEmailCode || !user.twoFactorEmailExpires) {
       return fail(400, {
         action: 'enableEmail2FA' as const,
@@ -234,7 +266,18 @@ export const actions: Actions = {
       })
     }
 
-    if (user.twoFactorEmailCode !== code) {
+    if (!verifyOtpCode(String(user.twoFactorEmailCode), code)) {
+      const { locked } = recordFailedAuthAttempt(attemptKey)
+      if (locked) {
+        await privilegedPb.collection('users').update(locals.user.id, {
+          twoFactorEmailCode: '',
+          twoFactorEmailExpires: 0
+        })
+        return fail(429, {
+          action: 'enableEmail2FA' as const,
+          errorKey: 'profile.codeExpired' as const
+        })
+      }
       return fail(400, {
         action: 'enableEmail2FA' as const,
         errorKey: 'profile.invalidCode' as const
@@ -242,12 +285,13 @@ export const actions: Actions = {
     }
 
     try {
-      const updated = await locals.pb.collection('users').update(locals.user.id, {
+      const updated = await privilegedPb.collection('users').update(locals.user.id, {
         twoFactorMethod: 'email',
         twoFactorEmailCode: '',
         twoFactorEmailExpires: 0
       })
-      locals.user = updated
+      clearAuthAttempts(attemptKey)
+      locals.user = sanitizeUser(updated)
 
       return {
         action: 'enableEmail2FA' as const,
@@ -279,17 +323,27 @@ export const actions: Actions = {
       })
     }
 
-    const user = await locals.pb.collection('users').getOne(locals.user.id)
+    const attemptKey = `profile2fa:totp:${locals.user.id}`
+    if (isAuthRateLimited(attemptKey)) {
+      return fail(429, {
+        action: 'enableAuthenticator2FA' as const,
+        errorKey: 'profile.invalidCode' as const
+      })
+    }
+
+    const privilegedPb = await getPrivilegedPocketBase(locals.pb)
+    const user = await privilegedPb.collection('users').getOne(locals.user.id)
     const dbPendingSecret = user.twoFactorPendingSecret || ''
 
     let verifiedSecret = ''
     if (dbPendingSecret && verifyTOTP(dbPendingSecret, code)) {
       verifiedSecret = dbPendingSecret
-    } else if (formSecret && verifyTOTP(formSecret, code)) {
+    } else if (!dbPendingSecret && formSecret && verifyTOTP(formSecret, code)) {
       verifiedSecret = formSecret
     }
 
     if (!verifiedSecret) {
+      recordFailedAuthAttempt(attemptKey)
       return fail(400, {
         action: 'enableAuthenticator2FA' as const,
         errorKey: 'profile.invalidCode' as const
@@ -297,12 +351,13 @@ export const actions: Actions = {
     }
 
     try {
-      const updated = await locals.pb.collection('users').update(locals.user.id, {
+      const updated = await privilegedPb.collection('users').update(locals.user.id, {
         twoFactorMethod: 'authenticator',
         twoFactorSecret: verifiedSecret,
         twoFactorPendingSecret: ''
       })
-      locals.user = updated
+      clearAuthAttempts(attemptKey)
+      locals.user = sanitizeUser(updated)
 
       return {
         action: 'enableAuthenticator2FA' as const,
@@ -323,14 +378,16 @@ export const actions: Actions = {
       throw redirect(303, '/login')
     }
 
+    const privilegedPb = await getPrivilegedPocketBase(locals.pb)
+
     try {
-      const updated = await locals.pb.collection('users').update(locals.user.id, {
+      const updated = await privilegedPb.collection('users').update(locals.user.id, {
         twoFactorMethod: 'none',
         twoFactorSecret: '',
         twoFactorEmailCode: '',
         twoFactorEmailExpires: 0
       })
-      locals.user = updated
+      locals.user = sanitizeUser(updated)
 
       return {
         action: 'disable2FA' as const,

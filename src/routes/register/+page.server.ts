@@ -1,5 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
+import { setAuthSessionCookie } from '@/lib/server/twoFactor'
 
 export const load: PageServerLoad = async ({ locals }) => {
   // If already authenticated, redirect to home
@@ -9,7 +10,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 }
 
 export const actions: Actions = {
-  default: async ({ request, locals }) => {
+  default: async ({ request, locals, cookies }) => {
     const formData = await request.formData()
     const name = (formData.get('name') as string)?.trim() || ''
     const email = (formData.get('email') as string)?.trim() || ''
@@ -52,7 +53,8 @@ export const actions: Actions = {
       }
 
       await locals.pb.collection('users').create(createData)
-      await locals.pb.collection('users').authWithPassword(email, password)
+      const authData = await locals.pb.collection('users').authWithPassword(email, password)
+      setAuthSessionCookie(cookies, authData.record.id)
     } catch (err: any) {
       console.error('Registration error:', err)
       let message = 'Não foi possível criar a conta. Tenta novamente.'

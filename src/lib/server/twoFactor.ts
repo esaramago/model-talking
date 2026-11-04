@@ -1,4 +1,14 @@
-import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, randomInt } from 'crypto'
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHash,
+  createHmac,
+  randomBytes,
+  randomInt,
+  timingSafeEqual
+} from 'crypto'
+import type { Cookies } from '@sveltejs/kit'
+import { env } from '$env/dynamic/private'
 
 /**
  * Base32 RFC 4648 alphabet.
@@ -61,10 +71,32 @@ export function generateTOTP(secret: string, counter: number): string {
 }
 
 /**
- * Verifies a 6-digit TOTP token against a base32 secret.
+ * Compares two 6-digit OTP codes in constant time to prevent timing attacks.
+ */
+export function verifyOtpCode(expectedCode: string, providedCode: string): boolean {
+  if (!expectedCode || !providedCode) return false
+  const cleanExpected = expectedCode.replace(/\s+/g, '')
+  const cleanProvided = providedCode.replace(/\s+/g, '')
+  if (
+    cleanExpected.length !== 6 ||
+    cleanProvided.length !== 6 ||
+    !/^\d{6}$/.test(cleanExpected) ||
+    !/^\d{6}$/.test(cleanProvided)
+  ) {
+    return false
+  }
+
+  const expBuf = Buffer.from(cleanExpected, 'utf8')
+  const provBuf = Buffer.from(cleanProvided, 'utf8')
+  if (expBuf.length !== provBuf.length) return false
+  return timingSafeEqual(expBuf, provBuf)
+}
+
+/**
+ * Verifies a 6-digit TOTP token against a base32 secret in constant time.
  * Allows a clock drift window of ±1 step (30 seconds).
  */
-export function verifyTOTP(secret: string, token: string, windowSteps: number = 2): boolean {
+export function verifyTOTP(secret: string, token: string, windowSteps: number = 1): boolean {
   if (!secret || !token) return false
   const cleanToken = token.replace(/\s+/g, '')
   if (cleanToken.length !== 6 || !/^\d{6}$/.test(cleanToken)) {
@@ -72,12 +104,63 @@ export function verifyTOTP(secret: string, token: string, windowSteps: number = 
   }
 
   const currentStep = Math.floor(Date.now() / 1000 / 30)
+  let matched = false
   for (let step = currentStep - windowSteps; step <= currentStep + windowSteps; step++) {
-    if (generateTOTP(secret, step) === cleanToken) {
-      return true
+    if (verifyOtpCode(generateTOTP(secret, step), cleanToken)) {
+      matched = true
     }
   }
-  return false
+  return matched
+}
+
+const MAX_AUTH_ATTEMPTS = 5
+const AUTH_LOCKOUT_WINDOW_MS = 10 * 60 * 1000
+const authAttempts = new Map<string, { count: number; expiresAt: number }>()
+
+function pruneExpiredAuthAttempts(now: number): void {
+  if (authAttempts.size < 500) return
+  for (const [key, entry] of authAttempts) {
+    if (now >= entry.expiresAt) {
+      authAttempts.delete(key)
+    }
+  }
+}
+
+export function isAuthRateLimited(
+  key: string,
+  maxAttempts: number = MAX_AUTH_ATTEMPTS
+): boolean {
+  const now = Date.now()
+  const entry = authAttempts.get(key)
+  if (!entry) return false
+  if (now >= entry.expiresAt) {
+    authAttempts.delete(key)
+    return false
+  }
+  return entry.count >= maxAttempts
+}
+
+export function recordFailedAuthAttempt(
+  key: string,
+  maxAttempts: number = MAX_AUTH_ATTEMPTS,
+  windowMs: number = AUTH_LOCKOUT_WINDOW_MS
+): { attempts: number; locked: boolean } {
+  const now = Date.now()
+  pruneExpiredAuthAttempts(now)
+
+  const existing = authAttempts.get(key)
+  const count = existing && now < existing.expiresAt ? existing.count + 1 : 1
+  const expiresAt = existing && now < existing.expiresAt ? existing.expiresAt : now + windowMs
+
+  authAttempts.set(key, { count, expiresAt })
+  return {
+    attempts: count,
+    locked: count >= maxAttempts
+  }
+}
+
+export function clearAuthAttempts(key: string): void {
+  authAttempts.delete(key)
 }
 
 /**
@@ -109,21 +192,74 @@ export function sanitizeUser<T extends Record<string, any> | null>(user: T): T {
   return clone
 }
 
-const PENDING_2FA_KEY = createHash('sha256')
-  .update(process.env.OPENROUTER_API_KEY || 'mt_2fa_server_secret_key_2026')
-  .digest()
+const RUNTIME_SERVER_SECRET = randomBytes(32).toString('hex')
+export const AUTH_SESSION_COOKIE_NAME = 'mt_auth_sig'
+
+function getServerSecret(): string {
+  return (
+    env.RATE_LIMIT_SECRET ||
+    env.OPENROUTER_API_KEY ||
+    process.env.RATE_LIMIT_SECRET ||
+    process.env.OPENROUTER_API_KEY ||
+    RUNTIME_SERVER_SECRET
+  )
+}
+
+/**
+ * Signs an authenticated user ID to prove login/2FA passed through the server.
+ */
+export function signAuthSession(userId: string): string {
+  const hmac = createHmac('sha256', getServerSecret()).update(`auth:${userId}`).digest('hex')
+  return `${userId}.${hmac}`
+}
+
+/**
+ * Verifies that the server-signed auth session cookie matches the active PocketBase user ID.
+ */
+export function verifyAuthSession(
+  cookieValue: string | undefined,
+  expectedUserId: string | undefined
+): boolean {
+  if (!cookieValue || !expectedUserId || !cookieValue.includes('.')) return false
+  const [userId, signature] = cookieValue.split('.')
+  if (!userId || !signature || userId !== expectedUserId) return false
+
+  const expected = createHmac('sha256', getServerSecret()).update(`auth:${userId}`).digest('hex')
+  const sigBuffer = Buffer.from(signature)
+  const expBuffer = Buffer.from(expected)
+
+  if (sigBuffer.length !== expBuffer.length) return false
+  return timingSafeEqual(sigBuffer, expBuffer)
+}
+
+export function setAuthSessionCookie(cookies: Cookies, userId: string): void {
+  cookies.set(AUTH_SESSION_COOKIE_NAME, signAuthSession(userId), {
+    path: '/',
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 60 * 60 * 24 * 30
+  })
+}
+
+export function clearAuthSessionCookie(cookies: Cookies): void {
+  cookies.delete(AUTH_SESSION_COOKIE_NAME, { path: '/' })
+}
+
+function getPending2FAKey(): Buffer {
+  return createHash('sha256').update(`2fa:${getServerSecret()}`).digest()
+}
 
 export interface Pending2FAPayload {
   userId: string
-  email: string
-  password: string
+  pbToken: string
   method: string
   timestamp: number
 }
 
 export function createPending2FAToken(payload: Pending2FAPayload): string {
   const iv = randomBytes(12)
-  const cipher = createCipheriv('aes-256-gcm', PENDING_2FA_KEY, iv)
+  const cipher = createCipheriv('aes-256-gcm', getPending2FAKey(), iv)
   const encrypted = Buffer.concat([cipher.update(JSON.stringify(payload), 'utf8'), cipher.final()])
   const authTag = cipher.getAuthTag()
   return Buffer.concat([iv, authTag, encrypted]).toString('base64url')
@@ -136,7 +272,7 @@ export function verifyPending2FAToken(token: string): Pending2FAPayload | null {
     const iv = raw.subarray(0, 12)
     const authTag = raw.subarray(12, 28)
     const encrypted = raw.subarray(28)
-    const decipher = createDecipheriv('aes-256-gcm', PENDING_2FA_KEY, iv)
+    const decipher = createDecipheriv('aes-256-gcm', getPending2FAKey(), iv)
     decipher.setAuthTag(authTag)
     const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]).toString('utf8')
     return JSON.parse(decrypted) as Pending2FAPayload

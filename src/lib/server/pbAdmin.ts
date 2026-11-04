@@ -56,3 +56,12 @@ export async function getAdminPocketBase(): Promise<PocketBase | null> {
     return null
   }
 }
+
+/**
+ * Returns the authenticated PocketBase superuser client when available,
+ * falling back to the request's user-scoped PocketBase instance.
+ */
+export async function getPrivilegedPocketBase(fallbackPb: PocketBase): Promise<PocketBase> {
+  const adminPb = await getAdminPocketBase()
+  return adminPb || fallbackPb
+}

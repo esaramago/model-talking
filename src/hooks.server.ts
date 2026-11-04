@@ -1,6 +1,12 @@
 import PocketBase from 'pocketbase'
 import type { Handle } from '@sveltejs/kit'
 import { env } from '$env/dynamic/private'
+import {
+  AUTH_SESSION_COOKIE_NAME,
+  clearAuthSessionCookie,
+  sanitizeUser,
+  verifyAuthSession
+} from '@/lib/server/twoFactor'
 
 const POCKETBASE_URL =
   env.VITE_POCKETBASE_URL ||
@@ -15,19 +21,46 @@ export const handle: Handle = async ({ event, resolve }) => {
     event.request.headers.get('cookie') || '',
   )
 
-  try {
-    // Refresh token if valid
-    if (event.locals.pb.authStore.isValid) {
-      await event.locals.pb.collection('users').authRefresh()
+  if (event.locals.pb.authStore.isValid) {
+    const authUserId = event.locals.pb.authStore.record?.id
+    const sessionSig = event.cookies.get(AUTH_SESSION_COOKIE_NAME)
+
+    // Reject PocketBase tokens that did not complete the server login / 2FA flow
+    if (!verifyAuthSession(sessionSig, authUserId)) {
+      event.locals.pb.authStore.clear()
+      clearAuthSessionCookie(event.cookies)
+    } else {
+      try {
+        await event.locals.pb.collection('users').authRefresh()
+      } catch {
+        event.locals.pb.authStore.clear()
+        clearAuthSessionCookie(event.cookies)
+      }
     }
-  } catch {
-    // Clear auth state on error
-    event.locals.pb.authStore.clear()
+  }
+
+  if (event.locals.pb.authStore.isValid && event.locals.pb.authStore.record) {
+    const sanitized = sanitizeUser(event.locals.pb.authStore.record)
+    event.locals.pb.authStore.save(event.locals.pb.authStore.token, sanitized)
   }
 
   event.locals.user = event.locals.pb.authStore.record
 
   const response = await resolve(event)
+
+  if (event.locals.pb.authStore.isValid) {
+    const recordToExport =
+      event.locals.user?.id === event.locals.pb.authStore.record?.id
+        ? event.locals.user
+        : event.locals.pb.authStore.record
+
+    if (recordToExport) {
+      event.locals.pb.authStore.save(
+        event.locals.pb.authStore.token,
+        sanitizeUser(recordToExport),
+      )
+    }
+  }
 
   // Update auth cookie in response without overwriting other cookies set during the request
   response.headers.append(

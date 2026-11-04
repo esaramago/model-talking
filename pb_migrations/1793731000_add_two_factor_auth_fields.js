@@ -4,18 +4,22 @@ migrate((app) => {
 
   users.fields.add(new TextField({
     name: "twoFactorSecret",
+    hidden: true,
   }));
 
   users.fields.add(new TextField({
     name: "twoFactorPendingSecret",
+    hidden: true,
   }));
 
   users.fields.add(new TextField({
     name: "twoFactorEmailCode",
+    hidden: true,
   }));
 
   users.fields.add(new NumberField({
     name: "twoFactorEmailExpires",
+    hidden: true,
   }));
 
   return app.save(users);
