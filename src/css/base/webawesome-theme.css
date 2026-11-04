@@ -6,21 +6,56 @@
 
   --wa-border-radius-xl: 3.6rem;
 
-  --wa-color-brand-95: #f5f6d8;
-  --wa-color-brand-90: #ebedb3;
-  --wa-color-brand-80: #dee084;
-  --wa-color-brand-70: #d3d459;
-  --wa-color-brand-60: #caca38;
-  --wa-color-brand-50: #a3a312;
-  --wa-color-brand-40: #969500;
-  --wa-color-brand-30: #6e6e00;
-  --wa-color-brand-20: #484800;
-  --wa-color-brand-10: #292800;
-  --wa-color-brand-05: #151500;
+  --wa-color-brand-95: #f4f1ff;
+  --wa-color-brand-90: #e7e2ff;
+  --wa-color-brand-80: #cfc2ff;
+  --wa-color-brand-70: #b69fff;
+  --wa-color-brand-60: #9a73f7;
+  --wa-color-brand-50: #7738dd;
+  --wa-color-brand-40: #5f2db2;
+  --wa-color-brand-30: #4a218d;
+  --wa-color-brand-20: #36166a;
+  --wa-color-brand-10: #220f45;
+  --wa-color-brand-05: #14092b;
 }
 
 wa-button {
   &::part(base) {
+    position: relative;
     border-radius: var(--wa-border-radius-pill);
+    transition: background-color 0.2s;
+  }
+
+  &[appearance="accent"] {
+    &::part(base) {
+      position: relative;
+      border-radius: var(--wa-border-radius-pill);
+      background: linear-gradient(180deg, var(--wa-color-brand-40) 0%, var(--wa-color-brand-50) 100%);
+      overflow: hidden;
+    }
+
+    /* Un-nested from &::part(base) */
+    &::part(base)::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, var(--wa-color-brand-30) 0%, var(--wa-color-brand-40) 100%);
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+    }
+    /* Keeps text & icons above ::before */
+    &::part(label),
+    &::part(prefix),
+    &::part(suffix) {
+      position: relative;
+      z-index: 1;
+    }
+
+    &:hover {
+      &::part(base)::before {
+        opacity: 1;
+      }
+    }
   }
 }
