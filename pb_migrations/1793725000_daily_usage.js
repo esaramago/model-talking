@@ -3,11 +3,11 @@ migrate((app) => {
   const collection = new Collection({
     type: "base",
     name: "daily_usage",
-    listRule: "@request.headers.x_internal_key = 'mt_server_secret_key_99812'",
-    viewRule: "@request.headers.x_internal_key = 'mt_server_secret_key_99812'",
-    createRule: "@request.headers.x_internal_key = 'mt_server_secret_key_99812'",
-    updateRule: "@request.headers.x_internal_key = 'mt_server_secret_key_99812'",
-    deleteRule: "@request.headers.x_internal_key = 'mt_server_secret_key_99812'",
+    listRule: null,
+    viewRule: null,
+    createRule: null,
+    updateRule: null,
+    deleteRule: null,
     fields: [
       {
         name: "key",

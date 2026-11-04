@@ -1,17 +1,24 @@
 import crypto from 'node:crypto'
 import type PocketBase from 'pocketbase'
 import type { RequestEvent } from '@sveltejs/kit'
+import { env } from '$env/dynamic/private'
 import { DAILY_MESSAGE_LIMIT, DAILY_TITLE_LIMIT } from '@/lib/config'
+import { getAdminPocketBase } from '@/lib/server/pbAdmin'
 
 export { DAILY_MESSAGE_LIMIT, DAILY_TITLE_LIMIT }
-export const INTERNAL_SECRET_KEY =
-  process.env.INTERNAL_SECRET_KEY || 'mt_secret_daily_usage_key_8f3a1e'
 
 const GUEST_COOKIE_NAME = 'mt_guest_token'
-const COOKIE_SECRET =
-  process.env.RATE_LIMIT_SECRET ||
-  process.env.OPENROUTER_API_KEY ||
-  'mt_cookie_signing_salt_2026'
+const RUNTIME_COOKIE_SECRET = crypto.randomBytes(32).toString('hex')
+
+function getCookieSecret(): string {
+  return (
+    env.RATE_LIMIT_SECRET ||
+    env.OPENROUTER_API_KEY ||
+    process.env.RATE_LIMIT_SECRET ||
+    process.env.OPENROUTER_API_KEY ||
+    RUNTIME_COOKIE_SECRET
+  )
+}
 
 export interface QuotaInfo {
   remaining: number
@@ -45,7 +52,7 @@ export function getResetAtUtc(date: Date = new Date()): string {
  * Signs a guest ID with HMAC-SHA256 to prevent client-side cookie tampering.
  */
 function signGuestId(id: string): string {
-  const hmac = crypto.createHmac('sha256', COOKIE_SECRET).update(id).digest('hex')
+  const hmac = crypto.createHmac('sha256', getCookieSecret()).update(id).digest('hex')
   return `${id}.${hmac}`
 }
 
@@ -57,7 +64,7 @@ function verifyGuestToken(token: string | undefined): string | null {
   const [id, signature] = token.split('.')
   if (!id || !signature) return null
 
-  const expected = crypto.createHmac('sha256', COOKIE_SECRET).update(id).digest('hex')
+  const expected = crypto.createHmac('sha256', getCookieSecret()).update(id).digest('hex')
   const sigBuffer = Buffer.from(signature)
   const expBuffer = Buffer.from(expected)
 
@@ -69,20 +76,10 @@ function verifyGuestToken(token: string | undefined): string | null {
 }
 
 /**
- * Extracts the real client IP address from proxy headers or connection.
+ * Extracts the real client IP address from the SvelteKit request event.
+ * Configure ADDRESS_HEADER / XFF_DEPTH in @sveltejs/adapter-node when behind a reverse proxy.
  */
 function extractClientIp(event: RequestEvent): string {
-  const forwarded = event.request.headers.get('x-forwarded-for')
-  if (forwarded) {
-    const firstIp = forwarded.split(',')[0].trim()
-    if (firstIp) return firstIp
-  }
-
-  const cfConnectingIp = event.request.headers.get('cf-connecting-ip')
-  if (cfConnectingIp) {
-    return cfConnectingIp.trim()
-  }
-
   try {
     return event.getClientAddress()
   } catch {
@@ -123,8 +120,9 @@ export function resolveRateLimitIdentifier(event: RequestEvent): RateLimitIdenti
   }
 }
 
-const pbHeaders = {
-  'x-internal-key': INTERNAL_SECRET_KEY
+async function getEffectivePb(pb?: PocketBase): Promise<PocketBase | undefined> {
+  const adminPb = await getAdminPocketBase()
+  return adminPb || pb
 }
 
 /**
@@ -135,11 +133,11 @@ async function fetchKeyCount(
   key: string,
   date: string
 ): Promise<{ count: number; recordId?: string }> {
-  if (pb) {
+  const client = await getEffectivePb(pb)
+  if (client) {
     try {
-      const record = await pb.collection('daily_usage').getFirstListItem(
-        pb.filter('key = {:key} && date = {:date}', { key, date }),
-        { headers: pbHeaders }
+      const record = await client.collection('daily_usage').getFirstListItem(
+        client.filter('key = {:key} && date = {:date}', { key, date })
       )
       const count = Number(record.count) || 0
       memoryUsage.set(key, { date, count })
@@ -170,22 +168,22 @@ async function setKeyCount(
 ): Promise<void> {
   memoryUsage.set(key, { date, count })
 
-  if (!pb) return
+  const client = await getEffectivePb(pb)
+  if (!client) return
 
   try {
     if (recordId) {
-      await pb.collection('daily_usage').update(recordId, { count }, { headers: pbHeaders })
+      await client.collection('daily_usage').update(recordId, { count })
     } else {
-      await pb.collection('daily_usage').create({ key, date, count }, { headers: pbHeaders })
+      await client.collection('daily_usage').create({ key, date, count })
     }
   } catch {
     // If create fails (e.g. concurrent race condition), attempt update
     try {
-      const existing = await pb.collection('daily_usage').getFirstListItem(
-        pb.filter('key = {:key} && date = {:date}', { key, date }),
-        { headers: pbHeaders }
+      const existing = await client.collection('daily_usage').getFirstListItem(
+        client.filter('key = {:key} && date = {:date}', { key, date })
       )
-      await pb.collection('daily_usage').update(existing.id, { count }, { headers: pbHeaders })
+      await client.collection('daily_usage').update(existing.id, { count })
     } catch {
       // In-memory update was already performed
     }
