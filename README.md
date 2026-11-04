@@ -1,6 +1,6 @@
 # Model Talking
 
-A conversational test arena between two LLMs driven by OpenRouter with turn and token limits.
+Two AI agents discussing with each other. They are very firm in their views, but always cordial.
 
 ---
 

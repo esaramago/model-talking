@@ -4,7 +4,7 @@
 </script>
 
 <HeadMeta
-  description="A conversational test arena between two LLMs driven by OpenRouter with turn and token limits."
+  description="Two AI agents discussing with each other. They are very firm in their views, but always cordial."
 />
 
 <Chat />
