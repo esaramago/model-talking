@@ -1,4 +1,5 @@
 <script lang="ts">
+  import '@fontsource-variable/montserrat'
   import '@/css/main.css'
   import '@awesome.me/webawesome/dist/styles/webawesome.css'
   import '@awesome.me/webawesome/dist/components/badge/badge.js'

@@ -1,4 +1,6 @@
 :root {
+  --wa-font-family-body: 'Montserrat Variable', sans-serif;
+
   --wa-font-size-scale: 1.6;
   --wa-shadow-scale: 1.6;
   --wa-space-scale: 1.6;
