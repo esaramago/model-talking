@@ -31,7 +31,11 @@
       syncWebAwesomeFormData(formElement, formData)
       return async ({ result, update }) => {
         loadingAction = null
-        await update({ reset: actionName === 'updatePassword' && result.type === 'success' })
+        await update({
+          reset:
+            (actionName === 'updatePassword' || actionName === 'disable2FA') &&
+            result.type === 'success'
+        })
       }
     }
   }
@@ -188,10 +192,23 @@
 
         {#if selectedMethod === 'none' && (data.user?.twoFactorMethod || 'none') !== 'none'}
           <form method="POST" action="?/disable2FA" use:enhance={createEnhance('disable2FA')}>
-            <wa-button type="submit" variant="danger" appearance="outlined" loading={loadingAction === 'disable2FA'}>
-              <wa-icon slot="start" name="shield-halved"></wa-icon>
-              {t('profile.disable2FA')}
-            </wa-button>
+            <Grid direction="column" gap="s">
+              <wa-input
+                name="currentPassword"
+                type="password"
+                label={t('profile.currentPasswordLabel')}
+                placeholder={t('profile.currentPasswordPlaceholder')}
+                required
+                password-toggle
+                autocomplete="current-password"
+              ></wa-input>
+              <div>
+                <wa-button type="submit" variant="danger" appearance="outlined" loading={loadingAction === 'disable2FA'}>
+                  <wa-icon slot="start" name="shield-halved"></wa-icon>
+                  {t('profile.disable2FA')}
+                </wa-button>
+              </div>
+            </Grid>
           </form>
         {:else if selectedMethod === 'authenticator' && data.user?.twoFactorMethod !== 'authenticator'}
           <Grid direction="column" gap="s">

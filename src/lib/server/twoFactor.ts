@@ -180,6 +180,69 @@ export function generateEmailOtp(): string {
 }
 
 /**
+ * Sends a 2FA verification code via configured email service.
+ * Never logs OTP codes in production.
+ */
+export async function sendTwoFactorEmail(email: string, code: string): Promise<void> {
+  const isProduction = process.env.NODE_ENV === 'production'
+  const resendApiKey = env.RESEND_API_KEY || process.env.RESEND_API_KEY
+  const emailWebhookUrl = env.EMAIL_WEBHOOK_URL || process.env.EMAIL_WEBHOOK_URL
+  const emailFrom =
+    env.EMAIL_FROM || process.env.EMAIL_FROM || 'Model Talking <noreply@modeltalking.com>'
+
+  const subject = 'Your Model Talking verification code'
+  const text = `Your two-factor verification code is: ${code}\n\nThis code expires in 10 minutes.`
+
+  if (resendApiKey) {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: emailFrom,
+        to: [email],
+        subject,
+        text
+      })
+    })
+
+    if (!response.ok) {
+      throw new Error(`Email service returned status ${response.status}`)
+    }
+    return
+  }
+
+  if (emailWebhookUrl) {
+    const response = await fetch(emailWebhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        to: email,
+        from: emailFrom,
+        subject,
+        text
+      })
+    })
+
+    if (!response.ok) {
+      throw new Error(`Email webhook returned status ${response.status}`)
+    }
+    return
+  }
+
+  if (!isProduction) {
+    console.info(`[DEV ONLY - 2FA Email Code for ${email}]: ${code}`)
+    return
+  }
+
+  throw new Error('No email service configured (set RESEND_API_KEY or EMAIL_WEBHOOK_URL)')
+}
+
+/**
  * Strips sensitive 2FA fields from a user record before serializing to client data.
  */
 export function sanitizeUser<T extends Record<string, any> | null>(user: T): T {
@@ -254,6 +317,7 @@ export interface Pending2FAPayload {
   userId: string
   pbToken: string
   method: string
+  otpId?: string
   timestamp: number
 }
 

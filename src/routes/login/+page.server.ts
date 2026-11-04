@@ -1,10 +1,10 @@
 import { fail, redirect } from '@sveltejs/kit'
+import PocketBase from 'pocketbase'
 import type { Actions, PageServerLoad } from './$types'
 import { getPrivilegedPocketBase } from '@/lib/server/pbAdmin'
 import {
   verifyTOTP,
   verifyOtpCode,
-  generateEmailOtp,
   createPending2FAToken,
   verifyPending2FAToken,
   sanitizeUser,
@@ -68,29 +68,32 @@ export const actions: Actions = {
         throw redirect(303, '/')
       }
 
-      if (twoFactorMethod === 'email') {
-        const code = generateEmailOtp()
-        const expires = Date.now() + 10 * 60 * 1000 // 10 minutes
-        const privilegedPb = await getPrivilegedPocketBase(locals.pb)
-
-        await privilegedPb.collection('users').update(user.id, {
-          twoFactorEmailCode: code,
-          twoFactorEmailExpires: expires
-        })
-
-        console.info(`[2FA Login Email Code for ${email}]: ${code}`)
-      }
-
       const pbToken = authData.token
 
       // Clear auth token so user is not logged in until 2FA is verified
       locals.pb.authStore.clear()
       clearAuthSessionCookie(cookies)
 
+      let otpId: string | undefined
+
+      if (twoFactorMethod === 'email') {
+        try {
+          const otpResponse = await locals.pb.collection('users').requestOTP(email)
+          otpId = otpResponse?.otpId
+        } catch (otpErr) {
+          console.error('PocketBase requestOTP failed:', otpErr)
+          return fail(500, {
+            email,
+            error: 'Não foi possível enviar o código de verificação por email.'
+          })
+        }
+      }
+
       const pendingToken = createPending2FAToken({
         userId: user.id,
         pbToken,
         method: twoFactorMethod,
+        otpId,
         timestamp: Date.now()
       })
 
@@ -205,30 +208,29 @@ export const actions: Actions = {
         })
       }
     } else if (pending.method === 'email') {
-      if (!user.twoFactorEmailCode || !user.twoFactorEmailExpires) {
-        return fail(400, {
-          step: 'twoFactor' as const,
-          twoFactorMethod: pending.method,
-          errorKey: 'login.codeExpired' as const
-        })
+      let otpValid = false
+
+      if (pending.otpId) {
+        try {
+          const authPb = new PocketBase(locals.pb.baseUrl)
+          await authPb.collection('users').authWithOTP(pending.otpId, code)
+          otpValid = true
+        } catch {
+          otpValid = false
+        }
+      } else if (user.twoFactorEmailCode && user.twoFactorEmailExpires) {
+        if (
+          Date.now() <= Number(user.twoFactorEmailExpires) &&
+          verifyOtpCode(String(user.twoFactorEmailCode), code)
+        ) {
+          otpValid = true
+        }
       }
 
-      if (Date.now() > Number(user.twoFactorEmailExpires)) {
-        return fail(400, {
-          step: 'twoFactor' as const,
-          twoFactorMethod: pending.method,
-          errorKey: 'login.codeExpired' as const
-        })
-      }
-
-      if (!verifyOtpCode(String(user.twoFactorEmailCode), code)) {
+      if (!otpValid) {
         const { locked } = recordFailedAuthAttempt(userAttemptKey)
         recordFailedAuthAttempt(ipAttemptKey, 10)
         if (locked) {
-          await privilegedPb.collection('users').update(user.id, {
-            twoFactorEmailCode: '',
-            twoFactorEmailExpires: 0
-          })
           cookies.delete('mt_2fa_pending', { path: '/' })
           return fail(429, {
             step: 'twoFactor' as const,
@@ -242,10 +244,12 @@ export const actions: Actions = {
         })
       }
 
-      await privilegedPb.collection('users').update(user.id, {
-        twoFactorEmailCode: '',
-        twoFactorEmailExpires: 0
-      })
+      if (user.twoFactorEmailCode) {
+        await privilegedPb.collection('users').update(user.id, {
+          twoFactorEmailCode: '',
+          twoFactorEmailExpires: 0
+        })
+      }
     } else {
       locals.pb.authStore.clear()
       clearAuthSessionCookie(cookies)

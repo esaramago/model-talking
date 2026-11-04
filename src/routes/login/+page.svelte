@@ -50,15 +50,16 @@
           }}
         >
           <Grid direction="column">
-            <wa-input
+            <label for="code">{t('login.twoFactorCodeLabel')}</label>
+            <input
+              id="code"
               name="code"
               type="text"
-              label={t('login.twoFactorCodeLabel')}
               placeholder={t('login.twoFactorCodePlaceholder')}
               maxlength={6}
               required
               autocomplete="one-time-code"
-            ></wa-input>
+            />
 
             <wa-button type="submit" variant="brand" {loading}>
               {t('login.verifyButton')}

@@ -1,4 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit'
+import PocketBase from 'pocketbase'
 import type { Actions, PageServerLoad } from './$types'
 import type { TwoFactorMethod, UserRecord } from '@/types/user'
 import { getPrivilegedPocketBase } from '@/lib/server/pbAdmin'
@@ -7,7 +8,6 @@ import {
   verifyTOTP,
   verifyOtpCode,
   buildOtpAuthUri,
-  generateEmailOtp,
   sanitizeUser,
   setAuthSessionCookie,
   isAuthRateLimited,
@@ -190,23 +190,24 @@ export const actions: Actions = {
     }
   },
 
-  sendEmail2FACode: async ({ locals }) => {
-    if (!locals.user) {
+  sendEmail2FACode: async ({ locals, cookies }) => {
+    if (!locals.user || !locals.user.email) {
       throw redirect(303, '/login')
     }
 
-    const code = generateEmailOtp()
-    const expires = Date.now() + 10 * 60 * 1000 // 10 minutes
-    const privilegedPb = await getPrivilegedPocketBase(locals.pb)
-
     try {
-      await privilegedPb.collection('users').update(locals.user.id, {
-        twoFactorEmailCode: code,
-        twoFactorEmailExpires: expires
-      })
-
       clearAuthAttempts(`profile2fa:email:${locals.user.id}`)
-      console.info(`[2FA Email Code for ${locals.user.email}]: ${code}`)
+      const otpResponse = await locals.pb.collection('users').requestOTP(locals.user.email)
+
+      if (otpResponse?.otpId) {
+        cookies.set('mt_profile_otp_id', otpResponse.otpId, {
+          path: '/',
+          httpOnly: true,
+          sameSite: 'lax',
+          maxAge: 60 * 10,
+          secure: process.env.NODE_ENV === 'production'
+        })
+      }
 
       return {
         action: 'sendEmail2FACode' as const,
@@ -214,7 +215,7 @@ export const actions: Actions = {
         messageKey: 'profile.emailCodeSent' as const
       }
     } catch (err: any) {
-      console.error('Failed to send email 2FA code:', err)
+      console.error('Failed to send email 2FA code via PocketBase:', err)
       return fail(400, {
         action: 'sendEmail2FACode' as const,
         errorKey: 'profile.updateError' as const
@@ -222,7 +223,7 @@ export const actions: Actions = {
     }
   },
 
-  enableEmail2FA: async ({ request, locals }) => {
+  enableEmail2FA: async ({ request, locals, cookies }) => {
     if (!locals.user) {
       throw redirect(303, '/login')
     }
@@ -241,38 +242,43 @@ export const actions: Actions = {
     const privilegedPb = await getPrivilegedPocketBase(locals.pb)
 
     if (isAuthRateLimited(attemptKey)) {
-      await privilegedPb.collection('users').update(locals.user.id, {
-        twoFactorEmailCode: '',
-        twoFactorEmailExpires: 0
-      })
+      cookies.delete('mt_profile_otp_id', { path: '/' })
       return fail(429, {
         action: 'enableEmail2FA' as const,
         errorKey: 'profile.codeExpired' as const
       })
     }
 
-    const user = await privilegedPb.collection('users').getOne(locals.user.id)
-    if (!user.twoFactorEmailCode || !user.twoFactorEmailExpires) {
-      return fail(400, {
-        action: 'enableEmail2FA' as const,
-        errorKey: 'profile.codeExpired' as const
-      })
+    const storedOtpId = cookies.get('mt_profile_otp_id')
+    let verified = false
+
+    if (storedOtpId) {
+      try {
+        const authPb = new PocketBase(locals.pb.baseUrl)
+        await authPb.collection('users').authWithOTP(storedOtpId, code)
+        verified = true
+      } catch {
+        verified = false
+      }
     }
 
-    if (Date.now() > Number(user.twoFactorEmailExpires)) {
-      return fail(400, {
-        action: 'enableEmail2FA' as const,
-        errorKey: 'profile.codeExpired' as const
-      })
+    if (!verified) {
+      // Fallback check against legacy db fields if set
+      const user = await privilegedPb.collection('users').getOne(locals.user.id)
+      if (
+        user.twoFactorEmailCode &&
+        user.twoFactorEmailExpires &&
+        Date.now() <= Number(user.twoFactorEmailExpires) &&
+        verifyOtpCode(String(user.twoFactorEmailCode), code)
+      ) {
+        verified = true
+      }
     }
 
-    if (!verifyOtpCode(String(user.twoFactorEmailCode), code)) {
+    if (!verified) {
       const { locked } = recordFailedAuthAttempt(attemptKey)
       if (locked) {
-        await privilegedPb.collection('users').update(locals.user.id, {
-          twoFactorEmailCode: '',
-          twoFactorEmailExpires: 0
-        })
+        cookies.delete('mt_profile_otp_id', { path: '/' })
         return fail(429, {
           action: 'enableEmail2FA' as const,
           errorKey: 'profile.codeExpired' as const
@@ -283,6 +289,8 @@ export const actions: Actions = {
         errorKey: 'profile.invalidCode' as const
       })
     }
+
+    cookies.delete('mt_profile_otp_id', { path: '/' })
 
     try {
       const updated = await privilegedPb.collection('users').update(locals.user.id, {
@@ -373,20 +381,84 @@ export const actions: Actions = {
     }
   },
 
-  disable2FA: async ({ locals }) => {
+  disable2FA: async ({ request, locals }) => {
     if (!locals.user) {
       throw redirect(303, '/login')
     }
 
+    const formData = await request.formData()
+    const currentPassword =
+      (formData.get('currentPassword') as string) ||
+      (formData.get('oldPassword') as string) ||
+      (formData.get('password') as string) ||
+      ''
+    const code = (formData.get('code') as string)?.replace(/\s+/g, '') || ''
+
+    if (!currentPassword && !code) {
+      return fail(400, {
+        action: 'disable2FA' as const,
+        errorKey: 'profile.fillRequired' as const
+      })
+    }
+
+    const attemptKey = `profile2fa:disable:${locals.user.id}`
+    if (isAuthRateLimited(attemptKey)) {
+      return fail(429, {
+        action: 'disable2FA' as const,
+        errorKey: currentPassword
+          ? ('profile.currentPasswordIncorrect' as const)
+          : ('profile.invalidCode' as const)
+      })
+    }
+
     const privilegedPb = await getPrivilegedPocketBase(locals.pb)
+    const user = await privilegedPb.collection('users').getOne(locals.user.id)
+    const userEmail = user.email || locals.user.email || ''
+
+    let verified = false
+
+    if (currentPassword && userEmail) {
+      try {
+        const authPb = new PocketBase(locals.pb.baseUrl)
+        await authPb.collection('users').authWithPassword(userEmail, currentPassword)
+        verified = true
+      } catch {
+        verified = false
+      }
+    }
+
+    if (!verified && code) {
+      if (user.twoFactorMethod === 'authenticator' && user.twoFactorSecret) {
+        verified = verifyTOTP(String(user.twoFactorSecret), code)
+      } else if (
+        user.twoFactorMethod === 'email' &&
+        user.twoFactorEmailCode &&
+        user.twoFactorEmailExpires &&
+        Date.now() <= Number(user.twoFactorEmailExpires)
+      ) {
+        verified = verifyOtpCode(String(user.twoFactorEmailCode), code)
+      }
+    }
+
+    if (!verified) {
+      recordFailedAuthAttempt(attemptKey)
+      return fail(400, {
+        action: 'disable2FA' as const,
+        errorKey: currentPassword
+          ? ('profile.currentPasswordIncorrect' as const)
+          : ('profile.invalidCode' as const)
+      })
+    }
 
     try {
       const updated = await privilegedPb.collection('users').update(locals.user.id, {
         twoFactorMethod: 'none',
         twoFactorSecret: '',
+        twoFactorPendingSecret: '',
         twoFactorEmailCode: '',
         twoFactorEmailExpires: 0
       })
+      clearAuthAttempts(attemptKey)
       locals.user = sanitizeUser(updated)
 
       return {
