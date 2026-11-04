@@ -6,10 +6,29 @@
 
   --wa-border-radius-xl: 3.6rem;
 
+  --wa-color-brand-95: #f4f1ff;
+  --wa-color-brand-90: #e7e2ff;
+  --wa-color-brand-80: #cfc2ff;
+  --wa-color-brand-70: #b69fff;
+  --wa-color-brand-60: #9a73f7;
   --wa-color-brand-50: #7738dd;
+  --wa-color-brand-40: #5f2db2;
+  --wa-color-brand-30: #4a218d;
+  --wa-color-brand-20: #36166a;
+  --wa-color-brand-10: #220f45;
+  --wa-color-brand-05: #14092b;
 
-
+  --wa-color-secondary-95: #f5f6d8;
+  --wa-color-secondary-90: #ebedb3;
+  --wa-color-secondary-80: #dee084;
+  --wa-color-secondary-70: #d3d459;
+  --wa-color-secondary-60: #caca38;
   --wa-color-secondary-50: #c1c117;
+  --wa-color-secondary-40: #969500;
+  --wa-color-secondary-30: #6e6e00;
+  --wa-color-secondary-20: #484800;
+  --wa-color-secondary-10: #292800;
+  --wa-color-secondary-05: #151500;
 }
 
 wa-button {

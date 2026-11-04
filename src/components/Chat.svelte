@@ -468,16 +468,6 @@
 </script>
 
 <Grid direction="column" gap="xl" justify="stretch">
-  {#if errorMessage}
-    <wa-callout variant="danger">
-      <wa-icon slot="start" name="triangle-exclamation" variant="solid"
-      ></wa-icon>
-      <Grid direction="column" gap="xs">
-        <strong>{t('chat.error')}</strong>
-        <p>{errorMessage}</p>
-      </Grid>
-    </wa-callout>
-  {/if}
 
   <Agents
     readonly={!!messages.length}
@@ -528,6 +518,17 @@
         oninput={handleTopicInput}
       ></wa-textarea>
     </div>
+
+    {#if errorMessage}
+      <wa-callout variant="danger">
+        <wa-icon slot="start" name="triangle-exclamation" variant="solid"
+        ></wa-icon>
+        <Grid direction="column" gap="xs">
+          <strong>{t('chat.error')}</strong>
+          <p>{errorMessage}</p>
+        </Grid>
+      </wa-callout>
+    {/if}
 
     <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
     <Grid wrap={true} align="center" justify="end" gap="s">
