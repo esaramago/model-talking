@@ -12,12 +12,6 @@ export interface ChatMessage {
   timestamp: number
 }
 
-export interface ModelOption {
-  label: string
-  value: string
-  isFree?: boolean
-}
-
 export interface LanguageOption {
   label: string
   value: string
@@ -64,3 +58,4 @@ export interface TalkRecord {
   updated?: string
 }
 
+export type TalkSummary = Pick<TalkRecord, 'id' | 'title' | 'created'>

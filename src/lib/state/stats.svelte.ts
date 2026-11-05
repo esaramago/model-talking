@@ -1,4 +1,4 @@
-import { MODEL } from '@/lib/config'
+import { DAILY_MESSAGE_LIMIT, MODEL } from '@/lib/config'
 import type { DailyQuota } from '@/types/chat'
 
 class StatsState {
@@ -10,8 +10,8 @@ class StatsState {
   status = $state('Pronto')
   isRunning = $state(false)
   model = $state(MODEL)
-  dailyRemaining = $state(20)
-  dailyTotal = $state(20)
+  dailyRemaining = $state(DAILY_MESSAGE_LIMIT)
+  dailyTotal = $state(DAILY_MESSAGE_LIMIT)
   isUnlimited = $state(false)
 
   setQuota(quota?: Partial<DailyQuota> | null) {
@@ -19,17 +19,6 @@ class StatsState {
     if (typeof quota.remaining === 'number') this.dailyRemaining = quota.remaining
     if (typeof quota.total === 'number') this.dailyTotal = quota.total
     if (typeof quota.isUnlimited === 'boolean') this.isUnlimited = quota.isUnlimited
-  }
-
-  reset() {
-    this.currentTurn = 0
-    this.generatedMessages = 0
-    this.totalTokens = 0
-    this.promptTokens = 0
-    this.completionTokens = 0
-    this.status = 'Pronto'
-    this.isRunning = false
-    this.model = MODEL
   }
 }
 

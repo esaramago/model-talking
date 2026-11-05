@@ -2,8 +2,6 @@ import type { TranslationSchema } from '../types'
 
 export const ru: TranslationSchema = {
   header: {
-    generatedMessageSingular: 'Сгенерированное сообщение',
-    generatedMessagePlural: 'Сгенерированные сообщения',
     totalTokens: 'Всего токенов',
     model: 'Модель',
     dailyCredits: 'кредиты',
@@ -40,7 +38,6 @@ export const ru: TranslationSchema = {
     noResponse: '(Нет ответа)',
     error: 'Ошибка',
     topicPlaceholder: 'С чего начнется разговор?',
-    random: 'Случайно',
     themePhilosophy: 'Философия',
     themeHistory: 'История',
     themeScifi: 'Фантастика',
@@ -160,8 +157,6 @@ export const ru: TranslationSchema = {
     twoFactorNone: 'Отключено',
     twoFactorEmail: 'Электронная почта',
     twoFactorAuthenticator: 'Приложение-аутентификатор (Authenticator)',
-    saveTwoFactor: 'Сохранить 2FA',
-    twoFactorUpdated: 'Настройки 2FA успешно обновлены.',
     twoFactorEnabled: '2FA успешно включена.',
     twoFactorDisabled: '2FA отключена.',
     twoFactorCurrentStatus: 'Текущий статус:',

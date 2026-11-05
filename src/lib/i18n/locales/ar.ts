@@ -2,8 +2,6 @@ import type { TranslationSchema } from '../types'
 
 export const ar: TranslationSchema = {
   header: {
-    generatedMessageSingular: 'رسالة مُنشأة',
-    generatedMessagePlural: 'رسائل مُنشأة',
     totalTokens: 'إجمالي التوكنات',
     model: 'النموذج',
     dailyCredits: 'اليومي',
@@ -40,7 +38,6 @@ export const ar: TranslationSchema = {
     noResponse: '(لا يوجد رد)',
     error: 'خطأ',
     topicPlaceholder: 'كيف تبدأ المحادثة؟',
-    random: 'عشوائي',
     themePhilosophy: 'فلسفة',
     themeHistory: 'تاريخ',
     themeScifi: 'خيال علمي',
@@ -160,8 +157,6 @@ export const ar: TranslationSchema = {
     twoFactorNone: 'معطل',
     twoFactorEmail: 'البريد الإلكتروني',
     twoFactorAuthenticator: 'تطبيق المصادقة (Authenticator)',
-    saveTwoFactor: 'حفظ 2FA',
-    twoFactorUpdated: 'تم تحديث تفضيلات المصادقة الثنائية بنجاح.',
     twoFactorEnabled: 'تم تفعيل المصادقة الثنائية بنجاح.',
     twoFactorDisabled: 'تم تعطيل المصادقة الثنائية.',
     twoFactorCurrentStatus: 'الحالة الحالية:',

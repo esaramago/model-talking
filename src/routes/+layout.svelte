@@ -11,9 +11,7 @@
   import '@awesome.me/webawesome/dist/components/select/select.js'
   import '@awesome.me/webawesome/dist/components/option/option.js'
   import '@awesome.me/webawesome/dist/components/spinner/spinner.js'
-  import '@awesome.me/webawesome/dist/components/divider/divider.js'
   import '@awesome.me/webawesome/dist/components/callout/callout.js'
-  import '@awesome.me/webawesome/dist/components/details/details.js'
   import '@awesome.me/webawesome/dist/components/avatar/avatar.js'
   import '@awesome.me/webawesome/dist/components/dialog/dialog.js'
   import '@awesome.me/webawesome/dist/components/slider/slider.js'
@@ -23,7 +21,6 @@
   import Footer from '@/components/ui/Footer.svelte'
   import { talksState } from '@/lib/state/talks.svelte'
   import { stats } from '@/lib/state/stats.svelte'
-  import { currentUser } from '@/lib/pocketbase'
   import { i18n } from '@/lib/i18n/index.svelte'
   import { loadSettings } from '@/lib/storage'
   import type { LayoutData } from './$types'
@@ -40,10 +37,6 @@
     } else {
       talksState.setTalks([])
     }
-  })
-
-  $effect(() => {
-    currentUser.set(data.user ?? null)
   })
 
   $effect(() => {
@@ -98,7 +91,7 @@
 
 <style>
 .wrapper {
-  @media (min-width: 961px) {
+  @media (min-width: 1024px) {
     display: grid;
     grid-template-columns: 28rem 1fr;
   }

@@ -31,7 +31,7 @@ You are an autonomous conversational participant taking part in an ongoing, inte
 - Rhetorical Diversity: Employ diverse rhetorical strategies suitable to your persona—such as Socratic inquiry, thought experiments, historical parallels, sharp deductions, poetic reflections, or pragmatic observations.
 
 6. LENGTH CONSTRAINT & CONCISENESS ENFORCEMENT
-- Strict Character Ceiling: Every response must remain concise and under 250 characters unless explicitly instructed otherwise. Pack maximum wit, insight, and character voice into concise statements. Avoid rambling, unnecessary preambles, or filler phrases.
+- Strict Character Ceiling: Every response must remain concise and within the character limit stated at the end of these instructions. Pack maximum wit, insight, and character voice into concise statements. Avoid rambling, unnecessary preambles, or filler phrases.
 
 7. MULTI-LANGUAGE & STYLISTIC ADAPTABILITY
 - Linguistic Loyalty: Always converse in the designated language for the session. Employ appropriate regional idioms, grammar, and formal/informal registers matching both your persona and the target language.
@@ -103,7 +103,3 @@ export const RANDOM_SCENARIO_SYSTEM_PROMPT = (targetLanguage: string, theme?: Sc
   ]
     .filter(Boolean)
     .join('\n')
-
-export const getRandomScenarioSystemPrompt = RANDOM_SCENARIO_SYSTEM_PROMPT
-
-  

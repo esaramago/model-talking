@@ -14,7 +14,10 @@ import {
   consumeQuota,
   consumeTitleQuota,
   getQuota,
-  resolveRateLimitIdentifier
+  refundQuota,
+  resolveRateLimitIdentifier,
+  type QuotaInfo,
+  type RateLimitIdentifier
 } from '@/lib/server/rateLimit'
 import { buildMessagesForModel, type ApiChatMessage } from '@/lib/chat'
 import type { ChatMessage } from '@/types/chat'
@@ -46,6 +49,22 @@ export const GET: RequestHandler = async (event) => {
 
 export const POST: RequestHandler = async (event) => {
   const { request, locals } = event
+  let currentQuota: QuotaInfo | undefined
+  let creditIdentifier: RateLimitIdentifier | null = null
+
+  async function refundCredit() {
+    if (!creditIdentifier) return
+    const identifier = creditIdentifier
+    creditIdentifier = null
+    await refundQuota(locals.pb, identifier)
+    if (currentQuota && !currentQuota.isUnlimited) {
+      currentQuota = {
+        ...currentQuota,
+        remaining: Math.min(currentQuota.total, currentQuota.remaining + 1)
+      }
+    }
+  }
+
   try {
     const body = (await request.json()) as ChatRequestBody
     const {
@@ -78,7 +97,6 @@ export const POST: RequestHandler = async (event) => {
 
     const identifier = resolveRateLimitIdentifier(event)
 
-    let currentQuota
     let effectiveMessages: ApiChatMessage[]
     let clampedTokens: number
     let effectiveTemperature: number
@@ -127,18 +145,6 @@ export const POST: RequestHandler = async (event) => {
       clampedTokens = TITLE_MAX_OUTPUT_TOKENS
       effectiveTemperature = 0.5
     } else {
-      const quotaResult = await consumeQuota(locals.pb, identifier)
-      currentQuota = quotaResult.quota
-      if (!quotaResult.allowed) {
-        return json(
-          {
-            error: `Daily credit limit reached (${DAILY_MESSAGE_LIMIT}/${DAILY_MESSAGE_LIMIT}). Your credits will reset at 00:00 UTC.`,
-            quota: currentQuota
-          },
-          { status: 429 }
-        )
-      }
-
       // Reject any client-injected system or developer role messages
       const hasUnauthorizedRole = messages.some(
         (m) =>
@@ -258,6 +264,21 @@ export const POST: RequestHandler = async (event) => {
       effectiveTemperature = Math.max(0, Math.min(Number(temperature) || 0.7, 2))
     }
 
+    if (!isTitle) {
+      const quotaResult = await consumeQuota(locals.pb, identifier)
+      currentQuota = quotaResult.quota
+      if (!quotaResult.allowed) {
+        return json(
+          {
+            error: `Daily credit limit reached (${DAILY_MESSAGE_LIMIT}/${DAILY_MESSAGE_LIMIT}). Your credits will reset at 00:00 UTC.`,
+            quota: currentQuota
+          },
+          { status: 429 }
+        )
+      }
+      creditIdentifier = identifier
+    }
+
     const requestPayload: Record<string, unknown> = {
       model: MODEL,
       messages: effectiveMessages,
@@ -271,7 +292,7 @@ export const POST: RequestHandler = async (event) => {
       headers: {
         Authorization: `Bearer ${resolvedApiKey}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'http://localhost:5174',
+        'HTTP-Referer': event.url.origin,
         'X-Title': 'Model Talking'
       },
       body: JSON.stringify(requestPayload)
@@ -280,6 +301,7 @@ export const POST: RequestHandler = async (event) => {
     if (!response.ok) {
       const errText = await response.text()
       console.error('OpenRouter error:', response.status, errText)
+      await refundCredit()
       const error =
         response.status === 429
           ? 'AI provider rate limit reached. Please try again later.'
@@ -304,6 +326,7 @@ export const POST: RequestHandler = async (event) => {
     })
   } catch (err: unknown) {
     console.error('Chat API error:', err)
+    await refundCredit()
     return json({ error: 'Internal server error' }, { status: 500 })
   }
 }

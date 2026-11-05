@@ -2,8 +2,6 @@ import type { TranslationSchema } from '../types'
 
 export const es: TranslationSchema = {
   header: {
-    generatedMessageSingular: 'Mensaje generado',
-    generatedMessagePlural: 'Mensajes generados',
     totalTokens: 'Tokens totales',
     model: 'Modelo',
     dailyCredits: 'Créditos',
@@ -40,7 +38,6 @@ export const es: TranslationSchema = {
     noResponse: '(Sin respuesta)',
     error: 'Error',
     topicPlaceholder: '¿Cómo empieza la conversación?',
-    random: 'Random',
     themePhilosophy: 'Filosofía',
     themeHistory: 'Historia',
     themeScifi: 'Ciencia Ficción',
@@ -160,8 +157,6 @@ export const es: TranslationSchema = {
     twoFactorNone: 'Desactivado',
     twoFactorEmail: 'Correo electrónico',
     twoFactorAuthenticator: 'Aplicación de autenticación (Authenticator)',
-    saveTwoFactor: 'Guardar 2FA',
-    twoFactorUpdated: 'Preferencias de 2FA actualizadas correctamente.',
     twoFactorEnabled: '2FA activado correctamente.',
     twoFactorDisabled: '2FA desactivado.',
     twoFactorCurrentStatus: 'Estado actual:',

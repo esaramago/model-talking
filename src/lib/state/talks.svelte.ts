@@ -1,9 +1,8 @@
 import { pb } from '@/lib/pocketbase'
-import type { TalkRecord } from '@/types/chat'
+import type { TalkRecord, TalkSummary } from '@/types/chat'
 
 class TalksState {
-  items = $state<TalkRecord[]>([])
-  isLoading = $state(false)
+  items = $state<TalkSummary[]>([])
   newChatTrigger = $state(0)
   pendingRestartAgents = $state<{
     agent1Name: string
@@ -19,16 +18,17 @@ class TalksState {
     this.newChatTrigger++
   }
 
-  setTalks(talks: TalkRecord[]) {
+  setTalks(talks: TalkSummary[]) {
     this.items = talks
   }
 
-  addOrUpdate(talk: TalkRecord) {
-    const index = this.items.findIndex((item) => item.id === talk.id)
+  addOrUpdate({ id, title, created }: TalkSummary) {
+    const summary = { id, title, created }
+    const index = this.items.findIndex((item) => item.id === id)
     if (index !== -1) {
-      this.items[index] = { ...this.items[index], ...talk }
+      this.items[index] = summary
     } else {
-      this.items = [talk, ...this.items]
+      this.items = [summary, ...this.items]
     }
   }
 
@@ -39,27 +39,6 @@ class TalksState {
   async delete(id: string) {
     await pb.collection('talks').delete(id)
     this.remove(id)
-  }
-
-  async refresh() {
-    const currentUserId = pb.authStore.record?.id
-    if (!currentUserId) {
-      this.items = []
-      return
-    }
-
-    try {
-      this.isLoading = true
-      const records = await pb.collection('talks').getFullList<TalkRecord>({
-        filter: pb.filter('user = {:userId}', { userId: currentUserId }),
-        sort: '-created'
-      })
-      this.items = records
-    } catch (err) {
-      console.warn('Failed to refresh talks from PocketBase:', err)
-    } finally {
-      this.isLoading = false
-    }
   }
 
   subscribe() {

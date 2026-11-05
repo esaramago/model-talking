@@ -1,7 +1,5 @@
 import { AVAILABLE_PERSONAS } from '@/lib/config'
 
-export { AVAILABLE_PERSONAS }
-
 export function getPersonaImageUrl(personaId: string | number): string {
   return `/img/personas/${personaId}.svg`
 }

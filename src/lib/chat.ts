@@ -5,18 +5,8 @@ import {
   BASE_SYSTEM_PROMPT,
   MODEL,
   DEFAULT_SETTINGS,
-  MAX_INPUT_TOKENS,
-  SUPPORTED_LANGUAGES
+  MAX_INPUT_TOKENS
 } from '@/lib/config'
-
-export {
-  AGENT_1_BASE_PROMPT,
-  AGENT_2_BASE_PROMPT,
-  BASE_SYSTEM_PROMPT,
-  MODEL,
-  MAX_INPUT_TOKENS,
-  SUPPORTED_LANGUAGES
-}
 
 export function getLanguageInstruction(language?: string): string {
   if (!language) return ''
@@ -159,7 +149,7 @@ export function buildMessagesForModel(
   const agentRolePrompt = targetSpeaker === 'agent1' ? AGENT_1_BASE_PROMPT : AGENT_2_BASE_PROMPT
   const namePrompt = agentName?.trim() ? `O teu nome é ${agentName.trim()}.` : ''
   const languagePrompt = getLanguageInstruction(language)
-  const rules = generalRules !== undefined ? generalRules.trim() : DEFAULT_SETTINGS.generalRules
+  const rules = generalRules.trim()
   const lengthPrompt = `Strict Character Ceiling: Every response must remain concise and under ${maxChars} characters.`
 
   const combinedSystemPrompt = [
@@ -250,11 +240,6 @@ export interface ChatTurnPayload {
   maxTokens?: number
   temperature?: number
   isTitle?: boolean
-  reasoning?: {
-    effort?: 'low' | 'medium' | 'high' | 'max' | 'none'
-    max_tokens?: number
-    exclude?: boolean
-  }
 }
 
 export async function requestModelTurn(payload: ChatTurnPayload): Promise<ChatResponse> {

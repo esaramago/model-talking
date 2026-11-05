@@ -10,13 +10,6 @@ import {
 import { getAdminPocketBase } from '@/lib/server/pbAdmin'
 import { deriveServerKey } from '@/lib/server/twoFactor'
 
-export {
-  DAILY_MESSAGE_LIMIT,
-  DAILY_TITLE_LIMIT,
-  DAILY_GUEST_IP_LIMIT,
-  DAILY_TITLE_IP_LIMIT
-}
-
 const GUEST_COOKIE_NAME = 'mt_guest_token'
 const MAX_MEMORY_USAGE_ENTRIES = 10_000
 
@@ -519,6 +512,36 @@ export async function consumeQuota(
       }
     }
   })
+}
+
+/**
+ * Gives back 1 message credit taken by consumeQuota, used when the AI provider fails.
+ */
+export async function refundQuota(
+  pb: PocketBase | undefined,
+  identifier: RateLimitIdentifier
+): Promise<void> {
+  if (identifier.isAdmin) return
+
+  const date = getUtcDateString()
+  ensureFreshMemoryUsage(date)
+
+  const keys = (
+    identifier.userKey
+      ? [identifier.userKey, identifier.cookieKey]
+      : [identifier.cookieKey, identifier.ipKey]
+  ).filter((key): key is string => Boolean(key))
+
+  await withKeysLock(keys, () =>
+    Promise.all(
+      keys.map(async (key) => {
+        const { count, recordId } = await fetchKeyCount(pb, key, date)
+        if (count > 0) {
+          await setKeyCount(pb, key, date, count - 1, recordId)
+        }
+      })
+    )
+  )
 }
 
 /**

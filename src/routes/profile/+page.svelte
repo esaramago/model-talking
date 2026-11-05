@@ -12,9 +12,23 @@
 
   let loadingAction = $state<string | null>(null)
   let selectedMethod = $state<'none' | 'email' | 'authenticator'>('none')
+  let authenticatorSetup = $state<{ secret: string; otpAuthUri: string } | null>(null)
+  let setupForm = $state<HTMLFormElement | null>(null)
+
+  const currentMethod = $derived(
+    (data.user?.twoFactorMethod as 'none' | 'email' | 'authenticator') || 'none'
+  )
+
+  // The server clears the pending secret when the method changes, so drop the cached setup too
+  $effect(() => {
+    selectedMethod = currentMethod
+    authenticatorSetup = null
+  })
 
   $effect(() => {
-    selectedMethod = (data.user?.twoFactorMethod as 'none' | 'email' | 'authenticator') || 'none'
+    if (form?.authenticatorSetup) {
+      authenticatorSetup = form.authenticatorSetup
+    }
   })
 
   function handleMethodChange(e: Event) {
@@ -23,6 +37,17 @@
     const val = (target?.value || currentTarget?.value) as 'none' | 'email' | 'authenticator' | undefined
     if (val) {
       selectedMethod = val
+      if (val === 'authenticator' && !authenticatorSetup && data.user?.twoFactorMethod !== 'authenticator') {
+        setupForm?.requestSubmit()
+      }
+    }
+  }
+
+  const setupEnhance: SubmitFunction = () => {
+    loadingAction = 'startAuthenticatorSetup'
+    return async ({ update }) => {
+      loadingAction = null
+      await update({ reset: false, invalidateAll: false })
     }
   }
 
@@ -172,6 +197,9 @@
           {/if}
         </Grid>
 
+        <form method="POST" action="?/startAuthenticatorSetup" use:enhance={setupEnhance} bind:this={setupForm}></form>
+
+        {@render feedback('startAuthenticatorSetup')}
         {@render feedback('enableAuthenticator2FA')}
         {@render feedback('enableEmail2FA')}
         {@render feedback('sendEmail2FACode')}
@@ -213,16 +241,20 @@
             <h3 data-appearance="h5">{t('profile.setupAuthenticatorTitle')}</h3>
             <p class="u-text-small">{t('profile.setupAuthenticatorStep1')}</p>
 
-            {#if data.authenticatorSetup?.otpAuthUri}
+            {#if loadingAction === 'startAuthenticatorSetup'}
+              <wa-spinner></wa-spinner>
+            {/if}
+
+            {#if authenticatorSetup?.otpAuthUri}
               <div class="u-text-center">
-                <wa-qr-code value={data.authenticatorSetup.otpAuthUri} size="180"></wa-qr-code>
+                <wa-qr-code value={authenticatorSetup.otpAuthUri} size="180"></wa-qr-code>
               </div>
             {/if}
 
             <p class="u-text-small">{t('profile.setupAuthenticatorStep2')}</p>
-            {#if data.authenticatorSetup?.secret}
+            {#if authenticatorSetup?.secret}
               <Grid align="center" gap="xs">
-                <code>{data.authenticatorSetup.secret}</code>
+                <code>{authenticatorSetup.secret}</code>
               </Grid>
             {/if}
 

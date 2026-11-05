@@ -1,6 +1,6 @@
-import { fail, redirect } from '@sveltejs/kit'
+import { fail, redirect, type Cookies } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
-import type { TwoFactorMethod, UserRecord } from '@/types/user'
+import type { UserRecord } from '@/types/user'
 import { getPrivilegedPocketBase } from '@/lib/server/pbAdmin'
 import { createServerPocketBase } from '@/lib/server/pocketbase'
 import {
@@ -22,30 +22,43 @@ import {
   clearAuthAttempts
 } from '@/lib/server/twoFactor'
 
-export const load: PageServerLoad = async ({ locals, cookies }) => {
+export const load: PageServerLoad = async ({ locals }) => {
   if (!locals.user) {
     throw redirect(303, '/login')
   }
 
+  return {
+    user: sanitizeUser(locals.user) as UserRecord
+  }
+}
+
+/**
+ * Returns the pending TOTP secret for the user, creating and persisting one on first use.
+ * Only called when the user actually starts the authenticator setup.
+ */
+async function getOrCreatePendingSecret(
+  locals: App.Locals,
+  cookies: Cookies,
+  userId: string
+): Promise<string> {
   const privilegedPb = await getPrivilegedPocketBase(locals.pb)
   let pendingSecret = ''
 
   try {
-    const fullUser = await privilegedPb.collection('users').getOne(locals.user.id)
+    const fullUser = await privilegedPb.collection('users').getOne(userId)
     pendingSecret = decryptTwoFactorSecret(fullUser.twoFactorPendingSecret as string | undefined)
   } catch {
-    pendingSecret = decryptTwoFactorSecret(locals.user.twoFactorPendingSecret as string | undefined)
+    pendingSecret = decryptTwoFactorSecret(locals.user?.twoFactorPendingSecret as string | undefined)
   }
 
   if (!pendingSecret) {
-    pendingSecret =
-      verifyPendingTotpToken(cookies.get(PENDING_TOTP_COOKIE_NAME), locals.user.id) || ''
+    pendingSecret = verifyPendingTotpToken(cookies.get(PENDING_TOTP_COOKIE_NAME), userId) || ''
   }
 
   if (!pendingSecret) {
     pendingSecret = generateBase32Secret()
     try {
-      const updated = await privilegedPb.collection('users').update(locals.user.id, {
+      const updated = await privilegedPb.collection('users').update(userId, {
         twoFactorPendingSecret: encryptTwoFactorSecret(pendingSecret)
       })
       locals.user = sanitizeUser(updated)
@@ -54,7 +67,7 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
     }
   }
 
-  cookies.set(PENDING_TOTP_COOKIE_NAME, createPendingTotpToken(locals.user.id, pendingSecret), {
+  cookies.set(PENDING_TOTP_COOKIE_NAME, createPendingTotpToken(userId, pendingSecret), {
     path: '/',
     httpOnly: true,
     sameSite: 'lax',
@@ -62,19 +75,33 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
     secure: process.env.NODE_ENV === 'production'
   })
 
-  const accountEmail = locals.user.email || 'user'
-  const otpAuthUri = buildOtpAuthUri('ModelTalking', accountEmail, pendingSecret)
-
-  return {
-    user: sanitizeUser(locals.user) as UserRecord,
-    authenticatorSetup: {
-      secret: pendingSecret,
-      otpAuthUri
-    }
-  }
+  return pendingSecret
 }
 
 export const actions: Actions = {
+  startAuthenticatorSetup: async ({ locals, cookies }) => {
+    if (!locals.user) {
+      throw redirect(303, '/login')
+    }
+
+    try {
+      const secret = await getOrCreatePendingSecret(locals, cookies, locals.user.id)
+      return {
+        action: 'startAuthenticatorSetup' as const,
+        authenticatorSetup: {
+          secret,
+          otpAuthUri: buildOtpAuthUri('ModelTalking', locals.user.email || 'user', secret)
+        }
+      }
+    } catch (err: any) {
+      console.error('Start authenticator setup error:', err)
+      return fail(400, {
+        action: 'startAuthenticatorSetup' as const,
+        errorKey: 'profile.updateError' as const
+      })
+    }
+  },
+
   updateName: async ({ request, locals }) => {
     if (!locals.user) {
       throw redirect(303, '/login')
@@ -428,11 +455,7 @@ export const actions: Actions = {
     }
 
     const formData = await request.formData()
-    const currentPassword =
-      (formData.get('currentPassword') as string) ||
-      (formData.get('oldPassword') as string) ||
-      (formData.get('password') as string) ||
-      ''
+    const currentPassword = (formData.get('currentPassword') as string) || ''
     const code = (formData.get('code') as string)?.replace(/\s+/g, '') || ''
 
     if (!currentPassword && !code) {

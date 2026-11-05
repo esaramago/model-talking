@@ -228,7 +228,7 @@ export const POST: RequestHandler = async (event) => {
           headers: {
             Authorization: `Bearer ${resolvedApiKey}`,
             'Content-Type': 'application/json',
-            'HTTP-Referer': 'http://localhost:5174',
+            'HTTP-Referer': event.url.origin,
             'X-Title': 'Model Talking'
           },
           body: JSON.stringify(requestPayload)

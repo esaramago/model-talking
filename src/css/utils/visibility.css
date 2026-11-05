@@ -10,12 +10,12 @@
   border-width: 0;
 }
 
-@media (max-width: 960px) {
+@media (max-width: 1023px) {
   .is-hidden-mobile {
     display: none !important;
   }
 }
-@media (min-width: 961px) {
+@media (min-width: 1024px) {
   .is-hidden-desktop {
     display: none !important;
   }

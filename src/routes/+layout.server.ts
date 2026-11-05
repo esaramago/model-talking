@@ -1,5 +1,5 @@
 import type { LayoutServerLoad } from './$types'
-import type { TalkRecord } from '@/types/chat'
+import type { TalkSummary } from '@/types/chat'
 import { getQuota, resolveRateLimitIdentifier } from '@/lib/server/rateLimit'
 import { sanitizeUser } from '@/lib/server/twoFactor'
 
@@ -18,12 +18,13 @@ export const load: LayoutServerLoad = async (event) => {
   }
 
   try {
-    const talks = await locals.pb.collection('talks').getFullList<TalkRecord>({
+    const talks = await locals.pb.collection('talks').getFullList<TalkSummary>({
       filter: locals.pb.filter('user = {:userId}', { userId: user.id }),
-      sort: '-created'
+      sort: '-created',
+      fields: 'id,title,created'
     })
     return {
-      talks: JSON.parse(JSON.stringify(talks)) as TalkRecord[],
+      talks: talks.map(({ id, title, created }) => ({ id, title, created })),
       user,
       quota
     }

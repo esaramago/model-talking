@@ -10,9 +10,6 @@ import {
 } from '@/lib/config'
 import { i18n } from '@/lib/i18n/index.svelte'
 
-export { DEFAULT_SETTINGS, STORAGE_KEY_PREFIX }
-export type { AgentDraft }
-
 export const DRAFT_STORAGE_KEY = 'model_talks_draft'
 
 export function getStorageKey(userId?: string | null): string {
@@ -242,21 +239,6 @@ export function saveSettings(settings: ChatSettings, userId?: string | null): vo
         .catch(() => {
           // Fail silently
         })
-    }
-  }
-}
-
-export function clearSettings(userId?: string | null): void {
-  if (userId) {
-    userSettingsCache.delete(userId)
-  } else {
-    guestSettings = { ...DEFAULT_SETTINGS }
-  }
-  if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-    try {
-      localStorage.removeItem(getStorageKey(userId))
-    } catch {
-      // Fail silently
     }
   }
 }

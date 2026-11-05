@@ -2,8 +2,6 @@ import type { TranslationSchema } from '../types'
 
 export const tr: TranslationSchema = {
   header: {
-    generatedMessageSingular: 'Oluşturulan Mesaj',
-    generatedMessagePlural: 'Oluşturulan Mesajlar',
     totalTokens: 'Toplam Token',
     model: 'Model',
     dailyCredits: 'Krediler',
@@ -40,7 +38,6 @@ export const tr: TranslationSchema = {
     noResponse: '(Yanıt yok)',
     error: 'Hata',
     topicPlaceholder: 'Sohbet nasıl başlasın?',
-    random: 'Rastgele',
     themePhilosophy: 'Felsefe',
     themeHistory: 'Tarih',
     themeScifi: 'Bilim Kurgu',
@@ -160,8 +157,6 @@ export const tr: TranslationSchema = {
     twoFactorNone: 'Devre dışı',
     twoFactorEmail: 'E-posta',
     twoFactorAuthenticator: 'Kimlik Doğrulayıcı Uygulaması (Authenticator)',
-    saveTwoFactor: '2FA kaydet',
-    twoFactorUpdated: '2FA tercihleri başarıyla güncellendi.',
     twoFactorEnabled: '2FA başarıyla etkinleştirildi.',
     twoFactorDisabled: '2FA devre dışı bırakıldı.',
     twoFactorCurrentStatus: 'Mevcut durum:',

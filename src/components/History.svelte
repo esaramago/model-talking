@@ -6,13 +6,13 @@
   import { page } from '$app/state'
   import { goto } from '$app/navigation'
   import { t } from '@/lib/i18n/index.svelte'
-  import type { TalkRecord } from '@/types/chat'
+  import type { TalkSummary } from '@/types/chat'
 
   let {
     talks: propTalks,
     onitemclick
   }: {
-    talks?: TalkRecord[]
+    talks?: TalkSummary[]
     onitemclick?: () => void
   } = $props()
 
@@ -21,7 +21,7 @@
     propTalks ?? (user ? (talksState.items.length > 0 ? talksState.items : (page.data?.talks ?? [])) : [])
   )
 
-  let talkToDelete = $state<TalkRecord | null>(null)
+  let talkToDelete = $state<TalkSummary | null>(null)
   let isConfirmDeleteOpen = $state(false)
   let isDeleting = $state(false)
 
@@ -30,7 +30,7 @@
     onitemclick?.()
   }
 
-  function openDeleteConfirm(talk: TalkRecord) {
+  function openDeleteConfirm(talk: TalkSummary) {
     talkToDelete = talk
     isConfirmDeleteOpen = true
   }
@@ -115,7 +115,7 @@
 <style>
 .history-navigation {
   font-size: var(--wa-font-size-xs);
-  @media (max-width: 960px) {
+  @media (max-width: 1023px) {
     font-size: var(--wa-font-size-s);
   }
   > li {

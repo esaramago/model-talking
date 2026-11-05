@@ -2,8 +2,6 @@ export type SupportedLanguage = 'pt-PT' | 'en' | 'es' | 'fr' | 'de' | 'it' | 'tr
 
 export interface TranslationSchema {
   header: {
-    generatedMessageSingular: string
-    generatedMessagePlural: string
     totalTokens: string
     model: string
     dailyCredits: string
@@ -40,7 +38,6 @@ export interface TranslationSchema {
     noResponse: string
     error: string
     topicPlaceholder: string
-    random: string
     themePhilosophy: string
     themeHistory: string
     themeScifi: string
@@ -160,8 +157,6 @@ export interface TranslationSchema {
     twoFactorNone: string
     twoFactorEmail: string
     twoFactorAuthenticator: string
-    saveTwoFactor: string
-    twoFactorUpdated: string
     twoFactorEnabled: string
     twoFactorDisabled: string
     twoFactorCurrentStatus: string

@@ -1,5 +1,4 @@
 import PocketBase, { BaseAuthStore } from 'pocketbase'
-import { writable } from 'svelte/store'
 
 // In browser environments, route all requests through SvelteKit's same-origin proxy
 // to enforce rate-limiting, 2FA verification, and prevent direct PocketBase bypasses.
@@ -10,22 +9,14 @@ const POCKETBASE_URL =
 
 export const pb = new PocketBase(POCKETBASE_URL, new BaseAuthStore())
 
-export const currentUser = writable(pb.authStore.record)
-
 if (typeof document !== 'undefined') {
 	pb.authStore.loadFromCookie(document.cookie)
-	currentUser.set(pb.authStore.record)
 
-	pb.authStore.onChange((_token, model) => {
-		currentUser.set(model)
+	pb.authStore.onChange(() => {
 		document.cookie = pb.authStore.exportToCookie({
 			httpOnly: false,
 			sameSite: 'lax',
 			secure: import.meta.env.PROD
 		})
-	})
-} else {
-	pb.authStore.onChange((_token, model) => {
-		currentUser.set(model)
 	})
 }

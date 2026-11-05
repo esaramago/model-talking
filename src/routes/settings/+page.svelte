@@ -80,6 +80,8 @@
     }
   })
 
+  let persistTimer: ReturnType<typeof setTimeout> | undefined
+
   function persistCurrentSettings() {
     if (!isHydrated) return
     const current = loadSettings(user?.id, user)
@@ -90,6 +92,20 @@
       maxChars
     }, user?.id)
   }
+
+  function schedulePersist() {
+    clearTimeout(persistTimer)
+    persistTimer = setTimeout(flushPersist, 500)
+  }
+
+  function flushPersist() {
+    if (persistTimer === undefined) return
+    clearTimeout(persistTimer)
+    persistTimer = undefined
+    persistCurrentSettings()
+  }
+
+  $effect(() => flushPersist)
 
   function handleLanguageChange(e: Event) {
     if (!isHydrated) return
@@ -111,7 +127,7 @@
       target.value = val
     }
     generalRules = val
-    persistCurrentSettings()
+    schedulePersist()
   }
 
   function handleMaxCharsInput(e: Event) {
