@@ -50,6 +50,30 @@ interface ParsedScenario {
   initialTopic: string
 }
 
+function truncateSafely(text: string, maxLength: number): string {
+  const trimmed = text.trim()
+  if (trimmed.length <= maxLength) return trimmed
+
+  const sliced = trimmed.slice(0, maxLength)
+  // Check for the last sentence terminator within the slice
+  const lastSentenceEnd = Math.max(
+    sliced.lastIndexOf('.'),
+    sliced.lastIndexOf('!'),
+    sliced.lastIndexOf('?')
+  )
+  if (lastSentenceEnd >= Math.floor(maxLength * 0.6)) {
+    return sliced.slice(0, lastSentenceEnd + 1).trim()
+  }
+
+  // Otherwise cut at the last word boundary to avoid slicing words mid-character
+  const lastSpace = sliced.lastIndexOf(' ')
+  if (lastSpace > Math.floor(maxLength * 0.4)) {
+    return sliced.slice(0, lastSpace).replace(/[,;:\-\s]+$/, '').trim()
+  }
+
+  return sliced.trim()
+}
+
 function parseScenarioContent(raw: string): ParsedScenario {
   let clean = raw.replace(/```(?:json)?/gi, '').trim()
   const firstBrace = clean.indexOf('{')
@@ -132,11 +156,11 @@ function parseScenarioContent(raw: string): ParsedScenario {
           : ''
 
   return {
-    agent1Name: agent1Name.trim().slice(0, 30),
-    agent2Name: agent2Name.trim().slice(0, 30),
-    systemPrompt1: systemPrompt1.trim().slice(0, 200),
-    systemPrompt2: systemPrompt2.trim().slice(0, 200),
-    initialTopic: initialTopic.trim().slice(0, 200)
+    agent1Name: truncateSafely(agent1Name, 40),
+    agent2Name: truncateSafely(agent2Name, 40),
+    systemPrompt1: truncateSafely(systemPrompt1, 200),
+    systemPrompt2: truncateSafely(systemPrompt2, 200),
+    initialTopic: truncateSafely(initialTopic, 200)
   }
 }
 
@@ -200,11 +224,11 @@ export const POST: RequestHandler = async (event) => {
           schema: {
             type: 'object',
             properties: {
-              agent1Name: { type: 'string', description: 'Name of character 1 (max 30 characters)' },
-              agent2Name: { type: 'string', description: 'Name of character 2 (max 30 characters)' },
-              systemPrompt1: { type: 'string', description: 'Concise definition, role, tone, and stance for character 1 (max 200 characters)' },
-              systemPrompt2: { type: 'string', description: 'Concise definition, role, tone, and stance for character 2 (max 200 characters)' },
-              initialTopic: { type: 'string', description: 'The opening statement or provocative question from character 1 to start the conversation (max 200 characters)' }
+              agent1Name: { type: 'string', description: 'Name of character 1 (max 35 characters)' },
+              agent2Name: { type: 'string', description: 'Name of character 2 (max 35 characters)' },
+              systemPrompt1: { type: 'string', description: 'Concise definition, role, tone, and stance for character 1 (between 100 and 170 characters, complete sentence ending with punctuation)' },
+              systemPrompt2: { type: 'string', description: 'Concise definition, role, tone, and stance for character 2 (between 100 and 170 characters, complete sentence ending with punctuation)' },
+              initialTopic: { type: 'string', description: 'The opening statement or provocative question from character 1 to start the conversation (between 100 and 170 characters, complete sentence ending with punctuation)' }
             },
             required: ['agent1Name', 'agent2Name', 'systemPrompt1', 'systemPrompt2', 'initialTopic'],
             additionalProperties: false

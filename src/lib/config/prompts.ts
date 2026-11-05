@@ -99,6 +99,10 @@ export const RANDOM_SCENARIO_SYSTEM_PROMPT = (targetLanguage: string, theme?: Sc
     'You are a creative dialogue designer.',
     'Generate a compelling, dynamic debate or discussion scenario between two distinct characters (e.g. historical figures, opposing experts, contrasting philosophers, or iconic archetypes).',
     theme && SCENARIO_THEME_INSTRUCTIONS[theme] ? SCENARIO_THEME_INSTRUCTIONS[theme] : '',
+    'STRICT LENGTH & COMPLETENESS RULES:',
+    '- systemPrompt1 & systemPrompt2: Concise persona definition, role, tone, and stance. Must be between 100 and 170 characters (under 25 words). Each must be a complete, grammatically finished sentence ending with proper punctuation (. ! ?). Never end mid-sentence or mid-word.',
+    '- initialTopic: A punchy opening statement or provocative question from character 1 to start the dialogue. Must be between 100 and 170 characters. Must be a complete sentence ending with punctuation (. ! ?).',
+    '- agent1Name & agent2Name: Concise character names (max 35 characters).',
     `Language requirement: Every field (names, descriptions, and initialTopic) MUST be written in ${targetLanguage}.`
   ]
     .filter(Boolean)
