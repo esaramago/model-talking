@@ -150,6 +150,7 @@ wa-textarea {
   --avatar-size: 6rem;
   display: flex;
   flex-direction: column;
+  align-items: start;
   gap: var(--wa-space-s);
   @container (width > 40rem) {
     display: grid;
