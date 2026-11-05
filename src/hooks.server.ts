@@ -159,12 +159,18 @@ export const handle: Handle = async ({ event, resolve }) => {
         lower === 'connection' ||
         lower === 'keep-alive' ||
         lower === 'transfer-encoding' ||
+        lower === 'accept-encoding' ||
         lower === PROXY_SECRET_HEADER
       ) {
         continue
       }
       proxyHeaders.set(key, value)
     }
+
+    // Request uncompressed responses internally so Node fetch does not decompress
+    // while forwarding mismatched Content-Length headers, and to avoid compression
+    // overhead between local containers.
+    proxyHeaders.set('accept-encoding', 'identity')
 
     proxyHeaders.set('x-forwarded-host', event.url.host)
     proxyHeaders.set('x-forwarded-proto', event.url.protocol.replace(':', ''))
@@ -197,7 +203,8 @@ export const handle: Handle = async ({ event, resolve }) => {
           lower === 'connection' ||
           lower === 'keep-alive' ||
           lower === 'transfer-encoding' ||
-          lower === 'content-encoding'
+          lower === 'content-encoding' ||
+          lower === 'content-length'
         ) {
           continue
         }
