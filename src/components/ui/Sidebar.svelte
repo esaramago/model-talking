@@ -86,7 +86,7 @@ aside {
   background-color: var(--wa-color-surface-lowered);
   overflow: auto;
   @media (max-width: 960px) {
-    position: absolute;
+    position: fixed;
     height: 100%;
     z-index: 2;
     transform: translateX(-100%);
