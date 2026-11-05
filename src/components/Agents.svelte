@@ -79,7 +79,7 @@
 
 <Grid wrap={true} break="small" fullWidth>
   {#each configs as config, index (config.id)}
-    <wa-card class={config.id === 'agent1' ? '--brand' : ''}>
+    <wa-card class={config.id === 'agent1' ? '--agent1' : ''}>
 
       <Grid direction="column" gap="s">
 
@@ -167,17 +167,17 @@ wa-avatar {
     background-color: var(--wa-color-brand-40);
   }
 }
-.--brand {
-  background-color: var(--wa-color-brand-30);
+.--agent1 {
+  background-color: var(--wa-color-secondary-30);
   @media (prefers-color-scheme: light) {
-    background-color: var(--wa-color-brand-80);
+    background-color: var(--wa-color-secondary-80);
   }
 
   wa-textarea,
   wa-input {
-    --wa-form-control-background-color: var(--wa-color-brand-30);
+    --wa-form-control-background-color: var(--wa-color-secondary-30);
     @media (prefers-color-scheme: light) {
-      --wa-form-control-background-color: var(--wa-color-brand-80);
+      --wa-form-control-background-color: var(--wa-color-secondary-80);
     }
   }
 }

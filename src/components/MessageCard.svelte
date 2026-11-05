@@ -60,9 +60,9 @@
   }
   wa-card {
     border-radius: var(--wa-border-radius-s) var(--wa-border-radius-xl) var(--wa-border-radius-xl);
-    background-color: var(--wa-color-brand-30);
+    background-color: var(--wa-color-secondary-30);
     @media (prefers-color-scheme: light) {
-      background-color: var(--wa-color-brand-80);
+      background-color: var(--wa-color-secondary-80);
     }
   }
   .chat-item--reversed {

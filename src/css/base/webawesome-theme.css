@@ -19,8 +19,14 @@
   --wa-color-brand-20: #36166a;
   --wa-color-brand-10: #220f45;
   --wa-color-brand-05: #14092b;
+  
+  --wa-color-secondary-30: #434700;
+  --wa-color-secondary-80: #edf395;
 
   --wa-color-text-quiet: var(--wa-color-neutral-90);
+  @media (prefers-color-scheme: light) {
+    --wa-color-text-quiet: var(--wa-color-neutral-30);
+  }
 }
 
 wa-button {
