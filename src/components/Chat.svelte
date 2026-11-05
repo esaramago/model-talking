@@ -30,6 +30,7 @@
     saveAgentDraft,
   } from '@/lib/storage'
   import { getRandomPersonaPair } from '@/lib/personas'
+  import { trackUmamiEvent } from '@/lib/umami'
   import { i18n, t } from '@/lib/i18n/index.svelte'
   import type { ChatMessage, TalkRecord } from '@/types/chat'
 
@@ -274,6 +275,7 @@
 
   async function handleRandomClick(theme: ScenarioTheme) {
     if (isRunning || isGeneratingRandom) return
+    trackUmamiEvent('Random Scenario', { theme })
     generatingTheme = theme
     randomErrorMessage = ''
     errorMessage = ''
@@ -389,6 +391,8 @@
     if (isRunning) return
 
     if (!conversationStarted) {
+      trackUmamiEvent('Start Conversation')
+
       if (!initialTopic.trim()) {
         errorMessage = t('chat.errorInitialTopic')
         return
@@ -463,6 +467,7 @@
       return
     }
 
+    trackUmamiEvent('Send Message')
     isRunning = true
     errorMessage = ''
     randomErrorMessage = ''
