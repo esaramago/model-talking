@@ -6,6 +6,7 @@
   import { syncWebAwesomeFormData } from '@/lib/forms'
   import { t } from '@/lib/i18n/index.svelte'
   import HeadMeta from '@/components/HeadMeta.svelte'
+  import Confirmation from '@/components/Confirmation.svelte'
   import type { ActionData, PageData } from './$types'
 
   let { data, form }: { data: PageData; form: ActionData } = $props()
@@ -14,6 +15,8 @@
   let selectedMethod = $state<'none' | 'email' | 'authenticator'>('none')
   let authenticatorSetup = $state<{ secret: string; otpAuthUri: string } | null>(null)
   let setupForm = $state<HTMLFormElement | null>(null)
+  let isConfirmDeleteAccountOpen = $state(false)
+  let deleteAccountForm = $state<HTMLFormElement | null>(null)
 
   const currentMethod = $derived(
     (data.user?.twoFactorMethod as 'none' | 'email' | 'authenticator') || 'none'
@@ -64,6 +67,10 @@
         })
       }
     }
+  }
+
+  function handleDeleteAccount() {
+    deleteAccountForm?.requestSubmit()
   }
 </script>
 
@@ -290,5 +297,60 @@
         {/if}
       </Grid>
     </wa-card>
+
+    <wa-card>
+      <Grid direction="column" gap="s">
+        <h2 data-appearance="h3">{t('profile.deleteAccountTitle')}</h2>
+        <p class="u-text-small">{t('profile.deleteAccountWarning')}</p>
+        {@render feedback('deleteAccount')}
+        <div>
+          <!-- svelte-ignore a11y_click_events_have_key_events -->
+          <wa-button
+            role="button"
+            tabindex="0"
+            variant="danger"
+            appearance="outlined"
+            onclick={() => {
+              isConfirmDeleteAccountOpen = true
+            }}
+          >
+            <wa-icon slot="start" name="trash-can"></wa-icon>
+            {t('profile.deleteAccountButton')}
+          </wa-button>
+        </div>
+      </Grid>
+    </wa-card>
   </Grid>
+
+  <Confirmation
+    bind:open={isConfirmDeleteAccountOpen}
+    title={t('profile.deleteAccountConfirmTitle')}
+    message={t('profile.deleteAccountConfirmMessage')}
+    confirmText={t('profile.deleteAccountConfirmButton')}
+    cancelText={t('confirmation.cancel')}
+    confirmVariant="danger"
+    loading={loadingAction === 'deleteAccount'}
+    onconfirm={handleDeleteAccount}
+    width="42rem"
+  >
+    <form
+      method="POST"
+      action="?/deleteAccount"
+      use:enhance={createEnhance('deleteAccount')}
+      bind:this={deleteAccountForm}
+    >
+      <Grid direction="column" gap="s">
+        {@render feedback('deleteAccount')}
+        <wa-input
+          name="password"
+          type="password"
+          label={t('profile.currentPasswordLabel')}
+          placeholder={t('profile.currentPasswordPlaceholder')}
+          required
+          password-toggle
+          autocomplete="current-password"
+        ></wa-input>
+      </Grid>
+    </form>
+  </Confirmation>
 </div>

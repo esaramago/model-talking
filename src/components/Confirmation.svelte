@@ -13,7 +13,8 @@
     loading = false,
     onconfirm,
     oncancel,
-    children
+    children,
+    width = '31rem'
   }: {
     open: boolean
     title?: string
@@ -25,6 +26,7 @@
     onconfirm?: () => void
     oncancel?: () => void
     children?: Snippet
+    width?: string
   } = $props()
 
   let dialogEl = $state<(HTMLElement & { open: boolean }) | null>(null)
@@ -52,6 +54,7 @@
   light-dismiss
   with-footer
   onwa-hide={handleCancel}
+  style={width ? `--width: ${width}` : ''}
 >
   <Grid direction="column">
     {#if message}

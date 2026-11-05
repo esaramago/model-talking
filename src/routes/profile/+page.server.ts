@@ -15,6 +15,7 @@ import {
   buildOtpAuthUri,
   sanitizeUser,
   setAuthSessionCookie,
+  clearAuthSessionCookie,
   createProfileOtpToken,
   verifyProfileOtpToken,
   isAuthRateLimited,
@@ -490,5 +491,66 @@ export const actions: Actions = {
         errorKey: 'profile.updateError' as const
       })
     }
+  },
+
+  deleteAccount: async ({ request, locals, cookies }) => {
+    if (!locals.user) {
+      throw redirect(303, '/login')
+    }
+
+    const formData = await request.formData()
+    const password = (formData.get('password') as string) || ''
+
+    if (!password) {
+      return fail(400, {
+        action: 'deleteAccount' as const,
+        errorKey: 'profile.fillRequired' as const
+      })
+    }
+
+    const privilegedPb = await getPrivilegedPocketBase(locals.pb)
+    const user = await privilegedPb.collection('users').getOne(locals.user.id)
+    const userEmail = user.email || locals.user.email || ''
+
+    try {
+      const authPb = createServerPocketBase(locals.pb.baseUrl)
+      await authPb.collection('users').authWithPassword(userEmail, password)
+    } catch {
+      return fail(400, {
+        action: 'deleteAccount' as const,
+        errorKey: 'profile.currentPasswordIncorrect' as const
+      })
+    }
+
+    const userId = locals.user.id
+
+    try {
+      try {
+        const userTalks = await privilegedPb.collection('talks').getFullList({
+          filter: `user = "${userId}"`,
+          fields: 'id'
+        })
+        for (const talk of userTalks) {
+          await privilegedPb.collection('talks').delete(talk.id).catch(() => {})
+        }
+      } catch (err) {
+        console.warn('Failed to clean up user talks during account deletion:', err)
+      }
+
+      await privilegedPb.collection('users').delete(userId)
+    } catch (err: any) {
+      console.error('Delete account error:', err)
+      return fail(400, {
+        action: 'deleteAccount' as const,
+        errorKey: 'profile.deleteAccountError' as const
+      })
+    }
+
+    cookies.delete(PENDING_TOTP_COOKIE_NAME, { path: '/' })
+    cookies.delete(PROFILE_OTP_COOKIE_NAME, { path: '/' })
+    locals.pb.authStore.clear()
+    clearAuthSessionCookie(cookies)
+
+    throw redirect(303, '/login')
   }
 }

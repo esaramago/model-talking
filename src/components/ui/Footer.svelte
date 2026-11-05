@@ -3,7 +3,11 @@
 </script>
 
 <footer>
-  {t('footer.createdBy')} <a href="https://emanuelsaramago.com" target="_blank">Emanuel Saramago</a>
+  <a href="/privacy">{t('footer.privacy')}</a>
+  <span>|</span>
+  <a href="/terms">{t('footer.terms')}</a>
+  <span>|</span>
+  {t('footer.createdBy')} <a href="https://emanuelsaramago.com" target="_blank" rel="noopener noreferrer">Emanuel Saramago</a>
   <span>|</span>
   <a href="mailto:modeltalking@emanuelsaramago.com">{t('footer.contact')}</a>
 </footer>

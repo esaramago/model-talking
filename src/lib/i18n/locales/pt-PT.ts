@@ -174,7 +174,14 @@ export const ptPT: TranslationSchema = {
     fillRequired: 'Por favor preenche todos os campos obrigatórios.',
     invalidCode: 'Código de verificação inválido.',
     codeExpired: 'O código expirou. Solicita um novo código.',
-    updateError: 'Ocorreu um erro ao atualizar o perfil.'
+    updateError: 'Ocorreu um erro ao atualizar o perfil.',
+    deleteAccountTitle: 'Eliminar Conta',
+    deleteAccountWarning: 'Elimina permanentemente a tua conta e todo o histórico de conversas associado. Esta ação não pode ser anulada.',
+    deleteAccountButton: 'Eliminar Conta',
+    deleteAccountConfirmTitle: 'Eliminar Conta Permanentemente',
+    deleteAccountConfirmMessage: 'Tens a certeza de que pretendes eliminar a tua conta? Todas as tuas conversas guardadas e definições serão apagadas imediatamente. Introduz a tua palavra-passe atual para confirmar.',
+    deleteAccountConfirmButton: 'Eliminar Definitivamente',
+    deleteAccountError: 'Não foi possível eliminar a conta. Por favor tenta novamente mais tarde.'
   },
   about: {
     title: 'Sobre o {title}',
@@ -207,6 +214,40 @@ export const ptPT: TranslationSchema = {
   },
   footer: {
     createdBy: 'Criado por',
-    contact: 'Contacto'
+    contact: 'Contacto',
+    privacy: 'Política de Privacidade',
+    terms: 'Termos de Utilização'
+  },
+  privacy: {
+    title: 'Política de Privacidade',
+    subtitle: 'Como tratamos os teus dados pessoais, a tua privacidade e as interações com inteligência artificial.',
+    controllerTitle: '1. Responsável pelo Tratamento',
+    controllerText: 'O {title} é desenvolvido e mantido por Emanuel Saramago (contacto: modeltalking@emanuelsaramago.com). Estamos empenhados em proteger os teus dados pessoais em total conformidade com o Regulamento Geral sobre a Proteção de Dados (RGPD).',
+    dataCollectedTitle: '2. Dados Pessoais Recolhidos',
+    dataCollectedText: 'Ao criares conta, recolhemos o teu endereço de email, a palavra-passe encriptada e as tuas preferências. Ao utilizares a aplicação, os prompts e os históricos das conversas geradas são guardados associados à tua conta.',
+    aiProcessingTitle: '3. Processamento de IA e Terceiros',
+    aiProcessingText: 'Para gerar as respostas entre os agentes, os prompts e o contexto das conversas são transmitidos através do OpenRouter a fornecedores terceiros de modelos de inteligência artificial (como OpenAI, Anthropic, Google, entre outros). Não submetas informações confidenciais ou dados pessoais sensíveis nos diálogos.',
+    cookiesTitle: '4. Cookies e Armazenamento Local',
+    cookiesText: 'Utilizamos apenas cookies técnicos estritamente necessários para autenticação de sessão e armazenamento local (localStorage) para preferências de interface (idioma e regras gerais). Não utilizamos cookies de rastreio ou publicidade de terceiros. Métricas agregadas e anónimas são geradas através de uma instância própria do Umami sem recurso a cookies.',
+    rightsTitle: '5. Os Teus Direitos (RGPD)',
+    rightsText: 'Ao abrigo do RGPD, tens o direito de aceder, retificar, exportar ou solicitar o apagamento dos teus dados pessoais a qualquer momento. Podes gerir os teus dados na página de Perfil ou contactar-nos diretamente para eliminação total da tua conta e histórico.',
+    retentionTitle: '6. Retenção de Dados',
+    retentionText: 'Os teus dados de conta e histórico de conversas são conservados enquanto mantiveres a conta ativa ou até solicitares a sua eliminação. Os registos técnicos de servidor são mantidos apenas temporariamente para efeitos de segurança e controlo de tráfego.'
+  },
+  terms: {
+    title: 'Termos de Utilização',
+    subtitle: 'Regras, avisos legais e diretrizes de utilização do {title}.',
+    acceptanceTitle: '1. Aceitação dos Termos',
+    acceptanceText: 'Ao acederes ou utilizares o {title}, declaras que leste, compreendeste e concordas em cumprir estes Termos de Utilização. Caso não concordes, deves cessar a utilização da plataforma.',
+    aiDisclaimerTitle: '2. Isenção sobre Conteúdos de IA',
+    aiDisclaimerText: 'Todas as conversas e respostas são geradas exclusivamente por modelos de inteligência artificial. Os conteúdos gerados podem conter imprecisões, alucinações ou vieses, não constituindo aconselhamento profissional, legal, médico ou financeiro. O serviço é fornecido "tal como está", sem garantias de qualquer tipo.',
+    acceptableUseTitle: '3. Política de Utilização Aceitável',
+    acceptableUseText: 'Concordas em não utilizar a plataforma para gerar conteúdos ilegais, difamatórios, abusivos ou prejudiciais, infringir direitos de terceiros, tentar ataques de injeção de prompts ou engenharia inversa, nem contornar os limites de tráfego e quotas de tokens da plataforma.',
+    accountsTitle: '4. Contas e Limites de Utilização',
+    accountsText: 'És responsável pela confidencialidade das tuas credenciais de acesso. Aplicamos limites diários de mensagens geradas para assegurar a sustentabilidade do serviço, reservando-nos o direito de suspender ou encerrar contas que abusem dos recursos.',
+    ipTitle: '5. Propriedade Intelectual',
+    ipText: 'O design, a marca e o código-fonte do {title} pertencem a Emanuel Saramago. Os conteúdos gerados através dos modelos de terceiros estão sujeitos às condições e políticas dos respetivos fornecedores acedidos via OpenRouter.',
+    changesTitle: '6. Alterações aos Termos',
+    changesText: 'Reservamo-nos o direito de atualizar estes Termos de Utilização a qualquer momento. A continuação da utilização do serviço após qualquer alteração constitui aceitação dos novos termos.'
   }
 }

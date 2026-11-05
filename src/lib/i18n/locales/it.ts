@@ -174,7 +174,14 @@ export const it: TranslationSchema = {
     fillRequired: 'Compila tutti i campi obbligatori.',
     invalidCode: 'Codice di verifica non valido.',
     codeExpired: 'Il codice è scaduto. Richiedine uno nuovo.',
-    updateError: 'Si è verificato un errore durante l’aggiornamento del profilo.'
+    updateError: 'Si è verificato un errore durante l’aggiornamento del profilo.',
+    deleteAccountTitle: 'Elimina account',
+    deleteAccountWarning: 'Elimina definitivamente il tuo account e tutta la cronologia delle conversazioni. Questa azione non può essere annullata.',
+    deleteAccountButton: 'Elimina account',
+    deleteAccountConfirmTitle: 'Elimina definitivamente l’account',
+    deleteAccountConfirmMessage: 'Sei sicuro di voler eliminare il tuo account? Tutte le conversazioni e le preferenze verranno cancellate. Inserisci la password per confermare.',
+    deleteAccountConfirmButton: 'Elimina definitivamente',
+    deleteAccountError: 'Impossibile eliminare l’account. Riprova più tardi.'
   },
   about: {
     title: 'Informazioni su {title}',
@@ -207,6 +214,40 @@ export const it: TranslationSchema = {
   },
   footer: {
     createdBy: 'Creato da',
-    contact: 'Contatto'
+    contact: 'Contatto',
+    privacy: 'Informativa sulla Privacy',
+    terms: 'Termini di Servizio'
+  },
+  privacy: {
+    title: 'Informativa sulla Privacy',
+    subtitle: 'Come gestiamo i tuoi dati personali, la tua privacy e le interazioni con l’intelligenza artificiale.',
+    controllerTitle: '1. Titolare del Trattamento',
+    controllerText: '{title} è gestito da Emanuel Saramago (contatto: modeltalking@emanuelsaramago.com) in conformità al GDPR.',
+    dataCollectedTitle: '2. Dati Personali Raccolti',
+    dataCollectedText: 'Raccogliamo email, password cifrata e preferenze, oltre alla cronologia delle conversazioni salvate.',
+    aiProcessingTitle: '3. Trattamento IA e Terze Parti',
+    aiProcessingText: 'I prompt vengono instradati tramite OpenRouter a modelli di IA terzi. Non inserire dati sensibili.',
+    cookiesTitle: '4. Cookie e Archiviazione Locale',
+    cookiesText: 'Utilizziamo solo cookie tecnici strettamente necessari e memoria locale per le preferenze. Nessun cookie di tracciamento pubblicitario.',
+    rightsTitle: '5. I Tuoi Diritti (GDPR)',
+    rightsText: 'Puoi accedere, modificare, esportare o eliminare i tuoi dati in qualsiasi momento dal Profilo o contattandoci.',
+    retentionTitle: '6. Conservazione dei Dati',
+    retentionText: 'I dati vengono conservati fino alla cancellazione del tuo account o delle chat.'
+  },
+  terms: {
+    title: 'Termini di Servizio',
+    subtitle: 'Regole, avvertenze e linee guida per l’utilizzo di {title}.',
+    acceptanceTitle: '1. Accettazione dei Termini',
+    acceptanceText: 'Accedendo a {title}, accetti di essere vincolato da questi Termini di Servizio.',
+    aiDisclaimerTitle: '2. Esclusione di Responsabilità sui Contenuti IA',
+    aiDisclaimerText: 'Tutti i dialoghi sono generati da intelligenza artificiale e non costituiscono consulenza professionale.',
+    acceptableUseTitle: '3. Uso Accettabile',
+    acceptableUseText: 'Accetti di non usare il servizio per scopi illeciti o per eludere i limiti di utilizzo.',
+    accountsTitle: '4. Account e Limiti di Utilizzo',
+    accountsText: 'Ci riserviamo il diritto di sospendere gli account che violano le regole o abusano delle risorse.',
+    ipTitle: '5. Proprietà Intellettuale',
+    ipText: 'Il design e il codice di {title} appartengono a Emanuel Saramago.',
+    changesTitle: '6. Modifiche',
+    changesText: 'Ci riserviamo il diritto di aggiornare questi termini in qualsiasi momento.'
   }
 }

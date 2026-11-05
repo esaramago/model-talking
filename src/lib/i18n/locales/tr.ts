@@ -174,7 +174,14 @@ export const tr: TranslationSchema = {
     fillRequired: 'Lütfen tüm zorunlu alanları doldurun.',
     invalidCode: 'Geçersiz doğrulama kodu.',
     codeExpired: 'Kodun süresi doldu. Lütfen yenisini isteyin.',
-    updateError: 'Profil güncellenirken bir hata oluştu.'
+    updateError: 'Profil güncellenirken bir hata oluştu.',
+    deleteAccountTitle: 'Hesabı Sil',
+    deleteAccountWarning: 'Hesabınızı ve tüm sohbet geçmişinizi kalıcı olarak siler. Bu işlem geri alınamaz.',
+    deleteAccountButton: 'Hesabı Sil',
+    deleteAccountConfirmTitle: 'Hesabı Kalıcı Olarak Sil',
+    deleteAccountConfirmMessage: 'Hesabınızı silmek istediğinizden emin misiniz? Tüm kayıtlı sohbetler hemen silinecektir. Onaylamak için mevcut şifrenizi girin.',
+    deleteAccountConfirmButton: 'Kalıcı Olarak Sil',
+    deleteAccountError: 'Hesap silinemedi. Lütfen daha sonra tekrar deneyin.'
   },
   about: {
     title: '{title} Hakkında',
@@ -207,6 +214,40 @@ export const tr: TranslationSchema = {
   },
   footer: {
     createdBy: 'Geliştiren',
-    contact: 'İletişim'
+    contact: 'İletişim',
+    privacy: 'Gizlilik Politikası',
+    terms: 'Kullanım Şartları'
+  },
+  privacy: {
+    title: 'Gizlilik Politikası',
+    subtitle: 'Kişisel verileriniz, gizliliğiniz ve yapay zeka etkileşimlerinizin nasıl işlendiği.',
+    controllerTitle: '1. Veri Sorumlusu',
+    controllerText: '{title}, Emanuel Saramago tarafından yönetilmektedir (iletişim: modeltalking@emanuelsaramago.com).',
+    dataCollectedTitle: '2. Toplanan Kişisel Veriler',
+    dataCollectedText: 'E-posta adresiniz, şifre özetiniz ve konuşma geçmişiniz hesabınızla ilişkilendirilerek saklanır.',
+    aiProcessingTitle: '3. Yapay Zeka İşleme ve Üçüncü Taraflar',
+    aiProcessingText: 'İstemler OpenRouter aracılığıyla üçüncü taraf yapay zeka sağlayıcılarına iletilir. Hassas kişisel bilgilerinizi paylaşmayınız.',
+    cookiesTitle: '4. Çerezler ve Yerel Depolama',
+    cookiesText: 'Yalnızca oturum açma için gerekli teknik çerezleri ve kullanıcı tercihleri için yerel depolamayı kullanıyoruz. Takip çerezi bulunmamaktadır.',
+    rightsTitle: '5. Haklarınız (GDPR)',
+    rightsText: 'Verilerinize erişme, düzeltme veya silinmesini talep etme hakkına sahipsiniz.',
+    retentionTitle: '6. Veri Saklama',
+    retentionText: 'Verileriniz hesabınız açık kaldığı sürece saklanır.'
+  },
+  terms: {
+    title: 'Kullanım Şartları',
+    subtitle: '{title} kullanım kuralları ve yasal bildirimler.',
+    acceptanceTitle: '1. Şartların Kabulü',
+    acceptanceText: '{title} hizmetini kullanarak bu şartları kabul etmiş sayılırsınız.',
+    aiDisclaimerTitle: '2. Yapay Zeka İçerik Sorumluluk Reddi',
+    aiDisclaimerText: 'Tüm konuşmalar yapay zeka tarafından üretilmiştir ve profesyonel tavsiye niteliği taşımaz.',
+    acceptableUseTitle: '3. Kabul Edilebilir Kullanım',
+    acceptableUseText: 'Hizmeti yasa dışı amaçlarla kullanmamayı ve sistem limitlerini aşmaya çalışmamayı kabul edersiniz.',
+    accountsTitle: '4. Hesaplar ve Kullanım Limitleri',
+    accountsText: 'Kötüye kullanım durumunda hesapları askıya alma hakkımız saklıdır.',
+    ipTitle: '5. Fikri Mülkiyet',
+    ipText: '{title} tasarımı ve kaynak kodu Emanuel Saramago\'ya aittir.',
+    changesTitle: '6. Değişiklikler',
+    changesText: 'Bu şartları herhangi bir zamanda güncelleme hakkımız saklıdır.'
   }
 }

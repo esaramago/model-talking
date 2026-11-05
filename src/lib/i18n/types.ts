@@ -175,6 +175,13 @@ export interface TranslationSchema {
     invalidCode: string
     codeExpired: string
     updateError: string
+    deleteAccountTitle: string
+    deleteAccountWarning: string
+    deleteAccountButton: string
+    deleteAccountConfirmTitle: string
+    deleteAccountConfirmMessage: string
+    deleteAccountConfirmButton: string
+    deleteAccountError: string
   }
   about: {
     title: string
@@ -208,6 +215,40 @@ export interface TranslationSchema {
   footer: {
     createdBy: string
     contact: string
+    privacy: string
+    terms: string
+  }
+  privacy: {
+    title: string
+    subtitle: string
+    controllerTitle: string
+    controllerText: string
+    dataCollectedTitle: string
+    dataCollectedText: string
+    aiProcessingTitle: string
+    aiProcessingText: string
+    cookiesTitle: string
+    cookiesText: string
+    rightsTitle: string
+    rightsText: string
+    retentionTitle: string
+    retentionText: string
+  }
+  terms: {
+    title: string
+    subtitle: string
+    acceptanceTitle: string
+    acceptanceText: string
+    aiDisclaimerTitle: string
+    aiDisclaimerText: string
+    acceptableUseTitle: string
+    acceptableUseText: string
+    accountsTitle: string
+    accountsText: string
+    ipTitle: string
+    ipText: string
+    changesTitle: string
+    changesText: string
   }
 }
 
