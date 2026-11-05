@@ -3,7 +3,6 @@
   import { goto } from '$app/navigation'
   import { page } from '$app/state'
   import Grid from '@/components/ui/Grid.svelte'
-  import Heading from '@/components/ui/Heading.svelte'
   import Conversation from '@/components/Conversation.svelte'
   import MessageCard from '@/components/MessageCard.svelte'
   import Agents from '@/components/Agents.svelte'
@@ -14,18 +13,23 @@
   import {
     requestModelTurn,
     generateTalkTitle,
+    generateRandomScenario,
   } from '@/lib/chat'
-  import { DEFAULT_AGENT_DRAFT, DEFAULT_SETTINGS, MAX_OUTPUT_TOKENS, MODEL } from '@/lib/config'
+  import {
+    DEFAULT_AGENT_DRAFT,
+    DEFAULT_SETTINGS,
+    MAX_OUTPUT_TOKENS,
+    MODEL,
+    SCENARIO_THEMES,
+    type ScenarioTheme,
+  } from '@/lib/config'
   import {
     clearAgentDraft,
     loadAgentDraft,
     loadSettings,
     saveAgentDraft,
   } from '@/lib/storage'
-  import {
-    getRandomConversation,
-    getRandomPersonaPair,
-  } from '@/lib/randomConversations'
+  import { getRandomPersonaPair } from '@/lib/personas'
   import { i18n, t } from '@/lib/i18n/index.svelte'
   import type { ChatMessage, TalkRecord } from '@/types/chat'
 
@@ -57,14 +61,17 @@
   let isRunning = $state(false)
   let statusMessage = $state(t('chat.ready'))
   let errorMessage = $state('')
+  let randomErrorMessage = $state('')
 
   let totalPromptTokens = $state(0)
   let totalCompletionTokens = $state(0)
   let totalTokensUsed = $state(0)
 
   let activeThinkingSpeaker = $state<string | null>(null)
-  let lastRandomId = $state<string | undefined>(undefined)
+  let generatingTheme = $state<ScenarioTheme | null>(null)
+  let isGeneratingRandom = $derived(generatingTheme !== null)
   let isConfirmRestartOpen = $state(false)
+  let isConfirmNewChatOpen = $state(false)
 
   function applyTalk(talk: TalkRecord) {
     currentTalkId = talk.id
@@ -114,14 +121,39 @@
     totalCompletionTokens = 0
     totalTokensUsed = 0
     if (!restoreDraft()) {
-      randomizeAgents()
+      initialTopic = ''
+      agent1Name = ''
+      agent2Name = ''
+      systemPrompt1 = ''
+      systemPrompt2 = ''
+      agent1Avatar = '/img/personas/1.svg'
+      agent2Avatar = '/img/personas/2.svg'
     }
     statusMessage = t('chat.ready')
+    errorMessage = ''
+    randomErrorMessage = ''
   }
 
   function promptRestart() {
     if (isRunning) return
     isConfirmRestartOpen = true
+  }
+
+  function promptNewChat() {
+    if (isRunning) return
+    isConfirmNewChatOpen = true
+  }
+
+  function handleNewChat() {
+    if (isRunning) return
+    isConfirmNewChatOpen = false
+
+    if (props.talkId) {
+      talksState.pendingRestartAgents = null
+      goto('/')
+    } else {
+      resetNewChat()
+    }
   }
 
   function handleRestart() {
@@ -151,6 +183,7 @@
       initialTopic = ''
       statusMessage = t('chat.ready')
       errorMessage = ''
+      randomErrorMessage = ''
     }
   }
 
@@ -173,9 +206,7 @@
       initialTopic = ''
       talksState.pendingRestartAgents = null
     } else {
-      if (!restoreDraft()) {
-        randomizeAgents()
-      }
+      restoreDraft()
     }
 
     isHydrated = true
@@ -271,20 +302,35 @@
       : agent2Name.trim() || t('agents.defaultAgent2')
   }
 
-  function randomizeAgents() {
-    const conv = getRandomConversation(lastRandomId)
-    lastRandomId = conv.id
+  async function handleRandomClick(theme: ScenarioTheme) {
+    if (isRunning || isGeneratingRandom) return
+    generatingTheme = theme
+    randomErrorMessage = ''
+    errorMessage = ''
 
-    const [randomAvatar1, randomAvatar2] = getRandomPersonaPair()
-    agent1Avatar = conv.agent1.avatar || randomAvatar1
-    agent2Avatar = conv.agent2.avatar || randomAvatar2
+    try {
+      const result = await generateRandomScenario(language, theme)
+      if (result.quota) {
+        stats.setQuota(result.quota)
+      }
 
-    agent1Name = conv.agent1.name
-    systemPrompt1 = conv.agent1.description
-    agent2Name = conv.agent2.name
-    systemPrompt2 = conv.agent2.description
-    if (conv.agent1.prompts?.[0]) {
-      initialTopic = conv.agent1.prompts[0]
+      agent1Name = result.agent1Name
+      agent2Name = result.agent2Name
+      systemPrompt1 = result.systemPrompt1
+      systemPrompt2 = result.systemPrompt2
+      initialTopic = result.initialTopic
+
+      const [randomAvatar1, randomAvatar2] = getRandomPersonaPair()
+      agent1Avatar = randomAvatar1
+      agent2Avatar = randomAvatar2
+    } catch (err: unknown) {
+      const errorWithQuota = err as { quota?: Parameters<typeof stats.setQuota>[0]; message?: string }
+      if (errorWithQuota?.quota) {
+        stats.setQuota(errorWithQuota.quota)
+      }
+      randomErrorMessage = err instanceof Error ? err.message : t('chat.errorOccurred')
+    } finally {
+      generatingTheme = null
     }
   }
 
@@ -384,6 +430,7 @@
       }
 
       errorMessage = ''
+      randomErrorMessage = ''
       isRunning = true
 
       messages = []
@@ -457,14 +504,42 @@
 
     isRunning = true
     errorMessage = ''
+    randomErrorMessage = ''
     await executeTurn()
     isRunning = false
   }
 </script>
 
-<Grid direction="column" gap="3xl" justify="stretch">
+  <Grid direction="column" justify="center">
+    <h3 data-appearance="h4" class="u-text-center">Preenche os campos abaixo ou escolhe um tema</h3>
+    <Grid justify="center" wrap={true} gap="xs">
+      {#each SCENARIO_THEMES as theme (theme.id)}
+        <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+        <wa-button
+          role="button"
+          tabindex="0"
+          variant="neutral"
+          appearance="outlined"
+          disabled={isRunning || isGeneratingRandom}
+          loading={generatingTheme === theme.id || undefined}
+          onclick={() => handleRandomClick(theme.id)}
+        >
+          <wa-icon slot="start" name={theme.icon} variant="solid"></wa-icon>
+          {t(theme.labelKey)}
+        </wa-button>
+      {/each}
+    </Grid>
+  </Grid>
 
-  <Heading title={t('chat.title')} subtitle={t('chat.subtitle')} />
+  {#if randomErrorMessage}
+    <wa-callout variant="danger">
+      <wa-icon slot="start" name="triangle-exclamation" variant="solid"></wa-icon>
+      <Grid direction="column" gap="xs">
+        <strong>{t('chat.error')}</strong>
+        <p>{randomErrorMessage}</p>
+      </Grid>
+    </wa-callout>
+  {/if}
 
   <Agents
     readonly={!!messages.length}
@@ -481,10 +556,12 @@
     <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
     <Grid wrap={true} align="center" justify="end" gap="s">
       <wa-button
-        href="/"
+        role="button"
+        tabindex="0"
         variant="neutral"
         appearance="outlined"
         disabled={isRunning}
+        onclick={promptNewChat}
       >
         {t('sidebar.newChat')}
       </wa-button>
@@ -540,19 +617,7 @@
     {/if}
 
     <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-    <Grid wrap={true} align="center" justify="end" gap="s">
-      <wa-button
-        role="button"
-        tabindex="0"
-        variant="neutral"
-        appearance="outlined"
-        disabled={isRunning}
-        onclick={randomizeAgents}
-      >
-        <wa-icon slot="start" name="shuffle" variant="solid"></wa-icon>
-        {t('chat.random')}
-      </wa-button>
-
+    <Grid wrap={true} justify="end">
       <wa-button
         role="button"
         tabindex="0"
@@ -561,7 +626,7 @@
         onclick={sendMessage}
       >
         <wa-icon slot="start" name="paper-plane" variant="solid"></wa-icon>
-        {t('chat.sendMessage')}
+        {t('chat.start')}
       </wa-button>
     </Grid>
   {/if}
@@ -574,7 +639,15 @@
     cancelText={t('chat.restartCancelButton')}
     onconfirm={handleRestart}
   />
-</Grid>
+
+  <Confirmation
+    bind:open={isConfirmNewChatOpen}
+    title={t('chat.newChatConfirmTitle')}
+    message={t('chat.newChatConfirmMessage')}
+    confirmText={t('chat.newChatConfirmButton')}
+    cancelText={t('chat.newChatCancelButton')}
+    onconfirm={handleNewChat}
+  />
 
 <style>
   wa-textarea {

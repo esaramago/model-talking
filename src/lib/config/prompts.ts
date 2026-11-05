@@ -52,4 +52,58 @@ export const AGENT_1_BASE_PROMPT =
  */
 export const AGENT_2_BASE_PROMPT =
   'ROLE: AGENT 2 (CONVERSATION COUNTERPART & CRITICAL RESPONDENT)\nYou are Agent 2 in this exchange. Your role is to evaluate, challenge, nuance, or expand upon the perspectives presented by Agent 1. Offer counterarguments, reveal alternative dimensions, and enrich the dialogue with constructive friction.'
+
+export type ScenarioTheme = 'philosophy' | 'history' | 'scifi' | 'comedy' | 'tech' | 'surprise'
+
+export interface ScenarioThemeConfig {
+  id: ScenarioTheme
+  icon: string
+  labelKey:
+    | 'chat.themePhilosophy'
+    | 'chat.themeHistory'
+    | 'chat.themeScifi'
+    | 'chat.themeComedy'
+    | 'chat.themeTech'
+    | 'chat.themeSurprise'
+}
+
+export const SCENARIO_THEMES: ScenarioThemeConfig[] = [
+  { id: 'philosophy', icon: 'scale-balanced', labelKey: 'chat.themePhilosophy' },
+  { id: 'history', icon: 'landmark', labelKey: 'chat.themeHistory' },
+  { id: 'scifi', icon: 'rocket', labelKey: 'chat.themeScifi' },
+  { id: 'comedy', icon: 'masks-theater', labelKey: 'chat.themeComedy' },
+  { id: 'tech', icon: 'microchip', labelKey: 'chat.themeTech' },
+  { id: 'surprise', icon: 'wand-magic-sparkles', labelKey: 'chat.themeSurprise' }
+]
+
+const SCENARIO_THEME_INSTRUCTIONS: Record<ScenarioTheme, string> = {
+  philosophy:
+    'Theme: Philosophy & Ethics. Create a deep philosophical, existential, or moral dilemma between two contrasting thinkers, schools of thought, or worldviews.',
+  history:
+    'Theme: History. Create an engaging historical encounter or rivalry between two iconic historical figures (from the same era or across different eras) debating a pivotal event, legacy, or idea.',
+  scifi:
+    'Theme: Science Fiction & Future. Create an imaginative futuristic or sci-fi scenario (e.g. sentient AI, space explorers, time travelers, cyberpunk rebels, or alien diplomats) facing a high-stakes dilemma.',
+  comedy:
+    'Theme: Comedy & Absurdity. Create a witty, absurd, and humorous clash between two funny, eccentric, or wildly mismatched characters arguing passionately over something entertaining or everyday.',
+  tech:
+    'Theme: Technology & Science. Create a sharp technology, science, or innovation debate between two opposing experts, visionaries, or skeptics.',
+  surprise:
+    'Theme: Surprise Wildcard. Create a wildly creative, unexpected crossover or wildcard matchup between two unforgettable characters from any domain.'
+}
+
+/**
+ * System prompt to generate a dynamic scenario between two distinct characters.
+ */
+export const RANDOM_SCENARIO_SYSTEM_PROMPT = (targetLanguage: string, theme?: ScenarioTheme) =>
+  [
+    'You are a creative dialogue designer.',
+    'Generate a compelling, dynamic debate or discussion scenario between two distinct characters (e.g. historical figures, opposing experts, contrasting philosophers, or iconic archetypes).',
+    theme && SCENARIO_THEME_INSTRUCTIONS[theme] ? SCENARIO_THEME_INSTRUCTIONS[theme] : '',
+    `Language requirement: Every field (names, descriptions, and initialTopic) MUST be written in ${targetLanguage}.`
+  ]
+    .filter(Boolean)
+    .join('\n')
+
+export const getRandomScenarioSystemPrompt = RANDOM_SCENARIO_SYSTEM_PROMPT
+
   

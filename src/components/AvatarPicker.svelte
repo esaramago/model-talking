@@ -2,7 +2,7 @@
   import Grid from '@/components/ui/Grid.svelte'
   import { t } from '@/lib/i18n/index.svelte'
   import { AVAILABLE_PERSONAS } from '@/lib/config'
-  import { getPersonaImageUrl } from '@/lib/randomConversations'
+  import { getPersonaImageUrl } from '@/lib/personas'
 
   let {
     open = $bindable(false),

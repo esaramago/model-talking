@@ -6,7 +6,7 @@ export interface TranslationSchema {
     generatedMessagePlural: string
     totalTokens: string
     model: string
-    dailyMessages: string
+    dailyCredits: string
     unlimited: string
     about: string
     openMenu: string
@@ -41,12 +41,23 @@ export interface TranslationSchema {
     error: string
     topicPlaceholder: string
     random: string
+    themePhilosophy: string
+    themeHistory: string
+    themeScifi: string
+    themeComedy: string
+    themeTech: string
+    themeSurprise: string
     sendMessage: string
+    start: string
     restart: string
     restartConfirmTitle: string
     restartConfirmMessage: string
     restartConfirmButton: string
     restartCancelButton: string
+    newChatConfirmTitle: string
+    newChatConfirmMessage: string
+    newChatConfirmButton: string
+    newChatCancelButton: string
     tokens: string
   }
   agents: {

@@ -21,7 +21,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 
   // Check if this is a request intended for PocketBase (API or admin assets)
   const isPocketBaseRequest =
-    (pathname.startsWith('/api/') && !pathname.startsWith('/api/chat')) ||
+    (pathname.startsWith('/api/') && !pathname.startsWith('/api/chat') && !pathname.startsWith('/api/random')) ||
     pathname.startsWith('/_/')
 
   if (isPocketBaseRequest) {

@@ -88,7 +88,7 @@ export const POST: RequestHandler = async (event) => {
       if (!identifier.isAdmin && currentQuota.remaining <= 0) {
         return json(
           {
-            error: `Daily message limit reached (${DAILY_MESSAGE_LIMIT}/${DAILY_MESSAGE_LIMIT}). Your messages will reset at 00:00 UTC.`,
+            error: `Daily credit limit reached (${DAILY_MESSAGE_LIMIT}/${DAILY_MESSAGE_LIMIT}). Your credits will reset at 00:00 UTC.`,
             quota: currentQuota
           },
           { status: 429 }
@@ -132,7 +132,7 @@ export const POST: RequestHandler = async (event) => {
       if (!quotaResult.allowed) {
         return json(
           {
-            error: `Daily message limit reached (${DAILY_MESSAGE_LIMIT}/${DAILY_MESSAGE_LIMIT}). Your messages will reset at 00:00 UTC.`,
+            error: `Daily credit limit reached (${DAILY_MESSAGE_LIMIT}/${DAILY_MESSAGE_LIMIT}). Your credits will reset at 00:00 UTC.`,
             quota: currentQuota
           },
           { status: 429 }

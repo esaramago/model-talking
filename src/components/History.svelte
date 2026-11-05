@@ -59,7 +59,7 @@
 
 {#if user}
   <Grid direction="column" gap="s">
-    <h2 data-appearance="h4">{t('sidebar.conversations')}</h2>
+    <h2 data-appearance="h3">{t('sidebar.conversations')}</h2>
     {#if talks.length === 0}
       <p class="u-text-small">{t('sidebar.noConversations')}</p>
     {:else}

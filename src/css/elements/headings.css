@@ -1,32 +1,28 @@
 h1,
 [data-appearance="h1"] {
-  font-size: var(--wa-font-size-3xl);
+  font-size: clamp(var(--wa-font-size-2xl), 5vw, var(--wa-font-size-3xl));
   line-height: 1.1;
 }
 h2,
 [data-appearance="h2"] {
-  font-size: var(--wa-font-size-2xl);
-  line-height: 1.25;
+  font-weight: var(--wa-font-weight-bold);
+  font-size: var(--wa-font-size-l);
 }
 legend,
 h3,
 [data-appearance="h3"] {
-  font-weight: var(--wa-font-weight-bold);
-  font-size: var(--wa-font-size-l);
+  font-size: var(--wa-font-size-m);
 }
 h4,
 [data-appearance="h4"] {
   font-size: var(--wa-font-size-m);
+  font-weight: var(--wa-font-weight-semibold);
+  color: var(--wa-color-text-quiet)
 }
 h5,
 [data-appearance="h5"] {
-  font-size: var(--wa-font-size-m);
-  font-weight: var(--wa-font-weight-semibold);
-}
-h6,
-[data-appearance="h6"] {
   font-size: var(--wa-font-size-s);
-  color: var(--wa-color-neutral-70);
+  color: var(--wa-color-text-quiet)
 }
 [data-appearance="p"] {
   font-size: var(--wa-font-size-m);

@@ -15,9 +15,8 @@
   flex-direction: column;
   gap: var(--wa-space-xs);
   text-align: center;
-  margin-block-end: var(--wa-space-3xl);
 }
 p {
-  font-size: var(--wa-font-size-l);
+  font-size: clamp(var(--wa-font-size-m), 4vw, var(--wa-font-size-l));
 }
 </style>

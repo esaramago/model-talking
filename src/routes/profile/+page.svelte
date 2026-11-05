@@ -70,7 +70,7 @@
     <wa-card>
       <form method="POST" action="?/updateName" use:enhance={createEnhance('updateName')}>
         <Grid direction="column" gap="s">
-          <h2 data-appearance="h4">{t('profile.nameTitle')}</h2>
+          <h2 data-appearance="h3">{t('profile.nameTitle')}</h2>
           {@render feedback('updateName')}
           <wa-input
             name="name"
@@ -92,7 +92,7 @@
     <wa-card>
       <form method="POST" action="?/updateEmail" use:enhance={createEnhance('updateEmail')}>
         <Grid direction="column" gap="s">
-          <h2 data-appearance="h4">{t('profile.emailTitle')}</h2>
+          <h2 data-appearance="h3">{t('profile.emailTitle')}</h2>
           {@render feedback('updateEmail')}
           <wa-input
             name="email"
@@ -116,7 +116,7 @@
     <wa-card>
       <form method="POST" action="?/updatePassword" use:enhance={createEnhance('updatePassword')}>
         <Grid direction="column" gap="s">
-          <h2 data-appearance="h4">{t('profile.passwordTitle')}</h2>
+          <h2 data-appearance="h3">{t('profile.passwordTitle')}</h2>
           {@render feedback('updatePassword')}
           <wa-input
             name="oldPassword"
@@ -158,7 +158,7 @@
 
     <wa-card>
       <Grid direction="column" gap="s">
-        <h2 data-appearance="h4">{t('profile.twoFactorTitle')}</h2>
+        <h2 data-appearance="h3">{t('profile.twoFactorTitle')}</h2>
         <p class="u-text-small">{t('profile.twoFactorHint')}</p>
 
         <Grid align="center" gap="s">

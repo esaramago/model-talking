@@ -1,4 +1,4 @@
-import type { ChatMessage, DailyQuota, LanguageOption, ModelOption } from '@/types/chat'
+import type { ChatMessage, DailyQuota } from '@/types/chat'
 import {
   AGENT_1_BASE_PROMPT,
   AGENT_2_BASE_PROMPT,
@@ -37,31 +37,31 @@ export function getLanguageInstruction(language?: string): string {
   }
 
   if (normalized === 'es') {
-    return 'Responde sempre em espanhol.'
+    return 'Responde siempre en español.'
   }
 
   if (normalized === 'fr') {
-    return 'Responde sempre em francês.'
+    return 'Réponds toujours en français.'
   }
 
   if (normalized === 'de') {
-    return 'Responde sempre em alemão.'
+    return 'Antworte immer auf Deutsch.'
   }
 
   if (normalized === 'it') {
-    return 'Responde sempre em italiano.'
+    return 'Rispondi sempre in italiano.'
   }
 
   if (normalized === 'tr') {
-    return 'Responde sempre em turco.'
+    return 'Her zaman Türkçe yanıt ver.'
   }
 
   if (normalized === 'ru') {
-    return 'Responde sempre em russo.'
+    return 'Всегда отвечай на русском языке.'
   }
 
   if (normalized === 'ar') {
-    return 'Responde sempre em árabe.'
+    return 'أجب دائمًا باللغة العربية.'
   }
 
   return `Responde sempre em ${language}.`
@@ -192,7 +192,7 @@ export function buildMessagesForModel(
   const budgetedMessages = budgetMessages(messages, targetSpeaker, availableBudget)
 
   if (targetSpeaker === 'agent2') {
-    // LLM 2 sees LLM 1 messages as 'user' and its own messages as 'assistant'
+    // Agent 2 sees Agent 1 messages as 'user' and its own messages as 'assistant'
     for (const msg of budgetedMessages) {
       result.push({
         role: msg.speaker === 'agent1' ? 'user' : 'assistant',
@@ -200,10 +200,10 @@ export function buildMessagesForModel(
       })
     }
   } else {
-    // LLM 1 sees LLM 2 messages as 'user' and its own as 'assistant'
+    // Agent 1 sees Agent 2 messages as 'user' and its own as 'assistant'
     // To strictly begin with role 'user', combine initial turn 1 & 2 into opening context
     if (budgetedMessages.length >= 2) {
-      const otherSpeakerName = budgetedMessages[1].speakerName || 'LLM 2'
+      const otherSpeakerName = budgetedMessages[1].speakerName || 'Agent 2'
       result.push({
         role: 'user',
         content: `Opening context:\nYou started with: "${budgetedMessages[0].content}"\n${otherSpeakerName} replied: "${budgetedMessages[1].content}"`
@@ -307,4 +307,38 @@ export async function generateTalkTitle(promptText: string, model?: string): Pro
     console.warn('Failed to generate talk title via AI, falling back:', err)
     return fallbackTitle
   }
+}
+
+export interface RandomScenarioResult {
+  agent1Name: string
+  agent2Name: string
+  systemPrompt1: string
+  systemPrompt2: string
+  initialTopic: string
+  quota?: DailyQuota
+}
+
+export async function generateRandomScenario(
+  language?: string,
+  theme?: import('@/lib/config').ScenarioTheme
+): Promise<RandomScenarioResult> {
+  const res = await fetch('/api/random', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ language, theme })
+  })
+
+  const data = await res.json()
+
+  if (!res.ok) {
+    const error = new Error(data.error || `HTTP error ${res.status}`) as Error & { quota?: DailyQuota }
+    if (data.quota) {
+      error.quota = data.quota
+    }
+    throw error
+  }
+
+  return data as RandomScenarioResult
 }

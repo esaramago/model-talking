@@ -137,6 +137,9 @@
 {/if}
 
 <style>
+wa-card {
+  container-type: inline-size;
+}
 wa-textarea {
   &::part(textarea) {
     field-sizing: content;
@@ -144,16 +147,24 @@ wa-textarea {
   }
 }
 .avatar {
-  --avatar-size: 4rem;
-  display: grid;
-  grid-template-columns: var(--avatar-size) 1fr;
+  --avatar-size: 6rem;
+  display: flex;
+  flex-direction: column;
   gap: var(--wa-space-s);
+  @container (width > 40rem) {
+    display: grid;
+    grid-template-columns: var(--avatar-size) 1fr;
+    --avatar-size: 4rem;
+  }
 }
 wa-avatar {
   --size: var(--avatar-size);
 }
-.avatar-button:hover wa-avatar {
-  background-color: var(--wa-color-brand-40);
+.avatar-button {
+  height: auto;
+  &:hover wa-avatar {
+    background-color: var(--wa-color-brand-40);
+  }
 }
 .--brand {
   background-color: var(--wa-color-brand-30);

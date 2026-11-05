@@ -30,10 +30,10 @@
         <wa-badge variant="brand">{stats.totalTokens} {t('header.totalTokens')}</wa-badge>
       {/if}
       {#if stats.isUnlimited}
-        <wa-badge variant="success">{t('header.dailyMessages')}: {t('header.unlimited')}</wa-badge>
+        <wa-badge variant="success">{t('header.dailyCredits')}: {t('header.unlimited')}</wa-badge>
       {:else}
         <wa-badge variant={stats.dailyRemaining === 0 ? 'danger' : 'neutral'}>
-          {t('header.dailyMessages')}: {stats.dailyRemaining}/{stats.dailyTotal}
+          {t('header.dailyCredits')}: {stats.dailyRemaining}/{stats.dailyTotal}
         </wa-badge>
       {/if}
     </Grid>

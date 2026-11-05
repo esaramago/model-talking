@@ -63,14 +63,14 @@
 
   <wa-card>
     <Grid direction="column" gap="s">
-      <h2 data-appearance="h3">{t('about.whatItIsTitle', { title: PUBLIC_WEBSITE_TITLE })}</h2>
+      <h2>{t('about.whatItIsTitle', { title: PUBLIC_WEBSITE_TITLE })}</h2>
       <p>{t('about.whatItIsText1', { title: PUBLIC_WEBSITE_TITLE })}</p>
       <p>{t('about.whatItIsText2')}</p>
     </Grid>
   </wa-card>
 
   <Grid direction="column">
-    <h2 data-appearance="h3">{t('about.howItWorksTitle')}</h2>
+    <h2>{t('about.howItWorksTitle')}</h2>
     <Grid break="small" fullWidth>
       {#each steps as step}
         <wa-card>
@@ -87,7 +87,7 @@
   </Grid>
 
   <Grid direction="column">
-    <h2 data-appearance="h3">{t('about.featuresTitle')}</h2>
+    <h2>{t('about.featuresTitle')}</h2>
     <Grid break="small" fullWidth>
       {#each features as feature}
         <wa-card>
@@ -108,7 +108,7 @@
       <Grid direction="column" gap="s">
         <Grid align="center" gap="xs">
           <wa-icon name="gauge-high" variant="solid"></wa-icon>
-          <h2 data-appearance="h3">{t('about.limitsTitle')}</h2>
+          <h2>{t('about.limitsTitle')}</h2>
         </Grid>
         <p>{t('about.limitsText', { dailyLimit: DAILY_MESSAGE_LIMIT })}</p>
       </Grid>
@@ -118,7 +118,7 @@
       <Grid direction="column" gap="s">
         <Grid align="center" gap="xs">
           <wa-icon name="shield-halved" variant="solid"></wa-icon>
-          <h2 data-appearance="h3">{t('about.accountTitle')}</h2>
+          <h2>{t('about.accountTitle')}</h2>
         </Grid>
         <p>{t('about.accountText')}</p>
         {#if !user}

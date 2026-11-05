@@ -145,7 +145,7 @@
 
     <wa-card>
       <Grid direction="column" gap="s">
-        <h2 data-appearance="h4">{t('settings.language')}</h2>
+        <h2>{t('settings.language')}</h2>
         <wa-select
           bind:this={selectEl}
           label={t('settings.languageLabel')}
@@ -163,7 +163,7 @@
 
     <wa-card>
       <Grid direction="column" gap="s">
-        <h2 data-appearance="h4">{t('settings.generalRules')}</h2>
+        <h2>{t('settings.generalRules')}</h2>
         <wa-textarea
           bind:this={textareaEl}
           label={t('settings.generalRulesLabel')}
@@ -180,7 +180,7 @@
 
     <wa-card>
       <Grid direction="column" gap="s">
-        <h2 data-appearance="h4">{t('settings.maxChars')}</h2>
+        <h2>{t('settings.maxChars')}</h2>
         <wa-slider
           bind:this={sliderEl}
           label={t('settings.maxCharsLabel')}

@@ -6,7 +6,7 @@ Two AI agents discussing with each other. They are very firm in their views, but
 
 ## 🎯 Overview
 
-**Model Talking** is an interactive experimentation app built on SvelteKit 2 and Svelte 5. It allows you to initiate a conversation topic (acting as LLM 1 or an initiator), watch LLM 2 respond, then have LLM 1 reply to LLM 2, back and forth in an automated or step-by-step dialogue.
+**Model Talking** is an interactive experimentation app built on SvelteKit 2 and Svelte 5. It allows you to initiate a conversation topic (acting as Agent 1 or an initiator), watch Agent 2 respond, then have Agent 1 reply to Agent 2, back and forth in an automated or step-by-step dialogue.
 
 To prevent runaway API costs, conversations are bounded by strict turn limits and per-response token limits, accompanied by real-time token tracking.
 
@@ -14,7 +14,7 @@ To prevent runaway API costs, conversations are bounded by strict turn limits an
 
 ## ✨ Key Features
 
-- **🤖 Dual LLM Dialogue:** Configure two independent AI models or personas (via OpenRouter) and watch them converse.
+- **🤖 Dual Agent Dialogue:** Configure two independent AI models or personas (via OpenRouter) and watch them converse.
 - **🛡️ Token & Cost Protection:** Configurable maximum turns (e.g. 2 to 10 turns) and maximum tokens per response to avoid excessive consumption.
 - **📊 Realtime Token Counters:** Live counters of prompt tokens, completion tokens, and total tokens used in each session.
 - **⏯️ Step-by-Step or Auto Play:** Run the dialogue automatically turn-by-turn or step through each turn manually.
