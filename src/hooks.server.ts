@@ -22,6 +22,7 @@ export const handle: Handle = async ({ event, resolve }) => {
   // Check if this is a request intended for PocketBase (API or admin assets)
   const isPocketBaseRequest =
     (pathname.startsWith('/api/') && !pathname.startsWith('/api/chat') && !pathname.startsWith('/api/random')) ||
+    pathname === '/_' ||
     pathname.startsWith('/_/')
 
   if (isPocketBaseRequest) {
@@ -37,37 +38,25 @@ export const handle: Handle = async ({ event, resolve }) => {
       })
     }
 
-    // Completely block direct PocketBase admin UI and superuser/admin authentication endpoints
-    if (
-      normalizedPath === '/_' ||
-      normalizedPath.startsWith('/_/') ||
-      normalizedPath === '/api/admins' ||
-      normalizedPath.startsWith('/api/admins/') ||
-      normalizedPath === '/api/collections/_superusers' ||
-      normalizedPath.startsWith('/api/collections/_superusers/')
-    ) {
-      return new Response(
-        JSON.stringify({
-          code: 403,
-          message: 'Direct access to PocketBase administration is disabled.'
-        }),
-        { status: 403, headers: { 'content-type': 'application/json' } }
-      )
-    }
-
-    // Completely block direct user authentication, OTP, and registration endpoints
+    // Block direct user authentication, OTP, registration, and batch endpoints
     // (whether addressed by collection name 'users' or internal ID '_pb_users_auth_').
-    // All authentication and registration must go through SvelteKit's /login and /register routes
+    // Superusers (_superusers) are exempted so the PocketBase Admin UI (/_/) and admin recovery remain functional.
+    // All regular user authentication must go through SvelteKit's /login and /register routes
     // where rate-limiting, password verification, and 2FA (TOTP/Email) are enforced.
-    const isDirectAuthEndpoint =
-      /^\/api\/collections\/[^/]+\/(auth-with-password|auth-with-otp|request-otp|auth-with-oauth2)$/.test(
-        normalizedPath
-      )
+    const authEndpointMatch = normalizedPath.match(
+      /^\/api\/collections\/([^/]+)\/(auth-with-password|auth-with-otp|request-otp|auth-with-oauth2)$/
+    )
+    const isSuperuserCollection =
+      authEndpointMatch !== null &&
+      (authEndpointMatch[1] === '_superusers' || authEndpointMatch[1] === 'pbc_3142635823')
+
+    const isDirectAuthEndpoint = authEndpointMatch !== null && !isSuperuserCollection
     const isDirectUserCreate =
       event.request.method.toUpperCase() === 'POST' &&
       /^\/api\/collections\/(users|_pb_users_auth_)\/records$/.test(normalizedPath)
+    const isBatchEndpoint = normalizedPath === '/api/batch'
 
-    if (isDirectAuthEndpoint || isDirectUserCreate) {
+    if (isDirectAuthEndpoint || isDirectUserCreate || isBatchEndpoint) {
       return new Response(
         JSON.stringify({
           code: 403,
@@ -77,64 +66,85 @@ export const handle: Handle = async ({ event, resolve }) => {
       )
     }
 
-    // Verify 2FA auth session if an auth token is presented in Authorization header or pb_auth cookie
-    const authHeader = (event.request.headers.get('authorization') || '').trim()
-    let token = ''
-    if (/^bearer\s+/i.test(authHeader)) {
-      token = authHeader.replace(/^bearer\s+/i, '').trim()
-    } else if (authHeader) {
-      token = authHeader
-    }
+    // Verify 2FA auth session if an auth token is presented in Authorization header or pb_auth cookie.
+    // Skip for static Admin UI assets (/_/) and superuser endpoints so a stale regular-user pb_auth cookie
+    // never blocks loading the Admin dashboard or completing superuser authentication/recovery.
+    const isAdminUiAsset = normalizedPath === '/_' || normalizedPath.startsWith('/_/')
+    const isSuperuserEndpoint = /^\/api\/collections\/(_superusers|pbc_3142635823)(\/|$)/.test(
+      normalizedPath
+    )
 
-    if (!token) {
-      const cookieHeader = event.request.headers.get('cookie') || ''
-      const pbCookieMatch = cookieHeader.match(/(?:^|;\s*)pb_auth=([^;]+)/)
-      if (pbCookieMatch) {
+    if (!isAdminUiAsset && !isSuperuserEndpoint) {
+      const authHeader = (event.request.headers.get('authorization') || '').trim()
+      let token = ''
+      if (/^bearer\s+/i.test(authHeader)) {
+        token = authHeader.replace(/^bearer\s+/i, '').trim()
+      } else if (authHeader) {
+        token = authHeader
+      }
+
+      if (!token) {
+        const cookieHeader = event.request.headers.get('cookie') || ''
+        const pbCookieMatch = cookieHeader.match(/(?:^|;\s*)pb_auth=([^;]+)/)
+        if (pbCookieMatch) {
+          try {
+            const cookieVal = decodeURIComponent(pbCookieMatch[1])
+            const parsed = JSON.parse(cookieVal)
+            if (parsed && typeof parsed === 'object' && parsed.token) {
+              token = parsed.token
+            }
+          } catch {
+            // Ignore cookie parse error
+          }
+        }
+      }
+
+      if (token) {
+        let tokenUserId: string | undefined
+        let isSuperuserToken = false
         try {
-          const cookieVal = decodeURIComponent(pbCookieMatch[1])
-          const parsed = JSON.parse(cookieVal)
-          if (parsed && typeof parsed === 'object' && parsed.token) {
-            token = parsed.token
+          const parts = token.split('.')
+          if (parts.length === 3) {
+            const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'))
+            if (typeof payload?.id === 'string' && payload.id) {
+              tokenUserId = payload.id
+            }
+            if (
+              payload?.collectionId === '_superusers' ||
+              payload?.collectionId === 'pbc_3142635823' ||
+              payload?.type === 'admin'
+            ) {
+              isSuperuserToken = true
+            }
           }
         } catch {
-          // Ignore cookie parse error
+          return new Response(
+            JSON.stringify({ code: 401, message: 'Invalid authentication token.' }),
+            { status: 401, headers: { 'content-type': 'application/json' } }
+          )
         }
-      }
-    }
 
-    if (token) {
-      let tokenUserId: string | undefined
-      try {
-        const parts = token.split('.')
-        if (parts.length === 3) {
-          const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'))
-          if (typeof payload?.id === 'string' && payload.id) {
-            tokenUserId = payload.id
+        if (!tokenUserId) {
+          return new Response(
+            JSON.stringify({ code: 401, message: 'Invalid authentication token.' }),
+            { status: 401, headers: { 'content-type': 'application/json' } }
+          )
+        }
+
+        // SvelteKit 2FA session verification applies strictly to regular users;
+        // superusers authenticate and manage MFA directly inside PocketBase.
+        if (!isSuperuserToken) {
+          const sessionSig = event.cookies.get(AUTH_SESSION_COOKIE_NAME)
+          if (!verifyAuthSession(sessionSig, tokenUserId)) {
+            return new Response(
+              JSON.stringify({
+                code: 401,
+                message: 'Session requires two-factor verification. Please log in again.'
+              }),
+              { status: 401, headers: { 'content-type': 'application/json' } }
+            )
           }
         }
-      } catch {
-        return new Response(
-          JSON.stringify({ code: 401, message: 'Invalid authentication token.' }),
-          { status: 401, headers: { 'content-type': 'application/json' } }
-        )
-      }
-
-      if (!tokenUserId) {
-        return new Response(
-          JSON.stringify({ code: 401, message: 'Invalid authentication token.' }),
-          { status: 401, headers: { 'content-type': 'application/json' } }
-        )
-      }
-
-      const sessionSig = event.cookies.get(AUTH_SESSION_COOKIE_NAME)
-      if (!verifyAuthSession(sessionSig, tokenUserId)) {
-        return new Response(
-          JSON.stringify({
-            code: 401,
-            message: 'Session requires two-factor verification. Please log in again.'
-          }),
-          { status: 401, headers: { 'content-type': 'application/json' } }
-        )
       }
     }
 
