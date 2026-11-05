@@ -198,9 +198,15 @@ export const en: TranslationSchema = {
     featureSettingsText: 'Set general rules to guide the agents, choose the interface language, and adjust the maximum character limit per message.',
     featureHistoryTitle: 'Conversation History',
     featureHistoryText: 'Review, continue, or restart past conversations with the same characters at any time.',
+    modelTitle: 'AI Model',
+    modelText: 'Conversations use the {model} model, provided via OpenRouter.',
     limitsTitle: 'Usage & Daily Limits',
     limitsText: 'To ensure fair usage and prevent runaway resource consumption, the app tracks token usage in real time and applies a daily limit of {dailyLimit} generated messages.',
     accountTitle: 'Account Benefits',
     accountText: 'By signing in, you can automatically save your conversation history, apply custom general rules to your agents, and secure your account with two-factor authentication (2FA).'
+  },
+  footer: {
+    createdBy: 'Created by',
+    contact: 'Contact'
   }
 }

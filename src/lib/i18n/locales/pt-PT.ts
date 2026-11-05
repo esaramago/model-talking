@@ -198,9 +198,15 @@ export const ptPT: TranslationSchema = {
     featureSettingsText: 'Define regras gerais para orientar os agentes, escolhe o idioma e ajusta o limite máximo de caracteres por mensagem.',
     featureHistoryTitle: 'Histórico de Conversas',
     featureHistoryText: 'Revê, continua ou reinicia conversas anteriores com as mesmas personagens a qualquer momento.',
+    modelTitle: 'Modelo de IA',
+    modelText: 'As conversas utilizam o modelo {model}, disponibilizado através do OpenRouter.',
     limitsTitle: 'Utilização e Limites Diários',
     limitsText: 'Para garantir uma utilização justa e controlar o consumo de recursos, a aplicação monitoriza os tokens em tempo real e aplica um limite diário de {dailyLimit} mensagens geradas.',
     accountTitle: 'Vantagens de Criar Conta',
     accountText: 'Ao iniciares sessão, podes guardar automaticamente o teu histórico de conversas, aplicar regras gerais personalizadas aos agentes e proteger a tua conta com autenticação de dois fatores (2FA).'
+  },
+  footer: {
+    createdBy: 'Criado por',
+    contact: 'Contacto'
   }
 }

@@ -198,9 +198,15 @@ export const tr: TranslationSchema = {
     featureSettingsText: 'Ajanları yönlendirmek için genel kurallar belirleyin, dili seçin ve mesaj başına maksimum karakter sınırını ayarlayın.',
     featureHistoryTitle: 'Sohbet Geçmişi',
     featureHistoryText: 'Geçmiş sohbetleri istediğiniz zaman inceleyin, devam ettirin veya aynı karakterlerle yeniden başlatın.',
+    modelTitle: 'Yapay Zekâ Modeli',
+    modelText: 'Sohbetlerde OpenRouter aracılığıyla sağlanan {model} modeli kullanılır.',
     limitsTitle: 'Kullanım ve Günlük Sınırlar',
     limitsText: 'Adil kullanımı sağlamak ve kaynak tüketimini kontrol altında tutmak için uygulama, token kullanımını gerçek zamanlı olarak izler ve günlük {dailyLimit} üretilen mesaj sınırı uygular.',
     accountTitle: 'Hesap Avantajları',
     accountText: 'Giriş yaparak sohbet geçmişinizi otomatik olarak kaydedebilir, ajanlarınıza özel genel kurallar uygulayabilir ve hesabınızı iki faktörlü kimlik doğrulama (2FA) ile koruyabilirsiniz.'
+  },
+  footer: {
+    createdBy: 'Geliştiren',
+    contact: 'İletişim'
   }
 }

@@ -198,9 +198,15 @@ export const it: TranslationSchema = {
     featureSettingsText: 'Imposta regole generali per guidare gli agenti, scegli la lingua e regola il limite massimo di caratteri per messaggio.',
     featureHistoryTitle: 'Cronologia delle conversazioni',
     featureHistoryText: 'Rivedi, continua o riavvia le conversazioni passate con gli stessi personaggi in qualsiasi momento.',
+    modelTitle: 'Modello IA',
+    modelText: 'Le conversazioni utilizzano il modello {model}, fornito tramite OpenRouter.',
     limitsTitle: 'Utilizzo e limiti giornalieri',
     limitsText: 'Per garantire un utilizzo equo e controllare il consumo di risorse, l’app monitora i token in tempo reale e applica un limite giornaliero di {dailyLimit} messaggi generati.',
     accountTitle: 'Vantaggi dell’account',
     accountText: 'Effettuando l’accesso puoi salvare automaticamente la cronologia delle conversazioni, applicare regole generali personalizzate agli agenti e proteggere il tuo account con l’autenticazione a due fattori (2FA).'
+  },
+  footer: {
+    createdBy: 'Creato da',
+    contact: 'Contatto'
   }
 }

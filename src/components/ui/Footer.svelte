@@ -1,12 +1,11 @@
 <script>
-  import { stats } from '@/lib/state/stats.svelte'
   import { t } from '@/lib/i18n/index.svelte'
 </script>
 
 <footer>
-  Criado por <a href="https://emanuelsaramago.com" target="_blank">Emanuel Saramago</a>
+  {t('footer.createdBy')} <a href="https://emanuelsaramago.com" target="_blank">Emanuel Saramago</a>
   <span>|</span>
-  {t('header.model')}: {stats.model}
+  <a href="mailto:modeltalking@emanuelsaramago.com">{t('footer.contact')}</a>
 </footer>
 
 <style>

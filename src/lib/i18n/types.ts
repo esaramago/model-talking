@@ -198,10 +198,16 @@ export interface TranslationSchema {
     featureSettingsText: string
     featureHistoryTitle: string
     featureHistoryText: string
+    modelTitle: string
+    modelText: string
     limitsTitle: string
     limitsText: string
     accountTitle: string
     accountText: string
+  }
+  footer: {
+    createdBy: string
+    contact: string
   }
 }
 

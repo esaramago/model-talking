@@ -198,9 +198,15 @@ export const de: TranslationSchema = {
     featureSettingsText: 'Legen Sie allgemeine Regeln für die Agenten fest, wählen Sie die Sprache und passen Sie das Zeichenlimit pro Nachricht an.',
     featureHistoryTitle: 'Gesprächsverlauf',
     featureHistoryText: 'Sehen Sie frühere Gespräche jederzeit ein, setzen Sie sie fort oder starten Sie sie mit denselben Charakteren neu.',
+    modelTitle: 'KI-Modell',
+    modelText: 'Die Unterhaltungen nutzen das Modell {model}, das über OpenRouter bereitgestellt wird.',
     limitsTitle: 'Nutzung & Tageslimits',
     limitsText: 'Um eine faire Nutzung zu gewährleisten und den Ressourcenverbrauch zu steuern, erfasst die App die Token-Nutzung in Echtzeit und begrenzt die tägliche Anzahl auf {dailyLimit} generierte Nachrichten.',
     accountTitle: 'Vorteile eines Kontos',
     accountText: 'Wenn Sie sich anmelden, können Sie Ihren Gesprächsverlauf automatisch speichern, eigene allgemeine Regeln für Agenten anwenden und Ihr Konto mit Zwei-Faktor-Authentifizierung (2FA) schützen.'
+  },
+  footer: {
+    createdBy: 'Erstellt von',
+    contact: 'Kontakt'
   }
 }

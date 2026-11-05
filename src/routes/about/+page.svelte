@@ -4,6 +4,7 @@
   import Heading from '@/components/ui/Heading.svelte'
   import HeadMeta from '@/components/HeadMeta.svelte'
   import { DAILY_MESSAGE_LIMIT, PUBLIC_WEBSITE_TITLE } from '@/lib/config'
+  import { stats } from '@/lib/state/stats.svelte'
   import { t } from '@/lib/i18n/index.svelte'
 
   const user = $derived(page.data?.user ?? null)
@@ -104,6 +105,16 @@
   </Grid>
 
   <Grid break="small" fullWidth>
+    <wa-card>
+      <Grid direction="column" gap="s">
+        <Grid align="center" gap="xs">
+          <wa-icon name="cpu" variant="solid"></wa-icon>
+          <h2>{t('about.modelTitle')}</h2>
+        </Grid>
+        <p>{t('about.modelText', { model: stats.model })}</p>
+      </Grid>
+    </wa-card>
+
     <wa-card>
       <Grid direction="column" gap="s">
         <Grid align="center" gap="xs">
