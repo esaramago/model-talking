@@ -102,33 +102,6 @@ export const actions: Actions = {
     }
   },
 
-  updateName: async ({ request, locals }) => {
-    if (!locals.user) {
-      throw redirect(303, '/login')
-    }
-
-    const formData = await request.formData()
-    const name = (formData.get('name') as string)?.trim() || ''
-
-    try {
-      const updated = await locals.pb.collection('users').update(locals.user.id, { name })
-      locals.user = updated
-      return {
-        action: 'updateName' as const,
-        success: true,
-        name,
-        messageKey: 'profile.nameUpdated' as const
-      }
-    } catch (err: any) {
-      console.error('Update name error:', err)
-      return fail(400, {
-        action: 'updateName' as const,
-        name,
-        errorKey: 'profile.updateError' as const
-      })
-    }
-  },
-
   updateEmail: async ({ request, locals }) => {
     if (!locals.user) {
       throw redirect(303, '/login')

@@ -93,42 +93,23 @@
     <Heading title={t('profile.title')} subtitle={t('profile.subtitle')} />
 
     <wa-card>
-      <form method="POST" action="?/updateName" use:enhance={createEnhance('updateName')}>
-        <Grid direction="column" gap="s">
-          <h2 data-appearance="h3">{t('profile.nameTitle')}</h2>
-          {@render feedback('updateName')}
-          <wa-input
-            name="name"
-            type="text"
-            label={t('profile.nameLabel')}
-            placeholder={t('profile.namePlaceholder')}
-            value={form?.action === 'updateName' && form.name !== undefined ? form.name : (data.user?.name ?? '')}
-            autocomplete="name"
-          ></wa-input>
-          <div>
-            <wa-button type="submit" variant="brand" loading={loadingAction === 'updateName'}>
-              {t('profile.saveName')}
-            </wa-button>
-          </div>
-        </Grid>
-      </form>
-    </wa-card>
-
-    <wa-card>
       <form method="POST" action="?/updateEmail" use:enhance={createEnhance('updateEmail')}>
         <Grid direction="column" gap="s">
           <h2 data-appearance="h3">{t('profile.emailTitle')}</h2>
           {@render feedback('updateEmail')}
-          <wa-input
+          <div>
+            <label for="email">{t('profile.emailLabel')}</label>
+            <input
+            id="email"
             name="email"
             type="email"
-            label={t('profile.emailLabel')}
             placeholder={t('profile.emailPlaceholder')}
-            hint={t('profile.emailHint')}
             value={form?.action === 'updateEmail' && form.email !== undefined ? form.email : (data.user?.email ?? '')}
             required
             autocomplete="email"
-          ></wa-input>
+            />
+            <p class="u-text-small">{t('profile.emailHint')}</p>
+          </div>
           <div>
             <wa-button type="submit" variant="brand" loading={loadingAction === 'updateEmail'}>
               {t('profile.saveEmail')}

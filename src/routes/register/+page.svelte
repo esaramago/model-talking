@@ -39,47 +39,46 @@
           }
         }}
       >
+        <!-- Use native HTML inputs instead of wa-input for password manager compatibility -->
         <Grid direction="column">
-          <wa-input
-            name="name"
-            type="text"
-            label={t('register.nameLabel')}
-            placeholder={t('register.namePlaceholder')}
-            value={form?.name ?? ''}
-            autocomplete="name"
-          ></wa-input>
+          <Grid direction="column" gap="none">
+            <label for="email">{t('register.emailLabel')}</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              placeholder={t('register.emailPlaceholder')}
+              value={form?.email ?? ''}
+              required
+              autocomplete="email"
+            />
+          </Grid>
 
-          <wa-input
-            name="email"
-            type="email"
-            label={t('register.emailLabel')}
-            placeholder={t('register.emailPlaceholder')}
-            value={form?.email ?? ''}
-            required
-            autocomplete="email"
-          ></wa-input>
+          <Grid direction="column" gap="none">
+            <label for="password">{t('register.passwordLabel')}</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              placeholder={t('register.passwordPlaceholder')}
+              required
+              minlength={8}
+              autocomplete="new-password"
+            />
+          </Grid>
 
-          <wa-input
-            name="password"
-            type="password"
-            label={t('register.passwordLabel')}
-            placeholder={t('register.passwordPlaceholder')}
-            required
-            minlength={8}
-            password-toggle
-            autocomplete="new-password"
-          ></wa-input>
-
-          <wa-input
-            name="passwordConfirm"
-            type="password"
-            label={t('register.confirmPasswordLabel')}
-            placeholder={t('register.confirmPasswordPlaceholder')}
-            required
-            minlength={8}
-            password-toggle
-            autocomplete="new-password"
-          ></wa-input>
+          <Grid direction="column" gap="none">
+            <label for="passwordConfirm">{t('register.confirmPasswordLabel')}</label>
+            <input
+              id="passwordConfirm"
+              name="passwordConfirm"
+              type="password"
+              placeholder={t('register.confirmPasswordPlaceholder')}
+              required
+              minlength={8}
+              autocomplete="new-password"
+            />
+          </Grid>
 
           <wa-button type="submit" variant="brand" {loading}>
             {t('register.submit')}
