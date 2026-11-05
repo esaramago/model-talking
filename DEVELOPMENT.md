@@ -1,6 +1,6 @@
 # Development Guide
 
-This guide details the local setup, workflows, architecture conventions, and deployment procedures for developing applications with **Base Stack**.
+This guide details the local setup, workflows, architecture conventions, and deployment procedures for developing applications with **Model Talking**.
 
 ---
 
@@ -44,16 +44,20 @@ cp .env.example .env
 | `AUTH_SECRET` | _(empty, dev only)_ | `openssl rand -hex 32` | **Required in production.** Signs sessions and encrypts 2FA secrets. The app refuses to start without it (`RATE_LIMIT_SECRET` is still read as a legacy fallback) |
 | `POCKETBASE_PROXY_SECRET` | `openssl rand -hex 32` | `openssl rand -hex 32` | **Required in production.** Shared secret between SvelteKit and PocketBase; see `pb_hooks/proxy_guard.pb.js` |
 | `WEB_BIND_ADDRESS` | `127.0.0.1` | `127.0.0.1` | Host interface the web container binds to; keep it on loopback when a reverse proxy runs on the same host |
+| `OPENROUTER_API_KEY` | _(empty)_ | `sk-or-...` | OpenRouter API key used to power AI model conversations and debates |
+| `RESEND_API_KEY` | _(empty)_ | `re_...` | Optional Resend API key for dispatching 2FA email verification codes |
+| `EMAIL_WEBHOOK_URL` | _(empty)_ | `https://...` | Optional webhook URL fallback for email dispatch |
+| `EMAIL_FROM` | _(empty)_ | `auth@yourdomain.com`| Sender address for outgoing authentication emails |
 
 ### 3. Start the Development Environment
 
-Run the development command:
+Run the development command with PocketBase:
 
 ```bash
-pnpm dev
+pnpm dev:pb
 ```
 
-> **Note:** The `pnpm dev` script automatically starts the PocketBase Docker container in the background (`docker compose up -d pocketbase`) before starting Vite.
+> **Note:** The `pnpm dev:pb` script automatically starts the PocketBase Docker container in the background (`docker compose up -d pocketbase`) before starting Vite. If PocketBase is already running, you can use `pnpm dev` to start Vite directly.
 
 Once started, the following services are available:
 
@@ -69,7 +73,8 @@ When accessing the PocketBase Admin UI for the first time, you will be prompted 
 
 | Command | Description |
 | :--- | :--- |
-| `pnpm dev` | Starts PocketBase via Docker and launches the Vite dev server with HMR |
+| `pnpm dev:pb` | Starts PocketBase via Docker and launches the Vite dev server with HMR |
+| `pnpm dev` | Launches the Vite dev server with HMR (assumes PocketBase is already running) |
 | `pnpm build` | Compiles the production SvelteKit application using `@sveltejs/adapter-node` |
 | `pnpm preview` | Locally previews the production build output |
 | `pnpm check` | Synchronizes SvelteKit types and runs static type checks via `svelte-check` |
@@ -84,12 +89,16 @@ To maintain code quality and consistency across projects, adhere to the followin
 ### 1. Layout & Styling Rules
 - **No Tailwind or Utility CSS Frameworks:** Do not install Tailwind or similar utility-class libraries.
 - **No Inline Styles:** Use component props and existing CSS custom properties.
-- **Use `Grid.svelte` for Layouts:** Always use the `<Grid>` component for structural alignment, flex direction, and spacing instead of writing custom wrapper CSS.
+- **Use `Grid.svelte` for Layouts:** Always use `<Grid>` (`@/components/ui/Grid.svelte`) for structural alignment, flex direction, and spacing instead of writing custom wrapper CSS.
 - **Avoid Redundant Attributes:** The default `gap` for `<Grid>` is `m`. Avoid writing `<Grid gap="m">`.
 - **Children Flex Grow:** Add `data-grow="1"` to any direct child of `<Grid>` to have it expand and fill remaining space.
 
 #### `Grid.svelte` Props Reference:
 ```svelte
+<script lang="ts">
+  import Grid from '@/components/ui/Grid.svelte'
+</script>
+
 <Grid
   tag="div"              <!-- HTML element tag (default: 'div', e.g. 'section', 'nav', 'ul') -->
   direction="column"     <!-- 'row' | 'column' | 'row-reverse' | 'column-reverse' -->
@@ -107,20 +116,22 @@ To maintain code quality and consistency across projects, adhere to the followin
 
 ### 2. UI Components (WebAwesome)
 - Use [WebAwesome](https://webawesome.com/) web components (`<wa-button>`, `<wa-card>`, `<wa-icon>`, `<wa-badge>`, `<wa-input>`, etc.) whenever possible.
-- When introducing a new WebAwesome component, register it by importing its JavaScript bundle in `src/routes/+layout.svelte` (or in the page component where it is used):
+- Core WebAwesome components are registered centrally in `src/routes/+layout.svelte`. When introducing a new component not yet registered globally, import its bundle:
   ```ts
   import '@awesome.me/webawesome/dist/components/dialog/dialog.js'
   ```
 
 ### 3. Backend & Authentication Flow (PocketBase)
-- **Client-Side:** Use the `pb` instance and the reactive `currentUser` store from `src/lib/pocketbase.ts`:
+- **Client-Side:** Import the `pb` instance from `@/lib/pocketbase`. User state can be inspected via `pb.authStore.record` or retrieved reactively via SvelteKit layout page data:
   ```svelte
   <script lang="ts">
-    import { pb, currentUser } from '@/lib/pocketbase'
+    import { pb } from '@/lib/pocketbase'
+
+    let { data } = $props()
   </script>
 
-  {#if $currentUser}
-    <p>Logged in as: {$currentUser.email}</p>
+  {#if data.user}
+    <p>Logged in as: {data.user.email}</p>
   {/if}
   ```
 - **Server-Side (SSR):** Handled automatically in `src/hooks.server.ts`. It loads auth cookies from incoming requests, checks token validity, refreshes sessions when possible, and passes `event.locals.pb` and `event.locals.user` to SvelteKit endpoints and load functions.
@@ -133,11 +144,11 @@ This repository is optimized for deployment via [Coolify](https://coolify.io/) o
 
 ### Local Testing of Production Build
 
-To test the entire containerized stack locally:
+To test the containerized stack locally:
 
 ```bash
-# Build and start both Web app and PocketBase
-docker compose up -d --build
+# Build and start PocketBase
+docker compose up -d pocketbase
 
 # View logs
 docker compose logs -f
@@ -146,9 +157,11 @@ docker compose logs -f
 docker compose down
 ```
 
-The production services will be available at:
-- Web App: `http://localhost:3000`
-- PocketBase: `http://localhost:8090`
+> **Note:** In `docker-compose.yml`, the `web` container is configured without published host ports because Coolify automatically routes HTTP traffic across the internal Docker network. For local standalone production testing of `web`, map the port in `docker-compose.yml` (e.g., `ports: ["3000:3000"]`) or run `pnpm preview`.
+
+When running locally with Docker Compose:
+- Web App (via `pnpm preview` or mapped port): `http://localhost:3000`
+- PocketBase: `http://localhost:8095`
 
 ### Coolify Setup
 
@@ -159,6 +172,8 @@ When deploying to Coolify:
    - `PORT`: `3000`
    - `INTERNAL_POCKETBASE_URL`: `http://pocketbase:8090` (internal Docker network URL)
    - `ORIGIN` & `PUBLIC_BASE_URL`: Automatically picked up from Coolify's built-in `COOLIFY_URL` (no need to manually set unless overriding)
+   - `OPENROUTER_API_KEY`: API key for OpenRouter
+   - `AUTH_SECRET` & `POCKETBASE_PROXY_SECRET`: High-entropy 32-byte hex secrets
    - `POCKETBASE_ADMIN_EMAIL` & `POCKETBASE_ADMIN_PASSWORD`: Superuser credentials for persisting rate limits and 2FA lockout counters across restarts and instances.
 
 ### 🛡️ Reverse Proxy & Rate Limiting Security
@@ -182,7 +197,7 @@ When running behind a reverse proxy (such as Traefik, Caddy, Nginx, or Cloudflar
 
 ## 🔧 Troubleshooting & Tips
 
-- **PocketBase Port Conflict:** If port `8090` is already in use by another service on your machine, adjust `POCKETBASE_PORT` in your `.env` file (e.g., `POCKETBASE_PORT=8091`).
+- **PocketBase Port Conflict:** If port `8095` is already in use by another service on your machine, adjust `POCKETBASE_PORT` in your `.env` file (e.g., `POCKETBASE_PORT=8096`).
 - **Stopping Background PocketBase:** If you want to stop the local PocketBase service after development:
   ```bash
   docker compose stop pocketbase
