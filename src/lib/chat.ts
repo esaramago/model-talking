@@ -86,49 +86,23 @@ export function budgetMessages(
   const totalTokens = messages.reduce((acc, m) => acc + estimateTextTokens(m.content), 0)
   if (totalTokens <= availableBudget) return messages
 
-  if (targetSpeaker === 'agent1') {
-    const baseTokens = estimateTextTokens(messages[0].content) + estimateTextTokens(messages[1].content)
-    let currentTokens = baseTokens
-    let startIndex = messages.length
+  const anchorCount = targetSpeaker === 'agent1' ? 2 : 1
+  const anchors = messages.slice(0, anchorCount)
+  let currentTokens = anchors.reduce((acc, m) => acc + estimateTextTokens(m.content), 0)
+  let startIndex = messages.length
 
-    for (let i = messages.length - 1; i >= 2; i--) {
-      const msgTokens = estimateTextTokens(messages[i].content)
-      if (currentTokens + msgTokens > availableBudget) break
-      currentTokens += msgTokens
-      startIndex = i
-    }
-
-    if (startIndex % 2 !== 0 && startIndex < messages.length) {
-      startIndex++
-    }
-
-    if (startIndex >= messages.length) {
-      return [messages[0], messages[1]]
-    }
-
-    return [messages[0], messages[1], ...messages.slice(startIndex)]
-  } else {
-    const baseTokens = estimateTextTokens(messages[0].content)
-    let currentTokens = baseTokens
-    let startIndex = messages.length
-
-    for (let i = messages.length - 1; i >= 1; i--) {
-      const msgTokens = estimateTextTokens(messages[i].content)
-      if (currentTokens + msgTokens > availableBudget) break
-      currentTokens += msgTokens
-      startIndex = i
-    }
-
-    if (startIndex % 2 === 0 && startIndex < messages.length) {
-      startIndex++
-    }
-
-    if (startIndex >= messages.length) {
-      return [messages[0]]
-    }
-
-    return [messages[0], ...messages.slice(startIndex)]
+  for (let i = messages.length - 1; i >= anchorCount; i--) {
+    const msgTokens = estimateTextTokens(messages[i].content)
+    if (currentTokens + msgTokens > availableBudget) break
+    currentTokens += msgTokens
+    startIndex = i
   }
+
+  if (startIndex % 2 !== anchorCount % 2 && startIndex < messages.length) {
+    startIndex++
+  }
+
+  return startIndex >= messages.length ? anchors : [...anchors, ...messages.slice(startIndex)]
 }
 
 /**

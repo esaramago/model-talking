@@ -16,7 +16,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     }
     return {
       talkId,
-      talk: JSON.parse(JSON.stringify(talk)) as TalkRecord
+      talk: { ...talk } as TalkRecord
     }
   } catch (err: any) {
     if (err?.status) throw err

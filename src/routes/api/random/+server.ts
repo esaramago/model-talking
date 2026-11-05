@@ -1,11 +1,10 @@
 import { json, type RequestHandler } from '@sveltejs/kit'
-import { env } from '$env/dynamic/private'
 import {
   DAILY_MESSAGE_LIMIT,
-  MODEL,
   RANDOM_SCENARIO_SYSTEM_PROMPT,
   type ScenarioTheme
 } from '@/lib/config'
+import { getOpenRouterApiKey, requestOpenRouterCompletion } from '@/lib/server/openrouter'
 import { consumeQuota, getQuota, resolveRateLimitIdentifier } from '@/lib/server/rateLimit'
 
 interface RandomRequestBody {
@@ -159,7 +158,7 @@ export const POST: RequestHandler = async (event) => {
       // Body may be empty
     }
 
-    const resolvedApiKey = env.OPENROUTER_API_KEY?.trim() || process.env.OPENROUTER_API_KEY?.trim()
+    const resolvedApiKey = getOpenRouterApiKey()
     if (!resolvedApiKey) {
       return json(
         {
@@ -186,7 +185,6 @@ export const POST: RequestHandler = async (event) => {
     const systemPrompt = RANDOM_SCENARIO_SYSTEM_PROMPT(targetLanguage, theme)
 
     const requestPayload = {
-      model: MODEL,
       messages: [
         { role: 'system', content: systemPrompt },
         {
@@ -214,8 +212,7 @@ export const POST: RequestHandler = async (event) => {
         }
       },
       max_tokens: 1500,
-      temperature: 0.85,
-      reasoning: { effort: 'low' }
+      temperature: 0.85
     }
 
     let scenario: ParsedScenario | null = null
@@ -223,16 +220,11 @@ export const POST: RequestHandler = async (event) => {
     // Attempt up to 2 times to guard against intermittent provider glitches
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
-        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${resolvedApiKey}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': event.url.origin,
-            'X-Title': 'Model Talking'
-          },
-          body: JSON.stringify(requestPayload)
-        })
+        const response = await requestOpenRouterCompletion(
+          resolvedApiKey,
+          event.url.origin,
+          requestPayload
+        )
 
         if (!response.ok) {
           const errText = await response.text()

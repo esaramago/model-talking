@@ -1,32 +1,42 @@
 <script lang="ts">
+  import type { Snippet } from 'svelte'
   import type { Spacing, Break, Justify, Align, Direction } from '@/types/grid'
 
-  export let tag: keyof HTMLElementTagNameMap = 'div'
-  export let direction: Direction | undefined = undefined
-  export let align: Align | undefined = undefined
-  export let justify: Justify | undefined = undefined
-  export let gap: Spacing | undefined = undefined
-  export let wrap: boolean | undefined = undefined
-  export let fullWidth: boolean = false
+  let {
+    tag = 'div',
+    direction,
+    align,
+    justify,
+    gap,
+    wrap,
+    fullWidth = false,
+    class: className,
+    break: breakProp,
+    children
+  }: {
+    tag?: keyof HTMLElementTagNameMap
+    direction?: Direction
+    align?: Align
+    justify?: Justify
+    gap?: Spacing
+    wrap?: boolean
+    fullWidth?: boolean
+    class?: string
+    break?: Break
+    children?: Snippet
+  } = $props()
 
-  // 'class' and 'break' are reserved keywords in JavaScript/TypeScript.
-  // We create internal variables and export them with the names parent components will use.
-  let className: string | undefined = undefined
-  export { className as class }
-
-  let breakProp: Break | undefined = undefined
-  export { breakProp as break }
-
-  // Reactive creation of the inline styles string (equivalent to Vue's computed)
-  $: gridStyle = [
-    gap ? `--gap: var(--wa-space-${gap})` : '',
-    align ? `--align: ${align}` : '',
-    justify ? `--justify: ${justify}` : '',
-    wrap !== undefined ? `--wrap: ${wrap ? 'wrap' : 'nowrap'}` : '',
-    direction ? `--direction: ${direction}` : '',
-  ]
-    .filter(Boolean)
-    .join(';')
+  const gridStyle = $derived(
+    [
+      gap ? `--gap: var(--wa-space-${gap})` : '',
+      align ? `--align: ${align}` : '',
+      justify ? `--justify: ${justify}` : '',
+      wrap !== undefined ? `--wrap: ${wrap ? 'wrap' : 'nowrap'}` : '',
+      direction ? `--direction: ${direction}` : ''
+    ]
+      .filter(Boolean)
+      .join(';')
+  )
 </script>
 
 <svelte:element
@@ -35,7 +45,7 @@
   class:l-grid--full-width={fullWidth}
   style={gridStyle || undefined}
 >
-  <slot />
+  {@render children?.()}
 </svelte:element>
 
 <style>

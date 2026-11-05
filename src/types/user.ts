@@ -13,6 +13,4 @@ export interface UserRecord extends RecordModel {
   twoFactorMethod?: TwoFactorMethod
   twoFactorSecret?: string
   twoFactorPendingSecret?: string
-  twoFactorEmailCode?: string
-  twoFactorEmailExpires?: number
 }

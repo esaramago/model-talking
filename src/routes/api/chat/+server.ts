@@ -1,5 +1,4 @@
 import { json, type RequestHandler } from '@sveltejs/kit'
-import { env } from '$env/dynamic/private'
 import {
   DAILY_MESSAGE_LIMIT,
   DEFAULT_SETTINGS,
@@ -10,6 +9,7 @@ import {
   MESSAGE_MAX_CHARS_MIN,
   MODEL
 } from '@/lib/config'
+import { getOpenRouterApiKey, requestOpenRouterCompletion } from '@/lib/server/openrouter'
 import {
   consumeQuota,
   consumeTitleQuota,
@@ -80,7 +80,7 @@ export const POST: RequestHandler = async (event) => {
       isTitle = false
     } = body
 
-    const resolvedApiKey = env.OPENROUTER_API_KEY?.trim() || process.env.OPENROUTER_API_KEY?.trim()
+    const resolvedApiKey = getOpenRouterApiKey()
 
     if (!resolvedApiKey) {
       return json(
@@ -279,23 +279,10 @@ export const POST: RequestHandler = async (event) => {
       creditIdentifier = identifier
     }
 
-    const requestPayload: Record<string, unknown> = {
-      model: MODEL,
+    const response = await requestOpenRouterCompletion(resolvedApiKey, event.url.origin, {
       messages: effectiveMessages,
       max_tokens: clampedTokens,
-      temperature: effectiveTemperature,
-      reasoning: { effort: 'low' }
-    }
-
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${resolvedApiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': event.url.origin,
-        'X-Title': 'Model Talking'
-      },
-      body: JSON.stringify(requestPayload)
+      temperature: effectiveTemperature
     })
 
     if (!response.ok) {

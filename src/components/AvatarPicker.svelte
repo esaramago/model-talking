@@ -37,11 +37,6 @@
     open = false
     oncancel?.()
   }
-
-  function handleWaHide() {
-    open = false
-    oncancel?.()
-  }
 </script>
 
 <wa-dialog
@@ -50,7 +45,7 @@
   open={open || undefined}
   light-dismiss
   with-footer
-  onwa-hide={handleWaHide}
+  onwa-hide={handleClose}
 >
   <Grid wrap={true} justify="center" gap="xl">
     {#each AVAILABLE_PERSONAS as personaId (personaId)}
@@ -58,7 +53,7 @@
       <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
       <button
         type="button"
-        title={`Escolha o avatar ${personaId}`}
+        title={`${t('agents.selectAvatar')} ${personaId}`}
         class={value === avatarUrl ? '--active' : ''}
         onclick={() => handleSelect(avatarUrl)}
       >

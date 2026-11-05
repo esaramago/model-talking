@@ -6,7 +6,7 @@ import { isIpLimitExempt, resolveClientIp } from '@/lib/server/rateLimit'
 import {
   verifyAndConsumeTOTP,
   decryptTwoFactorSecret,
-  verifyOtpCode,
+  PENDING_2FA_COOKIE_NAME,
   createPending2FAToken,
   verifyPending2FAToken,
   sanitizeUser,
@@ -96,7 +96,7 @@ export const actions: Actions = {
         timestamp: Date.now()
       })
 
-      cookies.set('mt_2fa_pending', pendingToken, {
+      cookies.set(PENDING_2FA_COOKIE_NAME, pendingToken, {
         path: '/',
         httpOnly: true,
         sameSite: 'lax',
@@ -129,26 +129,11 @@ export const actions: Actions = {
 
   verifyTwoFactor: async ({ request, locals, cookies, getClientAddress }) => {
     const formData = await request.formData()
-    const token = cookies.get('mt_2fa_pending') || ''
-
-    if (!token) {
-      return fail(400, {
-        step: 'twoFactor' as const,
-        errorKey: 'login.codeExpired' as const
-      })
-    }
+    const token = cookies.get(PENDING_2FA_COOKIE_NAME) || ''
 
     const pending = verifyPending2FAToken(token)
     if (!pending) {
-      cookies.delete('mt_2fa_pending', { path: '/' })
-      return fail(400, {
-        step: 'twoFactor' as const,
-        errorKey: 'login.codeExpired' as const
-      })
-    }
-
-    if (Date.now() - pending.timestamp > 10 * 60 * 1000) {
-      cookies.delete('mt_2fa_pending', { path: '/' })
+      if (token) cookies.delete(PENDING_2FA_COOKIE_NAME, { path: '/' })
       return fail(400, {
         step: 'twoFactor' as const,
         errorKey: 'login.codeExpired' as const
@@ -164,7 +149,7 @@ export const actions: Actions = {
     const userLimited = await isAuthRateLimited(userAttemptKey, 5)
 
     if (userLimited || ipLimited) {
-      cookies.delete('mt_2fa_pending', { path: '/' })
+      cookies.delete(PENDING_2FA_COOKIE_NAME, { path: '/' })
       return fail(429, {
         step: 'twoFactor' as const,
         errorKey: 'login.codeExpired' as const
@@ -187,7 +172,7 @@ export const actions: Actions = {
       privilegedPb = await getPrivilegedPocketBase(locals.pb)
       user = await privilegedPb.collection('users').getOne(pending.userId)
     } catch {
-      cookies.delete('mt_2fa_pending', { path: '/' })
+      cookies.delete(PENDING_2FA_COOKIE_NAME, { path: '/' })
       return fail(400, {
         step: 'twoFactor' as const,
         errorKey: 'login.codeExpired' as const
@@ -202,7 +187,7 @@ export const actions: Actions = {
           await recordFailedAuthAttempt(ipAttemptKey, 50)
         }
         if (locked) {
-          cookies.delete('mt_2fa_pending', { path: '/' })
+          cookies.delete(PENDING_2FA_COOKIE_NAME, { path: '/' })
           return fail(429, {
             step: 'twoFactor' as const,
             errorKey: 'login.codeExpired' as const
@@ -225,13 +210,6 @@ export const actions: Actions = {
         } catch {
           otpValid = false
         }
-      } else if (user.twoFactorEmailCode && user.twoFactorEmailExpires) {
-        if (
-          Date.now() <= Number(user.twoFactorEmailExpires) &&
-          verifyOtpCode(String(user.twoFactorEmailCode), code)
-        ) {
-          otpValid = true
-        }
       }
 
       if (!otpValid) {
@@ -240,7 +218,7 @@ export const actions: Actions = {
           await recordFailedAuthAttempt(ipAttemptKey, 50)
         }
         if (locked) {
-          cookies.delete('mt_2fa_pending', { path: '/' })
+          cookies.delete(PENDING_2FA_COOKIE_NAME, { path: '/' })
           return fail(429, {
             step: 'twoFactor' as const,
             errorKey: 'login.codeExpired' as const
@@ -252,17 +230,10 @@ export const actions: Actions = {
           errorKey: 'login.invalidCode' as const
         })
       }
-
-      if (user.twoFactorEmailCode) {
-        await privilegedPb.collection('users').update(user.id, {
-          twoFactorEmailCode: '',
-          twoFactorEmailExpires: 0
-        })
-      }
     } else {
       locals.pb.authStore.clear()
       clearAuthSessionCookie(cookies)
-      cookies.delete('mt_2fa_pending', { path: '/' })
+      cookies.delete(PENDING_2FA_COOKIE_NAME, { path: '/' })
       throw redirect(303, '/login')
     }
 
@@ -271,7 +242,7 @@ export const actions: Actions = {
       await locals.pb.collection('users').authRefresh()
     } catch {
       locals.pb.authStore.clear()
-      cookies.delete('mt_2fa_pending', { path: '/' })
+      cookies.delete(PENDING_2FA_COOKIE_NAME, { path: '/' })
       return fail(400, {
         step: 'twoFactor' as const,
         errorKey: 'login.codeExpired' as const
@@ -282,14 +253,14 @@ export const actions: Actions = {
     if (!isLoopback) {
       await clearAuthAttempts(ipAttemptKey)
     }
-    cookies.delete('mt_2fa_pending', { path: '/' })
+    cookies.delete(PENDING_2FA_COOKIE_NAME, { path: '/' })
     setAuthSessionCookie(cookies, user.id)
 
     throw redirect(303, '/')
   },
 
   cancelTwoFactor: async ({ cookies }) => {
-    cookies.delete('mt_2fa_pending', { path: '/' })
+    cookies.delete(PENDING_2FA_COOKIE_NAME, { path: '/' })
     throw redirect(303, '/login')
   }
 }

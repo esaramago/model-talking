@@ -325,18 +325,26 @@ export function buildOtpAuthUri(issuer: string, accountName: string, secret: str
  */
 export function sanitizeUser<T extends Record<string, any> | null>(user: T): T {
   if (!user) return user
-  const clone = JSON.parse(JSON.stringify(user))
-  delete clone.twoFactorSecret
-  delete clone.twoFactorPendingSecret
-  delete clone.twoFactorEmailCode
-  delete clone.twoFactorEmailExpires
-  return clone
+  const {
+    twoFactorSecret: _secret,
+    twoFactorPendingSecret: _pendingSecret,
+    twoFactorEmailCode: _emailCode,
+    twoFactorEmailExpires: _emailExpires,
+    ...safeUser
+  } = user
+  return safeUser as T
 }
 
 const RUNTIME_SERVER_SECRET = randomBytes(32).toString('hex')
 export const AUTH_SESSION_COOKIE_NAME = 'mt_auth_sig'
 export const PENDING_TOTP_COOKIE_NAME = 'mt_totp_pending'
+export const PENDING_2FA_COOKIE_NAME = 'mt_2fa_pending'
+export const PROFILE_OTP_COOKIE_NAME = 'mt_profile_otp_id'
 let warnedMissingSecret = false
+
+const derivedKeyCache = new Map<string, string>()
+let cachedTotpKey: Buffer | null = null
+let cachedPending2FAKey: Buffer | null = null
 
 function readConfiguredSecret(): string | undefined {
   const authSecret = (env.AUTH_SECRET || process.env.AUTH_SECRET)?.trim()
@@ -377,7 +385,14 @@ function getBaseServerSecret(): string {
  * so cookies, sessions, 2FA tokens, and DB encryption never share raw keys.
  */
 export function deriveServerKey(domain: string): string {
-  return createHmac('sha256', getBaseServerSecret()).update(`domain:${domain}`).digest('hex')
+  const baseSecret = getBaseServerSecret()
+  const cacheKey = `${baseSecret}:${domain}`
+  const cached = derivedKeyCache.get(cacheKey)
+  if (cached) return cached
+
+  const derived = createHmac('sha256', baseSecret).update(`domain:${domain}`).digest('hex')
+  derivedKeyCache.set(cacheKey, derived)
+  return derived
 }
 
 function getServerSecret(): string {
@@ -385,7 +400,72 @@ function getServerSecret(): string {
 }
 
 function getTotpEncryptionKey(): Buffer {
-  return createHash('sha256').update(deriveServerKey('totp-at-rest')).digest()
+  if (!cachedTotpKey) {
+    cachedTotpKey = createHash('sha256').update(deriveServerKey('totp-at-rest')).digest()
+  }
+  return cachedTotpKey
+}
+
+function getPending2FAKey(): Buffer {
+  if (!cachedPending2FAKey) {
+    cachedPending2FAKey = createHash('sha256').update(`2fa:${getServerSecret()}`).digest()
+  }
+  return cachedPending2FAKey
+}
+
+function aesGcmSeal(plaintext: string, key: Buffer): string {
+  const iv = randomBytes(12)
+  const cipher = createCipheriv('aes-256-gcm', key, iv)
+  const encrypted = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()])
+  const authTag = cipher.getAuthTag()
+  return Buffer.concat([iv, authTag, encrypted]).toString('base64url')
+}
+
+function aesGcmUnseal(encoded: string, key: Buffer): string | null {
+  try {
+    const raw = Buffer.from(encoded, 'base64url')
+    if (raw.length < 28) return null
+    const iv = raw.subarray(0, 12)
+    const authTag = raw.subarray(12, 28)
+    const encrypted = raw.subarray(28)
+    const decipher = createDecipheriv('aes-256-gcm', key, iv)
+    decipher.setAuthTag(authTag)
+    return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString('utf8')
+  } catch {
+    return null
+  }
+}
+
+function sealPendingToken(payload: object): string {
+  return aesGcmSeal(JSON.stringify(payload), getPending2FAKey())
+}
+
+function unsealPendingToken<T extends { userId?: string; timestamp?: number }>(
+  token: string | undefined,
+  maxAgeMs: number,
+  expectedUserId?: string
+): T | null {
+  if (!token) return null
+  const decrypted = aesGcmUnseal(token, getPending2FAKey())
+  if (!decrypted) return null
+
+  try {
+    const parsed = JSON.parse(decrypted) as T
+    if (
+      !parsed ||
+      typeof parsed !== 'object' ||
+      typeof parsed.timestamp !== 'number' ||
+      Date.now() - parsed.timestamp > maxAgeMs
+    ) {
+      return null
+    }
+    if (expectedUserId !== undefined && parsed.userId !== expectedUserId) {
+      return null
+    }
+    return parsed
+  } catch {
+    return null
+  }
 }
 
 const ENCRYPTED_SECRET_PREFIX = 'enc:v1:'
@@ -396,11 +476,7 @@ const ENCRYPTED_SECRET_PREFIX = 'enc:v1:'
 export function encryptTwoFactorSecret(plainSecret: string): string {
   if (!plainSecret) return ''
   if (plainSecret.startsWith(ENCRYPTED_SECRET_PREFIX)) return plainSecret
-  const iv = randomBytes(12)
-  const cipher = createCipheriv('aes-256-gcm', getTotpEncryptionKey(), iv)
-  const encrypted = Buffer.concat([cipher.update(plainSecret, 'utf8'), cipher.final()])
-  const authTag = cipher.getAuthTag()
-  return `${ENCRYPTED_SECRET_PREFIX}${Buffer.concat([iv, authTag, encrypted]).toString('base64url')}`
+  return `${ENCRYPTED_SECRET_PREFIX}${aesGcmSeal(plainSecret, getTotpEncryptionKey())}`
 }
 
 /**
@@ -411,19 +487,8 @@ export function decryptTwoFactorSecret(storedValue: string | undefined | null): 
   if (!storedValue.startsWith(ENCRYPTED_SECRET_PREFIX)) {
     return /^[A-Z2-7]+=*$/i.test(storedValue.trim()) ? storedValue.trim().toUpperCase() : ''
   }
-  try {
-    const encoded = storedValue.slice(ENCRYPTED_SECRET_PREFIX.length)
-    const raw = Buffer.from(encoded, 'base64url')
-    if (raw.length < 28) return ''
-    const iv = raw.subarray(0, 12)
-    const authTag = raw.subarray(12, 28)
-    const encrypted = raw.subarray(28)
-    const decipher = createDecipheriv('aes-256-gcm', getTotpEncryptionKey(), iv)
-    decipher.setAuthTag(authTag)
-    return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString('utf8')
-  } catch {
-    return ''
-  }
+  const encoded = storedValue.slice(ENCRYPTED_SECRET_PREFIX.length)
+  return aesGcmUnseal(encoded, getTotpEncryptionKey()) || ''
 }
 
 export interface PendingTotpPayload {
@@ -431,6 +496,12 @@ export interface PendingTotpPayload {
   secret: string
   timestamp: number
 }
+
+const PENDING_TOTP_MAX_AGE_MS = 30 * 60 * 1000
+const AUTH_SESSION_MAX_AGE_SEC = 60 * 60 * 24 * 30
+const AUTH_SESSION_MAX_AGE_MS = AUTH_SESSION_MAX_AGE_SEC * 1000
+const PROFILE_OTP_MAX_AGE_MS = 10 * 60 * 1000
+const PENDING_2FA_MAX_AGE_MS = 10 * 60 * 1000
 
 /**
  * Creates a server-encrypted token holding the pending TOTP secret bound to the user ID.
@@ -441,11 +512,7 @@ export function createPendingTotpToken(userId: string, secret: string): string {
     secret,
     timestamp: Date.now()
   }
-  const iv = randomBytes(12)
-  const cipher = createCipheriv('aes-256-gcm', getPending2FAKey(), iv)
-  const encrypted = Buffer.concat([cipher.update(JSON.stringify(payload), 'utf8'), cipher.final()])
-  const authTag = cipher.getAuthTag()
-  return Buffer.concat([iv, authTag, encrypted]).toString('base64url')
+  return sealPendingToken(payload)
 }
 
 /**
@@ -455,35 +522,10 @@ export function verifyPendingTotpToken(
   token: string | undefined,
   expectedUserId: string
 ): string | null {
-  if (!token || !expectedUserId) return null
-  try {
-    const raw = Buffer.from(token, 'base64url')
-    if (raw.length < 28) return null
-    const iv = raw.subarray(0, 12)
-    const authTag = raw.subarray(12, 28)
-    const encrypted = raw.subarray(28)
-    const decipher = createDecipheriv('aes-256-gcm', getPending2FAKey(), iv)
-    decipher.setAuthTag(authTag)
-    const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]).toString('utf8')
-    const parsed = JSON.parse(decrypted) as PendingTotpPayload
-    if (
-      !parsed ||
-      parsed.userId !== expectedUserId ||
-      !parsed.secret ||
-      typeof parsed.timestamp !== 'number' ||
-      Date.now() - parsed.timestamp > 30 * 60 * 1000
-    ) {
-      return null
-    }
-    return parsed.secret
-  } catch {
-    return null
-  }
+  if (!expectedUserId) return null
+  const parsed = unsealPendingToken<PendingTotpPayload>(token, PENDING_TOTP_MAX_AGE_MS, expectedUserId)
+  return parsed?.secret || null
 }
-
-const AUTH_SESSION_MAX_AGE_SEC = 60 * 60 * 24 * 30
-const AUTH_SESSION_MAX_AGE_MS = AUTH_SESSION_MAX_AGE_SEC * 1000
-const PROFILE_OTP_MAX_AGE_MS = 10 * 60 * 1000
 
 /**
  * Signs an authenticated user session with an expiration timestamp and random nonce
@@ -558,11 +600,7 @@ export function createProfileOtpToken(userId: string, otpId: string): string {
     otpId,
     timestamp: Date.now()
   }
-  const iv = randomBytes(12)
-  const cipher = createCipheriv('aes-256-gcm', getPending2FAKey(), iv)
-  const encrypted = Buffer.concat([cipher.update(JSON.stringify(payload), 'utf8'), cipher.final()])
-  const authTag = cipher.getAuthTag()
-  return Buffer.concat([iv, authTag, encrypted]).toString('base64url')
+  return sealPendingToken(payload)
 }
 
 /**
@@ -572,34 +610,9 @@ export function verifyProfileOtpToken(
   token: string | undefined,
   expectedUserId: string
 ): string | null {
-  if (!token || !expectedUserId) return null
-  try {
-    const raw = Buffer.from(token, 'base64url')
-    if (raw.length < 28) return null
-    const iv = raw.subarray(0, 12)
-    const authTag = raw.subarray(12, 28)
-    const encrypted = raw.subarray(28)
-    const decipher = createDecipheriv('aes-256-gcm', getPending2FAKey(), iv)
-    decipher.setAuthTag(authTag)
-    const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]).toString('utf8')
-    const parsed = JSON.parse(decrypted) as ProfileOtpPayload
-    if (
-      !parsed ||
-      parsed.userId !== expectedUserId ||
-      !parsed.otpId ||
-      typeof parsed.timestamp !== 'number' ||
-      Date.now() - parsed.timestamp > PROFILE_OTP_MAX_AGE_MS
-    ) {
-      return null
-    }
-    return parsed.otpId
-  } catch {
-    return null
-  }
-}
-
-function getPending2FAKey(): Buffer {
-  return createHash('sha256').update(`2fa:${getServerSecret()}`).digest()
+  if (!expectedUserId) return null
+  const parsed = unsealPendingToken<ProfileOtpPayload>(token, PROFILE_OTP_MAX_AGE_MS, expectedUserId)
+  return parsed?.otpId || null
 }
 
 export interface Pending2FAPayload {
@@ -611,25 +624,13 @@ export interface Pending2FAPayload {
 }
 
 export function createPending2FAToken(payload: Pending2FAPayload): string {
-  const iv = randomBytes(12)
-  const cipher = createCipheriv('aes-256-gcm', getPending2FAKey(), iv)
-  const encrypted = Buffer.concat([cipher.update(JSON.stringify(payload), 'utf8'), cipher.final()])
-  const authTag = cipher.getAuthTag()
-  return Buffer.concat([iv, authTag, encrypted]).toString('base64url')
+  return sealPendingToken(payload)
 }
 
-export function verifyPending2FAToken(token: string): Pending2FAPayload | null {
-  try {
-    const raw = Buffer.from(token, 'base64url')
-    if (raw.length < 28) return null
-    const iv = raw.subarray(0, 12)
-    const authTag = raw.subarray(12, 28)
-    const encrypted = raw.subarray(28)
-    const decipher = createDecipheriv('aes-256-gcm', getPending2FAKey(), iv)
-    decipher.setAuthTag(authTag)
-    const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]).toString('utf8')
-    return JSON.parse(decrypted) as Pending2FAPayload
-  } catch {
+export function verifyPending2FAToken(token: string | undefined): Pending2FAPayload | null {
+  const parsed = unsealPendingToken<Pending2FAPayload>(token, PENDING_2FA_MAX_AGE_MS)
+  if (!parsed?.userId || !parsed?.pbToken || !parsed?.method) {
     return null
   }
+  return parsed
 }

@@ -43,11 +43,6 @@
   function handleConfirm() {
     onconfirm?.()
   }
-
-  function handleWaHide() {
-    open = false
-    oncancel?.()
-  }
 </script>
 
 <wa-dialog
@@ -56,7 +51,7 @@
   open={open || undefined}
   light-dismiss
   with-footer
-  onwa-hide={handleWaHide}
+  onwa-hide={handleCancel}
 >
   <Grid direction="column">
     {#if message}

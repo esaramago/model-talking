@@ -55,8 +55,6 @@
   }
 
   onMount(async () => {
-    applySettings(user?.id, user)
-    lastSyncedUserId = user?.id ?? null
     if (typeof window !== 'undefined' && 'customElements' in window) {
       await Promise.all([
         customElements.whenDefined('wa-select'),
@@ -71,10 +69,7 @@
 
   $effect(() => {
     const currentUserId = user?.id ?? null
-    if (lastSyncedUserId === undefined) {
-      lastSyncedUserId = currentUserId
-      applySettings(currentUserId, user)
-    } else if (lastSyncedUserId !== currentUserId) {
+    if (lastSyncedUserId !== currentUserId) {
       lastSyncedUserId = currentUserId
       applySettings(currentUserId, user)
     }
@@ -130,22 +125,15 @@
     schedulePersist()
   }
 
-  function handleMaxCharsInput(e: Event) {
-    if (!isHydrated) return
-    const target = (e.target || e.currentTarget) as HTMLElement & { value?: number | string }
-    const val = Number(target?.value)
-    if (!isNaN(val)) {
-      maxChars = Math.min(Math.max(Math.round(val), MESSAGE_MAX_CHARS_MIN), MESSAGE_MAX_CHARS_MAX)
-    }
-  }
-
-  function handleMaxCharsChange(e: Event) {
+  function updateMaxCharsFromEvent(e: Event, persist: boolean) {
     if (!isHydrated) return
     const target = (e.target || e.currentTarget) as HTMLElement & { value?: number | string }
     const val = Number(target?.value)
     if (isNaN(val)) return
     maxChars = Math.min(Math.max(Math.round(val), MESSAGE_MAX_CHARS_MIN), MESSAGE_MAX_CHARS_MAX)
-    persistCurrentSettings()
+    if (persist) {
+      persistCurrentSettings()
+    }
   }
 </script>
 
@@ -206,8 +194,8 @@
           step={MESSAGE_MAX_CHARS_STEP}
           with-tooltip
           hint={t('settings.maxCharsHint')}
-          oninput={handleMaxCharsInput}
-          onchange={handleMaxCharsChange}
+          oninput={(e: Event) => updateMaxCharsFromEvent(e, false)}
+          onchange={(e: Event) => updateMaxCharsFromEvent(e, true)}
         ></wa-slider>
         <strong>{maxChars}</strong>
       </Grid>

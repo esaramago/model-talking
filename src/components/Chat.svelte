@@ -59,12 +59,9 @@
 
   let messages = $state<ChatMessage[]>([])
   let isRunning = $state(false)
-  let statusMessage = $state(t('chat.ready'))
   let errorMessage = $state('')
   let randomErrorMessage = $state('')
 
-  let totalPromptTokens = $state(0)
-  let totalCompletionTokens = $state(0)
   let totalTokensUsed = $state(0)
 
   let activeThinkingSpeaker = $state<string | null>(null)
@@ -72,6 +69,31 @@
   let isGeneratingRandom = $derived(generatingTheme !== null)
   let isConfirmRestartOpen = $state(false)
   let isConfirmNewChatOpen = $state(false)
+
+  function resetSessionCounters() {
+    currentTalkId = ''
+    messages = []
+    model = MODEL
+    maxTokens = MAX_OUTPUT_TOKENS
+    totalTokensUsed = 0
+    errorMessage = ''
+    randomErrorMessage = ''
+  }
+
+  function applyPendingRestart(): boolean {
+    const pending = talksState.pendingRestartAgents
+    if (!pending) return false
+
+    agent1Name = pending.agent1Name
+    agent2Name = pending.agent2Name
+    agent1Avatar = pending.agent1Avatar
+    agent2Avatar = pending.agent2Avatar
+    systemPrompt1 = pending.systemPrompt1
+    systemPrompt2 = pending.systemPrompt2
+    initialTopic = ''
+    talksState.pendingRestartAgents = null
+    return true
+  }
 
   function applyTalk(talk: TalkRecord) {
     currentTalkId = talk.id
@@ -91,9 +113,6 @@
     if (talk.maxChars) maxChars = talk.maxChars
     if (talk.maxTokens) maxTokens = Math.max(talk.maxTokens, MAX_OUTPUT_TOKENS)
     totalTokensUsed = talk.totalTokens ?? 0
-    statusMessage = conversationStarted
-      ? t('chat.conversationLoaded')
-      : t('chat.ready')
   }
 
   function restoreDraft(): boolean {
@@ -111,15 +130,9 @@
 
   function resetNewChat() {
     if (isRunning) return
-    currentTalkId = ''
-    messages = []
-    model = MODEL
-    maxTokens = MAX_OUTPUT_TOKENS
+    resetSessionCounters()
     const loaded = loadSettings(user?.id, user)
     maxChars = loaded.maxChars
-    totalPromptTokens = 0
-    totalCompletionTokens = 0
-    totalTokensUsed = 0
     if (!restoreDraft()) {
       initialTopic = ''
       agent1Name = ''
@@ -129,9 +142,6 @@
       agent1Avatar = '/img/personas/1.svg'
       agent2Avatar = '/img/personas/2.svg'
     }
-    statusMessage = t('chat.ready')
-    errorMessage = ''
-    randomErrorMessage = ''
   }
 
   function promptRestart() {
@@ -173,17 +183,8 @@
       talksState.pendingRestartAgents = preservedAgents
       goto('/')
     } else {
-      currentTalkId = ''
-      messages = []
-      model = MODEL
-      maxTokens = MAX_OUTPUT_TOKENS
-      totalPromptTokens = 0
-      totalCompletionTokens = 0
-      totalTokensUsed = 0
+      resetSessionCounters()
       initialTopic = ''
-      statusMessage = t('chat.ready')
-      errorMessage = ''
-      randomErrorMessage = ''
     }
   }
 
@@ -195,17 +196,7 @@
 
     if (props.initialTalk) {
       applyTalk(props.initialTalk)
-    } else if (talksState.pendingRestartAgents) {
-      const p = talksState.pendingRestartAgents
-      agent1Name = p.agent1Name
-      agent2Name = p.agent2Name
-      agent1Avatar = p.agent1Avatar
-      agent2Avatar = p.agent2Avatar
-      systemPrompt1 = p.systemPrompt1
-      systemPrompt2 = p.systemPrompt2
-      initialTopic = ''
-      talksState.pendingRestartAgents = null
-    } else {
+    } else if (!applyPendingRestart()) {
       restoreDraft()
     }
 
@@ -229,23 +220,8 @@
     } else if (props.talkId && props.talkId !== currentTalkId) {
       currentTalkId = props.talkId
     } else if (!props.talkId && currentTalkId && !isRunning) {
-      if (talksState.pendingRestartAgents) {
-        const p = talksState.pendingRestartAgents
-        currentTalkId = ''
-        messages = []
-        totalPromptTokens = 0
-        totalCompletionTokens = 0
-        totalTokensUsed = 0
-        agent1Name = p.agent1Name
-        agent2Name = p.agent2Name
-        agent1Avatar = p.agent1Avatar
-        agent2Avatar = p.agent2Avatar
-        systemPrompt1 = p.systemPrompt1
-        systemPrompt2 = p.systemPrompt2
-        initialTopic = ''
-        statusMessage = t('chat.ready')
-        talksState.pendingRestartAgents = null
-      } else {
+      resetSessionCounters()
+      if (!applyPendingRestart()) {
         // Switched back to new chat
         resetNewChat()
       }
@@ -278,13 +254,7 @@
   })
 
   $effect(() => {
-    stats.currentTurn = messages.length
-    stats.generatedMessages = messages.length
     stats.totalTokens = totalTokensUsed
-    stats.promptTokens = totalPromptTokens
-    stats.completionTokens = totalCompletionTokens
-    stats.status = statusMessage
-    stats.isRunning = isRunning
     stats.model = model || MODEL
   })
 
@@ -351,7 +321,6 @@
       : DEFAULT_SETTINGS.generalRules
 
     activeThinkingSpeaker = speakerName
-    statusMessage = t('chat.thinking', { speaker: speakerName })
     errorMessage = ''
 
     try {
@@ -375,8 +344,6 @@
       const cTokens = response.usage?.completion_tokens ?? 0
       const tTokens = response.usage?.total_tokens ?? 0
 
-      totalPromptTokens += pTokens
-      totalCompletionTokens += cTokens
       totalTokensUsed += tTokens
 
       const newMessage: ChatMessage = {
@@ -410,12 +377,10 @@
       }
 
       activeThinkingSpeaker = null
-      statusMessage = t('chat.ready')
       return true
     } catch (err: unknown) {
       activeThinkingSpeaker = null
       errorMessage = err instanceof Error ? err.message : t('chat.errorTurn')
-      statusMessage = t('chat.errorOccurred')
       return false
     }
   }
@@ -434,8 +399,6 @@
       isRunning = true
 
       messages = []
-      totalPromptTokens = 0
-      totalCompletionTokens = 0
       totalTokensUsed = 0
 
       const firstMessage: ChatMessage = {
@@ -465,7 +428,6 @@
 
       const currentUserId = user?.id || pb.authStore.record?.id
       if (currentUserId) {
-        statusMessage = t('chat.savingConversation')
         try {
           const talkTitle = await talkTitlePromise
           const newTalk = await pb.collection('talks').create<TalkRecord>({
@@ -497,7 +459,6 @@
         }
       }
 
-      statusMessage = t('chat.ready')
       isRunning = false
       return
     }

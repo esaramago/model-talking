@@ -6,6 +6,7 @@ import { sidebar } from '@/lib/state/sidebar.svelte'
 import { talksState } from '@/lib/state/talks.svelte'
 import { page } from '$app/state'
 import { t } from '@/lib/i18n/index.svelte'
+import { PUBLIC_WEBSITE_TITLE } from '@/lib/config'
 
 const user = $derived(page.data?.user ?? null)
 </script>
@@ -49,9 +50,10 @@ const user = $derived(page.data?.user ?? null)
       {t('sidebar.settings')}
     </wa-button>
     
-    <wa-button appearance="plain" href="/about" class="is-hidden-mobile">
+    <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+    <wa-button role="button" tabindex="0" size="s" href="/about" variant="neutral" appearance="plain" class="is-hidden-mobile" onclick={() => sidebar.close()}>
       <wa-icon slot="start" name="file-lines" variant="solid"></wa-icon>
-      Acerca
+      {t('header.about', { title: PUBLIC_WEBSITE_TITLE })}
     </wa-button>
 
     {#if user}

@@ -42,16 +42,15 @@
           }}
         >
           <Grid direction="column">
-            <label for="code">{t('login.twoFactorCodeLabel')}</label>
-            <input
-              id="code"
+            <wa-input
               name="code"
               type="text"
+              label={t('login.twoFactorCodeLabel')}
               placeholder={t('login.twoFactorCodePlaceholder')}
               maxlength={6}
               required
               autocomplete="one-time-code"
-            />
+            ></wa-input>
 
             <wa-button type="submit" variant="brand" {loading}>
               {t('login.verifyButton')}
@@ -90,30 +89,25 @@
           }}
         >
           <Grid direction="column">
-            <Grid direction="column" gap="none">
-              <label for="email">{t('login.emailLabel')}</label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                placeholder={t('login.emailPlaceholder')}
-                value={form?.email ?? ''}
-                required
-                autocomplete="email"
-              />
-            </Grid>
-              
-            <Grid direction="column" gap="none">
-              <label for="password">{t('login.passwordLabel')}</label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                placeholder={t('login.passwordPlaceholder')}
-                required
-                autocomplete="current-password"
-              />
-            </Grid>
+            <wa-input
+              name="email"
+              type="email"
+              label={t('login.emailLabel')}
+              placeholder={t('login.emailPlaceholder')}
+              value={form?.email ?? ''}
+              required
+              autocomplete="email"
+            ></wa-input>
+
+            <wa-input
+              name="password"
+              type="password"
+              label={t('login.passwordLabel')}
+              placeholder={t('login.passwordPlaceholder')}
+              required
+              password-toggle
+              autocomplete="current-password"
+            ></wa-input>
 
             <wa-button type="submit" variant="brand" {loading}>
               {t('login.submit')}

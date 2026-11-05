@@ -1,6 +1,7 @@
 import crypto from 'node:crypto'
 import type PocketBase from 'pocketbase'
 import type { RequestEvent } from '@sveltejs/kit'
+import type { DailyQuota } from '@/types/chat'
 import {
   DAILY_MESSAGE_LIMIT,
   DAILY_TITLE_LIMIT,
@@ -17,12 +18,7 @@ function getCookieSecret(): string {
   return deriveServerKey('rate-limit-cookie')
 }
 
-export interface QuotaInfo {
-  remaining: number
-  total: number
-  isUnlimited: boolean
-  resetAt: string
-}
+export type QuotaInfo = DailyQuota
 
 export interface RateLimitIdentifier {
   isAdmin: boolean
@@ -197,14 +193,6 @@ export function resolveClientIp(getClientAddress: () => string): string {
 }
 
 /**
- * Extracts the real client IP address from the SvelteKit request event.
- * Configure ADDRESS_HEADER / XFF_DEPTH in @sveltejs/adapter-node when behind a reverse proxy.
- */
-export function extractClientIp(event: RequestEvent): string {
-  return resolveClientIp(event.getClientAddress)
-}
-
-/**
  * Resolves the rate limit identifier using dual tracking (signed cookie + IP + user role).
  */
 export function resolveRateLimitIdentifier(event: RequestEvent): RateLimitIdentifier {
@@ -227,7 +215,7 @@ export function resolveRateLimitIdentifier(event: RequestEvent): RateLimitIdenti
   }
 
   // 2. Client IP
-  const clientIp = extractClientIp(event)
+  const clientIp = resolveClientIp(event.getClientAddress)
   const isExempt = isIpLimitExempt(clientIp)
 
   return {
@@ -389,21 +377,24 @@ export async function getQuota(
   }
 }
 
-/**
- * Consumes 1 message from the daily quota.
- * Increments are serialized per key in memory to eliminate TOCTOU race conditions.
- */
-export async function consumeQuota(
+async function consumeScopedQuota(
   pb: PocketBase | undefined,
-  identifier: RateLimitIdentifier
+  identifier: RateLimitIdentifier,
+  options: {
+    prefix?: string
+    dailyLimit: number
+    ipLimit: number
+  }
 ): Promise<{ allowed: boolean; quota: QuotaInfo }> {
+  const { prefix = '', dailyLimit, ipLimit } = options
   const resetAt = getResetAtUtc()
+
   if (identifier.isAdmin) {
     return {
       allowed: true,
       quota: {
         remaining: Infinity,
-        total: DAILY_MESSAGE_LIMIT,
+        total: dailyLimit,
         isUnlimited: true,
         resetAt
       }
@@ -413,22 +404,26 @@ export async function consumeQuota(
   const date = getUtcDateString()
   ensureFreshMemoryUsage(date)
 
+  const prefixKey = (k: string) => (prefix ? `${prefix}:${k}` : k)
+  const cookieKey = prefixKey(identifier.cookieKey)
+
   if (identifier.userKey) {
-    const userKey = identifier.userKey
-    const keys = [userKey, identifier.cookieKey]
+    const userKey = prefixKey(identifier.userKey)
+    const keys = [userKey, cookieKey]
+
     return withKeysLock(keys, async () => {
       const [userCountData, cookieCountData] = await Promise.all([
         fetchKeyCount(pb, userKey, date),
-        fetchKeyCount(pb, identifier.cookieKey, date)
+        fetchKeyCount(pb, cookieKey, date)
       ])
       const currentUsed = Math.max(userCountData.count, cookieCountData.count)
 
-      if (currentUsed >= DAILY_MESSAGE_LIMIT) {
+      if (currentUsed >= dailyLimit) {
         return {
           allowed: false,
           quota: {
             remaining: 0,
-            total: DAILY_MESSAGE_LIMIT,
+            total: dailyLimit,
             isUnlimited: false,
             resetAt
           }
@@ -438,14 +433,14 @@ export async function consumeQuota(
       const nextUsed = currentUsed + 1
       await Promise.all([
         setKeyCount(pb, userKey, date, nextUsed, userCountData.recordId),
-        setKeyCount(pb, identifier.cookieKey, date, nextUsed, cookieCountData.recordId)
+        setKeyCount(pb, cookieKey, date, nextUsed, cookieCountData.recordId)
       ])
 
       return {
         allowed: true,
         quota: {
-          remaining: Math.max(0, DAILY_MESSAGE_LIMIT - nextUsed),
-          total: DAILY_MESSAGE_LIMIT,
+          remaining: Math.max(0, dailyLimit - nextUsed),
+          total: dailyLimit,
           isUnlimited: false,
           resetAt
         }
@@ -454,37 +449,23 @@ export async function consumeQuota(
   }
 
   // Guest user: check per-device signed cookie and aggregate IP limit
-  const hasIp = Boolean(identifier.ipKey)
-  const keys = hasIp ? [identifier.cookieKey, identifier.ipKey!] : [identifier.cookieKey]
+  const ipKey = identifier.ipKey ? prefixKey(identifier.ipKey) : undefined
+  const keys = ipKey ? [cookieKey, ipKey] : [cookieKey]
 
   return withKeysLock(keys, async () => {
     const [cookieCountData, ipCountData] = await Promise.all([
-      fetchKeyCount(pb, identifier.cookieKey, date),
-      hasIp
-        ? fetchKeyCount(pb, identifier.ipKey!, date)
+      fetchKeyCount(pb, cookieKey, date),
+      ipKey
+        ? fetchKeyCount(pb, ipKey, date)
         : Promise.resolve<{ count: number; recordId?: string }>({ count: 0 })
     ])
 
-    // Per-device quota reached
-    if (cookieCountData.count >= DAILY_MESSAGE_LIMIT) {
+    if (cookieCountData.count >= dailyLimit || (ipKey && ipCountData.count >= ipLimit)) {
       return {
         allowed: false,
         quota: {
           remaining: 0,
-          total: DAILY_MESSAGE_LIMIT,
-          isUnlimited: false,
-          resetAt
-        }
-      }
-    }
-
-    // Aggregate IP ceiling reached
-    if (hasIp && ipCountData.count >= DAILY_GUEST_IP_LIMIT) {
-      return {
-        allowed: false,
-        quota: {
-          remaining: 0,
-          total: DAILY_MESSAGE_LIMIT,
+          total: dailyLimit,
           isUnlimited: false,
           resetAt
         }
@@ -495,22 +476,36 @@ export async function consumeQuota(
     const nextIpUsed = ipCountData.count + 1
 
     const updates: Promise<void>[] = [
-      setKeyCount(pb, identifier.cookieKey, date, nextCookieUsed, cookieCountData.recordId)
+      setKeyCount(pb, cookieKey, date, nextCookieUsed, cookieCountData.recordId)
     ]
-    if (hasIp) {
-      updates.push(setKeyCount(pb, identifier.ipKey!, date, nextIpUsed, ipCountData.recordId))
+    if (ipKey) {
+      updates.push(setKeyCount(pb, ipKey, date, nextIpUsed, ipCountData.recordId))
     }
     await Promise.all(updates)
 
     return {
       allowed: true,
       quota: {
-        remaining: Math.max(0, DAILY_MESSAGE_LIMIT - nextCookieUsed),
-        total: DAILY_MESSAGE_LIMIT,
+        remaining: Math.max(0, dailyLimit - nextCookieUsed),
+        total: dailyLimit,
         isUnlimited: false,
         resetAt
       }
     }
+  })
+}
+
+/**
+ * Consumes 1 message from the daily quota.
+ * Increments are serialized per key in memory to eliminate TOCTOU race conditions.
+ */
+export async function consumeQuota(
+  pb: PocketBase | undefined,
+  identifier: RateLimitIdentifier
+): Promise<{ allowed: boolean; quota: QuotaInfo }> {
+  return consumeScopedQuota(pb, identifier, {
+    dailyLimit: DAILY_MESSAGE_LIMIT,
+    ipLimit: DAILY_GUEST_IP_LIMIT
   })
 }
 
@@ -552,68 +547,10 @@ export async function consumeTitleQuota(
   pb: PocketBase | undefined,
   identifier: RateLimitIdentifier
 ): Promise<boolean> {
-  if (identifier.isAdmin) {
-    return true
-  }
-
-  const date = getUtcDateString()
-  ensureFreshMemoryUsage(date)
-
-  if (identifier.userKey) {
-    const titleUserKey = `title:${identifier.userKey}`
-    const titleCookieKey = `title:${identifier.cookieKey}`
-    const keys = [titleUserKey, titleCookieKey]
-
-    return withKeysLock(keys, async () => {
-      const [userCountData, cookieCountData] = await Promise.all([
-        fetchKeyCount(pb, titleUserKey, date),
-        fetchKeyCount(pb, titleCookieKey, date)
-      ])
-      const currentUsed = Math.max(userCountData.count, cookieCountData.count)
-
-      if (currentUsed >= DAILY_TITLE_LIMIT) {
-        return false
-      }
-
-      const nextUsed = currentUsed + 1
-      await Promise.all([
-        setKeyCount(pb, titleUserKey, date, nextUsed, userCountData.recordId),
-        setKeyCount(pb, titleCookieKey, date, nextUsed, cookieCountData.recordId)
-      ])
-      return true
-    })
-  }
-
-  const titleCookieKey = `title:${identifier.cookieKey}`
-  const titleIpKey = identifier.ipKey ? `title:${identifier.ipKey}` : undefined
-  const keys = titleIpKey ? [titleCookieKey, titleIpKey] : [titleCookieKey]
-
-  return withKeysLock(keys, async () => {
-    const [cookieCountData, ipCountData] = await Promise.all([
-      fetchKeyCount(pb, titleCookieKey, date),
-      titleIpKey
-        ? fetchKeyCount(pb, titleIpKey, date)
-        : Promise.resolve<{ count: number; recordId?: string }>({ count: 0 })
-    ])
-
-    if (cookieCountData.count >= DAILY_TITLE_LIMIT) {
-      return false
-    }
-
-    if (titleIpKey && ipCountData.count >= DAILY_TITLE_IP_LIMIT) {
-      return false
-    }
-
-    const nextCookieUsed = cookieCountData.count + 1
-    const nextIpUsed = ipCountData.count + 1
-
-    const updates: Promise<void>[] = [
-      setKeyCount(pb, titleCookieKey, date, nextCookieUsed, cookieCountData.recordId)
-    ]
-    if (titleIpKey) {
-      updates.push(setKeyCount(pb, titleIpKey, date, nextIpUsed, ipCountData.recordId))
-    }
-    await Promise.all(updates)
-    return true
+  const result = await consumeScopedQuota(pb, identifier, {
+    prefix: 'title',
+    dailyLimit: DAILY_TITLE_LIMIT,
+    ipLimit: DAILY_TITLE_IP_LIMIT
   })
+  return result.allowed
 }

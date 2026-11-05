@@ -20,6 +20,12 @@ function getDraftStorageKey(userId?: string | null): string {
   return userId ? `${DRAFT_STORAGE_KEY}_${userId}` : `${DRAFT_STORAGE_KEY}_guest`
 }
 
+function clampMaxChars(value: unknown): number {
+  const num = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN
+  if (!Number.isFinite(num)) return DEFAULT_SETTINGS.maxChars
+  return Math.min(Math.max(Math.round(num), MESSAGE_MAX_CHARS_MIN), MESSAGE_MAX_CHARS_MAX)
+}
+
 export function sanitizeSettings(
   settings: Partial<ChatSettings>
 ): ChatSettings {
@@ -32,12 +38,7 @@ export function sanitizeSettings(
       typeof settings.language === 'string' && settings.language.trim()
         ? settings.language.trim()
         : DEFAULT_SETTINGS.language,
-    maxChars:
-      typeof settings.maxChars === 'number' && !isNaN(settings.maxChars)
-        ? Math.min(Math.max(Math.round(settings.maxChars), MESSAGE_MAX_CHARS_MIN), MESSAGE_MAX_CHARS_MAX)
-        : (typeof (settings as any)?.maxChars === 'string' && !isNaN(Number((settings as any).maxChars))
-            ? Math.min(Math.max(Math.round(Number((settings as any).maxChars)), MESSAGE_MAX_CHARS_MIN), MESSAGE_MAX_CHARS_MAX)
-            : DEFAULT_SETTINGS.maxChars)
+    maxChars: clampMaxChars(settings.maxChars)
   }
 }
 
@@ -52,8 +53,7 @@ function loadLocalSettings(userId?: string | null): Partial<ChatSettings> | null
     const raw = localStorage.getItem(getStorageKey(userId))
     if (!raw) return null
     const parsed = JSON.parse(raw)
-    if (!parsed || typeof parsed !== 'object') return null
-    return parsed
+    return parsed && typeof parsed === 'object' ? parsed : null
   } catch {
     return null
   }
@@ -67,21 +67,25 @@ function saveLocalSettings(
     return
   }
   try {
-    const key = getStorageKey(userId)
-    localStorage.setItem(key, JSON.stringify(settings))
+    localStorage.setItem(getStorageKey(userId), JSON.stringify(settings))
   } catch {
     // Fail silently
   }
 }
 
+function isValidMaxChars(val: unknown): val is number {
+  return typeof val === 'number' && val >= MESSAGE_MAX_CHARS_MIN && val <= MESSAGE_MAX_CHARS_MAX
+}
+
 export function loadSettings(
   userId?: string | null,
-  userFallback?: { language?: string; generalRules?: string; maxChars?: number; settings?: Record<string, any>; [key: string]: any } | null
+  userFallback?: { language?: string; generalRules?: string; maxChars?: number; [key: string]: any } | null
 ): ChatSettings {
-  const effectiveUserId = userId || (typeof window !== 'undefined' ? pb.authStore.record?.id : null)
-  const effectiveFallback = userFallback || (typeof window !== 'undefined' ? pb.authStore.record : null)
+  const isBrowser = typeof window !== 'undefined'
+  const effectiveUserId = userId || (isBrowser ? pb.authStore.record?.id : null)
+  const effectiveFallback = userFallback || (isBrowser ? pb.authStore.record : null)
+  const local = loadLocalSettings(effectiveUserId)
 
-  // 1. Language, General Rules, Max Chars (stored in PocketBase for authenticated users)
   let language = DEFAULT_SETTINGS.language
   let generalRules = DEFAULT_SETTINGS.generalRules
   let maxChars = DEFAULT_SETTINGS.maxChars
@@ -89,71 +93,37 @@ export function loadSettings(
   if (effectiveUserId) {
     const cached = userSettingsCache.get(effectiveUserId)
     if (cached) {
-      language = cached.language
-      generalRules = cached.generalRules
-      maxChars = cached.maxChars
+      ;({ language, generalRules, maxChars } = cached)
     }
 
-    if (typeof window !== 'undefined' && pb.authStore.record?.id === effectiveUserId) {
-      const rec = pb.authStore.record
-      if (typeof rec.language === 'string' && rec.language.trim()) {
-        language = rec.language.trim()
-      }
-      if (typeof rec.generalRules === 'string') {
-        generalRules = rec.generalRules.slice(0, GENERAL_RULES_MAX_CHARS)
-      }
-      if (typeof rec.maxChars === 'number' && rec.maxChars >= MESSAGE_MAX_CHARS_MIN && rec.maxChars <= MESSAGE_MAX_CHARS_MAX) {
-        maxChars = rec.maxChars
-      }
-    } else if (!cached && effectiveFallback && typeof effectiveFallback === 'object') {
-      if (typeof effectiveFallback.language === 'string' && effectiveFallback.language.trim()) {
-        language = effectiveFallback.language.trim()
-      } else if (effectiveFallback.settings && typeof effectiveFallback.settings.language === 'string' && effectiveFallback.settings.language.trim()) {
-        language = effectiveFallback.settings.language.trim()
-      }
+    const source =
+      isBrowser && pb.authStore.record?.id === effectiveUserId
+        ? pb.authStore.record
+        : !cached
+          ? effectiveFallback
+          : null
 
-      if (typeof effectiveFallback.generalRules === 'string') {
-        generalRules = effectiveFallback.generalRules.slice(0, GENERAL_RULES_MAX_CHARS)
-      } else if (effectiveFallback.settings && typeof effectiveFallback.settings.generalRules === 'string') {
-        generalRules = effectiveFallback.settings.generalRules.slice(0, GENERAL_RULES_MAX_CHARS)
+    if (source && typeof source === 'object') {
+      if (typeof source.language === 'string' && source.language.trim()) {
+        language = source.language.trim()
       }
-
-      if (typeof effectiveFallback.maxChars === 'number' && effectiveFallback.maxChars >= MESSAGE_MAX_CHARS_MIN && effectiveFallback.maxChars <= MESSAGE_MAX_CHARS_MAX) {
-        maxChars = effectiveFallback.maxChars
-      } else if (effectiveFallback.settings && typeof effectiveFallback.settings.maxChars === 'number' && effectiveFallback.settings.maxChars >= MESSAGE_MAX_CHARS_MIN && effectiveFallback.settings.maxChars <= MESSAGE_MAX_CHARS_MAX) {
-        maxChars = effectiveFallback.settings.maxChars
+      if (typeof source.generalRules === 'string') {
+        generalRules = source.generalRules.slice(0, GENERAL_RULES_MAX_CHARS)
+      }
+      if (isValidMaxChars(source.maxChars)) {
+        maxChars = source.maxChars
       }
     }
-  } else {
-    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-      try {
-        const storedLang = localStorage.getItem('model_talks_lang')
-        if (storedLang) {
-          language = storedLang
-        }
-        const storedMaxChars = localStorage.getItem('model_talks_max_chars')
-        if (storedMaxChars) {
-          const num = Number(storedMaxChars)
-          if (!isNaN(num) && num >= MESSAGE_MAX_CHARS_MIN && num <= MESSAGE_MAX_CHARS_MAX) {
-            maxChars = num
-          }
-        }
-        const storedRules = localStorage.getItem('model_talks_general_rules')
-        if (typeof storedRules === 'string') {
-          generalRules = storedRules.slice(0, GENERAL_RULES_MAX_CHARS)
-        }
-      } catch {
-        // Fail silently
-      }
-    } else if (guestSettings) {
-      language = guestSettings.language
-      generalRules = guestSettings.generalRules
-      maxChars = guestSettings.maxChars
+  } else if (isBrowser && typeof localStorage !== 'undefined') {
+    try {
+      const storedLang = localStorage.getItem('model_talks_lang')
+      if (storedLang) language = storedLang
+    } catch {
+      // Fail silently
     }
+  } else if (guestSettings) {
+    ;({ language, generalRules, maxChars } = guestSettings)
   }
-
-  // 2. Check localStorage for local cached settings
-  const local = loadLocalSettings(effectiveUserId)
 
   if (local) {
     if (typeof local.generalRules === 'string' && (!generalRules || generalRules === DEFAULT_SETTINGS.generalRules)) {
@@ -162,16 +132,12 @@ export function loadSettings(
     if (typeof local.language === 'string' && local.language.trim() && (!language || language === DEFAULT_SETTINGS.language)) {
       language = local.language.trim()
     }
-    if (typeof local.maxChars === 'number' && local.maxChars >= MESSAGE_MAX_CHARS_MIN && local.maxChars <= MESSAGE_MAX_CHARS_MAX && maxChars === DEFAULT_SETTINGS.maxChars) {
+    if (isValidMaxChars(local.maxChars) && maxChars === DEFAULT_SETTINGS.maxChars) {
       maxChars = local.maxChars
     }
   }
 
-  const result: ChatSettings = sanitizeSettings({
-    generalRules,
-    language,
-    maxChars
-  })
+  const result = sanitizeSettings({ generalRules, language, maxChars })
 
   if (effectiveUserId) {
     userSettingsCache.set(effectiveUserId, result)
@@ -185,29 +151,12 @@ export function loadSettings(
 export function saveSettings(settings: ChatSettings, userId?: string | null): void {
   const sanitized = sanitizeSettings(settings)
 
-  // 1. Save all settings in localStorage
-  saveLocalSettings(
-    {
-      generalRules: sanitized.generalRules,
-      language: sanitized.language,
-      maxChars: sanitized.maxChars
-    },
-    userId
-  )
+  saveLocalSettings(sanitized, userId)
 
   if (userId) {
     userSettingsCache.set(userId, sanitized)
   } else {
     guestSettings = sanitized
-    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-      try {
-        localStorage.setItem('model_talks_lang', sanitized.language)
-        localStorage.setItem('model_talks_max_chars', String(sanitized.maxChars))
-        localStorage.setItem('model_talks_general_rules', sanitized.generalRules)
-      } catch {
-        // Fail silently
-      }
-    }
   }
 
   i18n.setLanguage(sanitized.language)

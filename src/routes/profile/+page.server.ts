@@ -9,9 +9,9 @@ import {
   encryptTwoFactorSecret,
   decryptTwoFactorSecret,
   PENDING_TOTP_COOKIE_NAME,
+  PROFILE_OTP_COOKIE_NAME,
   createPendingTotpToken,
   verifyPendingTotpToken,
-  verifyOtpCode,
   buildOtpAuthUri,
   sanitizeUser,
   setAuthSessionCookie,
@@ -256,7 +256,7 @@ export const actions: Actions = {
 
       if (otpResponse?.otpId) {
         const signedOtpToken = createProfileOtpToken(locals.user.id, otpResponse.otpId)
-        cookies.set('mt_profile_otp_id', signedOtpToken, {
+        cookies.set(PROFILE_OTP_COOKIE_NAME, signedOtpToken, {
           path: '/',
           httpOnly: true,
           sameSite: 'lax',
@@ -299,14 +299,14 @@ export const actions: Actions = {
     const privilegedPb = await getPrivilegedPocketBase(locals.pb)
 
     if (await isAuthRateLimited(attemptKey)) {
-      cookies.delete('mt_profile_otp_id', { path: '/' })
+      cookies.delete(PROFILE_OTP_COOKIE_NAME, { path: '/' })
       return fail(429, {
         action: 'enableEmail2FA' as const,
         errorKey: 'profile.codeExpired' as const
       })
     }
 
-    const storedOtpToken = cookies.get('mt_profile_otp_id')
+    const storedOtpToken = cookies.get(PROFILE_OTP_COOKIE_NAME)
     const storedOtpId = verifyProfileOtpToken(storedOtpToken, locals.user.id)
     let verified = false
 
@@ -321,22 +321,9 @@ export const actions: Actions = {
     }
 
     if (!verified) {
-      // Fallback check against legacy db fields if set
-      const user = await privilegedPb.collection('users').getOne(locals.user.id)
-      if (
-        user.twoFactorEmailCode &&
-        user.twoFactorEmailExpires &&
-        Date.now() <= Number(user.twoFactorEmailExpires) &&
-        verifyOtpCode(String(user.twoFactorEmailCode), code)
-      ) {
-        verified = true
-      }
-    }
-
-    if (!verified) {
       const { locked } = await recordFailedAuthAttempt(attemptKey)
       if (locked) {
-        cookies.delete('mt_profile_otp_id', { path: '/' })
+        cookies.delete(PROFILE_OTP_COOKIE_NAME, { path: '/' })
         return fail(429, {
           action: 'enableEmail2FA' as const,
           errorKey: 'profile.codeExpired' as const
@@ -348,13 +335,11 @@ export const actions: Actions = {
       })
     }
 
-    cookies.delete('mt_profile_otp_id', { path: '/' })
+    cookies.delete(PROFILE_OTP_COOKIE_NAME, { path: '/' })
 
     try {
       const updated = await privilegedPb.collection('users').update(locals.user.id, {
-        twoFactorMethod: 'email',
-        twoFactorEmailCode: '',
-        twoFactorEmailExpires: 0
+        twoFactorMethod: 'email'
       })
       await clearAuthAttempts(attemptKey)
       await clearAuthAttempts(sendAttemptKey)
@@ -495,13 +480,6 @@ export const actions: Actions = {
       const decryptedSecret = decryptTwoFactorSecret(user.twoFactorSecret)
       if (user.twoFactorMethod === 'authenticator' && decryptedSecret) {
         verified = await verifyAndConsumeTOTP(locals.user.id, decryptedSecret, code)
-      } else if (
-        user.twoFactorMethod === 'email' &&
-        user.twoFactorEmailCode &&
-        user.twoFactorEmailExpires &&
-        Date.now() <= Number(user.twoFactorEmailExpires)
-      ) {
-        verified = verifyOtpCode(String(user.twoFactorEmailCode), code)
       }
     }
 
@@ -521,9 +499,7 @@ export const actions: Actions = {
       const updated = await privilegedPb.collection('users').update(locals.user.id, {
         twoFactorMethod: 'none',
         twoFactorSecret: '',
-        twoFactorPendingSecret: '',
-        twoFactorEmailCode: '',
-        twoFactorEmailExpires: 0
+        twoFactorPendingSecret: ''
       })
       await clearAuthAttempts(attemptKey)
       locals.user = sanitizeUser(updated)
