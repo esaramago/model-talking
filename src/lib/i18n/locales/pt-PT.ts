@@ -38,6 +38,7 @@ export const ptPT: TranslationSchema = {
     noResponse: '(Sem resposta)',
     error: 'Erro',
     topicPlaceholder: 'Como começa a conversa?',
+    fillOrChooseTheme: 'Preenche os campos abaixo ou escolhe um tema',
     themePhilosophy: 'Filosofia',
     themeHistory: 'História',
     themeScifi: 'Ficção Científica',

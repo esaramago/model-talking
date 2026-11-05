@@ -29,6 +29,37 @@ export function isSupportedLanguage(lang: unknown): lang is SupportedLanguage {
   return typeof lang === 'string' && SUPPORTED_LANGUAGE_CODES.includes(lang as SupportedLanguage)
 }
 
+export function detectSystemLanguage(): SupportedLanguage {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+    return 'pt-PT'
+  }
+
+  const browserLangs = Array.isArray(navigator.languages) && navigator.languages.length > 0
+    ? navigator.languages
+    : [navigator.language]
+
+  for (const rawLang of browserLangs) {
+    if (!rawLang || typeof rawLang !== 'string') continue
+    const trimmed = rawLang.trim().toLowerCase()
+
+    // 1. Direct match (e.g. 'pt-pt' matches 'pt-PT', 'en' matches 'en')
+    const exact = SUPPORTED_LANGUAGE_CODES.find(
+      (code) => code.toLowerCase() === trimmed
+    )
+    if (exact) return exact
+
+    // 2. Base language match (e.g. 'en-us' -> 'en', 'pt-br' -> 'pt-PT')
+    const base = trimmed.split(/[-_]/)[0]
+    if (base === 'pt') return 'pt-PT'
+    const matchedBase = SUPPORTED_LANGUAGE_CODES.find(
+      (code) => code.toLowerCase() === base
+    )
+    if (matchedBase) return matchedBase
+  }
+
+  return 'pt-PT'
+}
+
 function getNestedValue(obj: Record<string, any>, path: string): string | undefined {
   const parts = path.split('.')
   let current: any = obj
@@ -43,16 +74,27 @@ export class I18nState {
   currentLanguage = $state<SupportedLanguage>('pt-PT')
 
   constructor() {
-    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('model_talks_lang')
-        if (stored && isSupportedLanguage(stored)) {
-          this.currentLanguage = stored
-          document.documentElement.dir = stored === 'ar' ? 'rtl' : 'ltr'
+    if (typeof window !== 'undefined') {
+      let initialLang: SupportedLanguage | null = null
+
+      if (typeof localStorage !== 'undefined') {
+        try {
+          const stored = localStorage.getItem('model_talks_lang')
+          if (stored && isSupportedLanguage(stored)) {
+            initialLang = stored
+          }
+        } catch {
+          // Ignore local storage error
         }
-      } catch {
-        // Ignore local storage error
       }
+
+      if (!initialLang) {
+        initialLang = detectSystemLanguage()
+      }
+
+      this.currentLanguage = initialLang
+      document.documentElement.lang = initialLang
+      document.documentElement.dir = initialLang === 'ar' ? 'rtl' : 'ltr'
     }
   }
 

@@ -38,6 +38,7 @@ export const ar: TranslationSchema = {
     noResponse: '(لا يوجد رد)',
     error: 'خطأ',
     topicPlaceholder: 'كيف تبدأ المحادثة؟',
+    fillOrChooseTheme: 'املأ الحقول أدناه أو اختر موضوعاً',
     themePhilosophy: 'فلسفة',
     themeHistory: 'تاريخ',
     themeScifi: 'خيال علمي',

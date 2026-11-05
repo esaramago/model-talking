@@ -11,8 +11,6 @@
 />
 
 <Grid direction="column" gap="3xl" justify="stretch">
-
   <Heading title={t('chat.title')} subtitle={t('chat.subtitle')} />
-
   <Chat />
 </Grid>

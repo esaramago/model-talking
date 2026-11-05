@@ -1,5 +1,11 @@
 <script lang="ts">
-	let { title, subtitle } = $props()
+	let {
+    title,
+    subtitle
+  }: {
+    title: string
+    subtitle?: string
+  } = $props()
 </script>
 
 <div class="heading">

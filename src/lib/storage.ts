@@ -8,7 +8,7 @@ import {
   MESSAGE_MAX_CHARS_MIN,
   MESSAGE_MAX_CHARS_MAX
 } from '@/lib/config'
-import { i18n } from '@/lib/i18n/index.svelte'
+import { detectSystemLanguage, i18n } from '@/lib/i18n/index.svelte'
 
 export const DRAFT_STORAGE_KEY = 'model_talks_draft'
 
@@ -86,14 +86,17 @@ export function loadSettings(
   const effectiveFallback = userFallback || (isBrowser ? pb.authStore.record : null)
   const local = loadLocalSettings(effectiveUserId)
 
-  let language = DEFAULT_SETTINGS.language
+  let language = isBrowser ? detectSystemLanguage() : DEFAULT_SETTINGS.language
   let generalRules = DEFAULT_SETTINGS.generalRules
   let maxChars = DEFAULT_SETTINGS.maxChars
+
+  let hasUserLanguage = false
 
   if (effectiveUserId) {
     const cached = userSettingsCache.get(effectiveUserId)
     if (cached) {
       ;({ language, generalRules, maxChars } = cached)
+      hasUserLanguage = true
     }
 
     const source =
@@ -106,6 +109,7 @@ export function loadSettings(
     if (source && typeof source === 'object') {
       if (typeof source.language === 'string' && source.language.trim()) {
         language = source.language.trim()
+        hasUserLanguage = true
       }
       if (typeof source.generalRules === 'string') {
         generalRules = source.generalRules.slice(0, GENERAL_RULES_MAX_CHARS)
@@ -129,7 +133,7 @@ export function loadSettings(
     if (typeof local.generalRules === 'string' && (!generalRules || generalRules === DEFAULT_SETTINGS.generalRules)) {
       generalRules = local.generalRules.slice(0, GENERAL_RULES_MAX_CHARS)
     }
-    if (typeof local.language === 'string' && local.language.trim() && (!language || language === DEFAULT_SETTINGS.language)) {
+    if (typeof local.language === 'string' && local.language.trim() && !hasUserLanguage) {
       language = local.language.trim()
     }
     if (isValidMaxChars(local.maxChars) && maxChars === DEFAULT_SETTINGS.maxChars) {

@@ -52,7 +52,7 @@
   let systemPrompt1 = $state(DEFAULT_AGENT_DRAFT.systemPrompt1)
   let systemPrompt2 = $state(DEFAULT_AGENT_DRAFT.systemPrompt2)
   let generalRules = $state(DEFAULT_SETTINGS.generalRules)
-  let language = $state(DEFAULT_SETTINGS.language)
+  let language = $state<string>(i18n.currentLanguage)
   let maxChars = $state(DEFAULT_SETTINGS.maxChars)
 
   let isHydrated = $state(false)
@@ -471,8 +471,9 @@
   }
 </script>
 
+{#if !conversationStarted}
   <Grid direction="column" justify="center">
-    <h3 data-appearance="h4" class="u-text-center">Preenche os campos abaixo ou escolhe um tema</h3>
+    <h3 data-appearance="h4" class="u-text-center">{t('chat.fillOrChooseTheme')}</h3>
     <Grid justify="center" wrap={true} gap="xs">
       {#each SCENARIO_THEMES as theme (theme.id)}
         <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
@@ -491,124 +492,127 @@
       {/each}
     </Grid>
   </Grid>
+{/if}
 
-  {#if randomErrorMessage}
+{#if randomErrorMessage}
+  <wa-callout variant="danger">
+    <wa-icon slot="start" name="triangle-exclamation" variant="solid"></wa-icon>
+    <Grid direction="column" gap="xs">
+      <strong>{t('chat.error')}</strong>
+      <p>{randomErrorMessage}</p>
+    </Grid>
+  </wa-callout>
+{/if}
+
+<Agents
+  readonly={!!messages.length}
+  bind:agent1Name
+  bind:agent2Name
+  bind:agent1Avatar
+  bind:agent2Avatar
+  bind:systemPrompt1
+  bind:systemPrompt2
+/>
+
+{#if conversationStarted}
+
+  <Conversation {messages} {activeThinkingSpeaker} />
+
+  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+  <Grid wrap={true} align="center" justify="end" gap="s">
+    <wa-button
+      role="button"
+      tabindex="0"
+      variant="neutral"
+      appearance="outlined"
+      disabled={isRunning}
+      onclick={promptNewChat}
+    >
+      {t('sidebar.newChat')}
+    </wa-button>
+
+    <wa-button
+      role="button"
+      tabindex="0"
+      variant="neutral"
+      appearance="outlined"
+      disabled={isRunning}
+      onclick={promptRestart}
+    >
+      <wa-icon slot="start" name="arrow-rotate-left" variant="solid"
+      ></wa-icon>
+      {t('chat.restart')}
+    </wa-button>
+
+    <wa-button
+      role="button"
+      tabindex="0"
+      variant="brand"
+      disabled={isRunning}
+      onclick={sendMessage}
+    >
+      <wa-icon slot="start" name="paper-plane" variant="solid"></wa-icon>
+      {t('chat.sendMessage')}
+    </wa-button>
+  </Grid>
+{:else}
+  <MessageCard
+    speaker="agent1"
+    speakerName={getSpeakerName('agent1')}
+    avatar={agent1Avatar}
+  >
+    <wa-textarea
+      maxlength="200"
+      value={initialTopic}
+      placeholder={t('chat.topicPlaceholder')}
+      rows="1"
+      oninput={handleTopicInput}
+    ></wa-textarea>
+  </MessageCard>
+
+  {#if errorMessage}
     <wa-callout variant="danger">
-      <wa-icon slot="start" name="triangle-exclamation" variant="solid"></wa-icon>
+      <wa-icon slot="start" name="triangle-exclamation" variant="solid"
+      ></wa-icon>
       <Grid direction="column" gap="xs">
         <strong>{t('chat.error')}</strong>
-        <p>{randomErrorMessage}</p>
+        <p>{errorMessage}</p>
       </Grid>
     </wa-callout>
   {/if}
 
-  <Agents
-    readonly={!!messages.length}
-    bind:agent1Name
-    bind:agent2Name
-    bind:agent1Avatar
-    bind:agent2Avatar
-    bind:systemPrompt1
-    bind:systemPrompt2
-  />
-
-  {#if conversationStarted}<Conversation {messages} {activeThinkingSpeaker} />
-
-    <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-    <Grid wrap={true} align="center" justify="end" gap="s">
-      <wa-button
-        role="button"
-        tabindex="0"
-        variant="neutral"
-        appearance="outlined"
-        disabled={isRunning}
-        onclick={promptNewChat}
-      >
-        {t('sidebar.newChat')}
-      </wa-button>
-
-      <wa-button
-        role="button"
-        tabindex="0"
-        variant="neutral"
-        appearance="outlined"
-        disabled={isRunning}
-        onclick={promptRestart}
-      >
-        <wa-icon slot="start" name="arrow-rotate-left" variant="solid"
-        ></wa-icon>
-        {t('chat.restart')}
-      </wa-button>
-
-      <wa-button
-        role="button"
-        tabindex="0"
-        variant="brand"
-        disabled={isRunning}
-        onclick={sendMessage}
-      >
-        <wa-icon slot="start" name="paper-plane" variant="solid"></wa-icon>
-        {t('chat.sendMessage')}
-      </wa-button>
-    </Grid>
-  {:else}
-    <MessageCard
-      speaker="agent1"
-      speakerName={getSpeakerName('agent1')}
-      avatar={agent1Avatar}
+  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+  <Grid wrap={true} justify="end">
+    <wa-button
+      role="button"
+      tabindex="0"
+      variant="brand"
+      disabled={isRunning}
+      onclick={sendMessage}
     >
-      <wa-textarea
-        maxlength="200"
-        value={initialTopic}
-        placeholder={t('chat.topicPlaceholder')}
-        rows="1"
-        oninput={handleTopicInput}
-      ></wa-textarea>
-    </MessageCard>
+      <wa-icon slot="start" name="paper-plane" variant="solid"></wa-icon>
+      {t('chat.start')}
+    </wa-button>
+  </Grid>
+{/if}
 
-    {#if errorMessage}
-      <wa-callout variant="danger">
-        <wa-icon slot="start" name="triangle-exclamation" variant="solid"
-        ></wa-icon>
-        <Grid direction="column" gap="xs">
-          <strong>{t('chat.error')}</strong>
-          <p>{errorMessage}</p>
-        </Grid>
-      </wa-callout>
-    {/if}
+<Confirmation
+  bind:open={isConfirmRestartOpen}
+  title={t('chat.restartConfirmTitle')}
+  message={t('chat.restartConfirmMessage')}
+  confirmText={t('chat.restartConfirmButton')}
+  cancelText={t('chat.restartCancelButton')}
+  onconfirm={handleRestart}
+/>
 
-    <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-    <Grid wrap={true} justify="end">
-      <wa-button
-        role="button"
-        tabindex="0"
-        variant="brand"
-        disabled={isRunning}
-        onclick={sendMessage}
-      >
-        <wa-icon slot="start" name="paper-plane" variant="solid"></wa-icon>
-        {t('chat.start')}
-      </wa-button>
-    </Grid>
-  {/if}
-
-  <Confirmation
-    bind:open={isConfirmRestartOpen}
-    title={t('chat.restartConfirmTitle')}
-    message={t('chat.restartConfirmMessage')}
-    confirmText={t('chat.restartConfirmButton')}
-    cancelText={t('chat.restartCancelButton')}
-    onconfirm={handleRestart}
-  />
-
-  <Confirmation
-    bind:open={isConfirmNewChatOpen}
-    title={t('chat.newChatConfirmTitle')}
-    message={t('chat.newChatConfirmMessage')}
-    confirmText={t('chat.newChatConfirmButton')}
-    cancelText={t('chat.newChatCancelButton')}
-    onconfirm={handleNewChat}
-  />
+<Confirmation
+  bind:open={isConfirmNewChatOpen}
+  title={t('chat.newChatConfirmTitle')}
+  message={t('chat.newChatConfirmMessage')}
+  confirmText={t('chat.newChatConfirmButton')}
+  cancelText={t('chat.newChatCancelButton')}
+  onconfirm={handleNewChat}
+/>
 
 <style>
   wa-textarea {

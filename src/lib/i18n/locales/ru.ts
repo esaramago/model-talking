@@ -38,6 +38,7 @@ export const ru: TranslationSchema = {
     noResponse: '(Нет ответа)',
     error: 'Ошибка',
     topicPlaceholder: 'С чего начнется разговор?',
+    fillOrChooseTheme: 'Заполните поля ниже или выберите тему',
     themePhilosophy: 'Философия',
     themeHistory: 'История',
     themeScifi: 'Фантастика',

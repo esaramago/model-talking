@@ -38,6 +38,7 @@ export const de: TranslationSchema = {
     noResponse: '(Keine Antwort)',
     error: 'Fehler',
     topicPlaceholder: 'Wie beginnt das Gespräch?',
+    fillOrChooseTheme: 'Füllen Sie die folgenden Felder aus oder wählen Sie ein Thema',
     themePhilosophy: 'Philosophie',
     themeHistory: 'Geschichte',
     themeScifi: 'Sci-Fi',

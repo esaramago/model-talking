@@ -38,6 +38,7 @@ export const tr: TranslationSchema = {
     noResponse: '(Yanıt yok)',
     error: 'Hata',
     topicPlaceholder: 'Sohbet nasıl başlasın?',
+    fillOrChooseTheme: 'Aşağıdaki alanları doldurun veya bir tema seçin',
     themePhilosophy: 'Felsefe',
     themeHistory: 'Tarih',
     themeScifi: 'Bilim Kurgu',

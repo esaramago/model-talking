@@ -38,6 +38,7 @@ export const it: TranslationSchema = {
     noResponse: '(Nessuna risposta)',
     error: 'Errore',
     topicPlaceholder: 'Come inizia la conversazione?',
+    fillOrChooseTheme: 'Compila i campi sottostanti o scegli un tema',
     themePhilosophy: 'Filosofia',
     themeHistory: 'Storia',
     themeScifi: 'Fantascienza',

@@ -38,6 +38,7 @@ export interface TranslationSchema {
     noResponse: string
     error: string
     topicPlaceholder: string
+    fillOrChooseTheme: string
     themePhilosophy: string
     themeHistory: string
     themeScifi: string
