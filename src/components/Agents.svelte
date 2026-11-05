@@ -147,7 +147,7 @@ wa-textarea {
   }
 }
 .avatar {
-  --avatar-size: 6rem;
+  --avatar-size: 5rem;
   display: flex;
   flex-direction: column;
   align-items: start;
