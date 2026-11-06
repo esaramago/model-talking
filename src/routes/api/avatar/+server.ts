@@ -1,5 +1,10 @@
 import { json, type RequestHandler } from '@sveltejs/kit'
 import { getOpenRouterApiKey, requestOpenRouterImage } from '@/lib/server/openrouter'
+import {
+  consumeAvatarQuota,
+  getQuota,
+  resolveRateLimitIdentifier
+} from '@/lib/server/rateLimit'
 
 interface AvatarRequestBody {
   prompt1?: string
@@ -7,7 +12,7 @@ interface AvatarRequestBody {
 }
 
 export const POST: RequestHandler = async (event) => {
-  const { request, url } = event
+  const { request, url, locals } = event
   const apiKey = getOpenRouterApiKey()
 
   if (!apiKey) {
@@ -21,16 +26,30 @@ export const POST: RequestHandler = async (event) => {
     const body = (await request.json()) as AvatarRequestBody
     const { prompt1, prompt2 } = body
 
-    if (!prompt1?.trim() && !prompt2?.trim()) {
+    const safePrompt1 = typeof prompt1 === 'string' ? prompt1.trim().slice(0, 500) : ''
+    const safePrompt2 = typeof prompt2 === 'string' ? prompt2.trim().slice(0, 500) : ''
+
+    if (!safePrompt1 && !safePrompt2) {
       return json({ error: 'At least one prompt is required.' }, { status: 400 })
+    }
+
+    const identifier = resolveRateLimitIdentifier(event)
+    const currentQuota = await getQuota(locals.pb, identifier)
+    if (!identifier.isAdmin && currentQuota.remaining <= 0) {
+      return json({ error: 'Daily credit limit reached.', quota: currentQuota }, { status: 429 })
+    }
+
+    const avatarAllowed = await consumeAvatarQuota(locals.pb, identifier)
+    if (!avatarAllowed) {
+      return json({ error: 'Daily avatar generation limit reached.' }, { status: 429 })
     }
 
     const origin = url.origin
 
     const generateSingleAvatar = async (prompt?: string): Promise<string | null> => {
-      if (!prompt?.trim()) return null
+      if (!prompt) return null
       try {
-        const response = await requestOpenRouterImage(apiKey, origin, prompt.trim())
+        const response = await requestOpenRouterImage(apiKey, origin, prompt)
         if (!response.ok) {
           const errText = await response.text()
           console.error('OpenRouter avatar generation failed:', response.status, errText)
@@ -55,8 +74,8 @@ export const POST: RequestHandler = async (event) => {
     }
 
     const [avatar1, avatar2] = await Promise.all([
-      generateSingleAvatar(prompt1),
-      generateSingleAvatar(prompt2)
+      generateSingleAvatar(safePrompt1),
+      generateSingleAvatar(safePrompt2)
     ])
 
     return json({ avatar1, avatar2 })

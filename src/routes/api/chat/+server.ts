@@ -11,6 +11,7 @@ import {
 } from '@/lib/config'
 import { getOpenRouterApiKey, requestOpenRouterCompletion } from '@/lib/server/openrouter'
 import {
+  consumeNameQuota,
   consumeQuota,
   consumeTitleQuota,
   getQuota,
@@ -19,7 +20,7 @@ import {
   type QuotaInfo,
   type RateLimitIdentifier
 } from '@/lib/server/rateLimit'
-import { buildMessagesForModel, type ApiChatMessage } from '@/lib/chat'
+import { buildMessagesForModel, getLanguageInstruction, type ApiChatMessage } from '@/lib/chat'
 import type { ChatMessage } from '@/types/chat'
 
 const TITLE_SYSTEM_PROMPT =
@@ -86,6 +87,9 @@ export const POST: RequestHandler = async (event) => {
       isTitle = false,
       isName = false
     } = body
+
+    const safeLanguage =
+      typeof language === 'string' ? language.trim().slice(0, 20) : undefined
 
     const resolvedApiKey = getOpenRouterApiKey()
 
@@ -163,6 +167,17 @@ export const POST: RequestHandler = async (event) => {
         )
       }
 
+      const nameAllowed = await consumeNameQuota(locals.pb, identifier)
+      if (!nameAllowed) {
+        return json(
+          {
+            error: 'Daily name generation limit reached. Your limit will reset at 00:00 UTC.',
+            quota: currentQuota
+          },
+          { status: 429 }
+        )
+      }
+
       const lastUserMessage = [...messages].reverse().find((m) => m && (m.role === 'user' || m.speaker))
       const rawUserContent =
         typeof lastUserMessage?.content === 'string'
@@ -176,9 +191,13 @@ export const POST: RequestHandler = async (event) => {
       }
 
       const truncatedUserContent = rawUserContent.slice(0, NAME_MAX_INPUT_CHARS)
+      const languageInstruction = getLanguageInstruction(safeLanguage)
+      const nameSystemPrompt = [NAME_SYSTEM_PROMPT, languageInstruction]
+        .filter(Boolean)
+        .join('\n\n')
 
       effectiveMessages = [
-        { role: 'system', content: NAME_SYSTEM_PROMPT },
+        { role: 'system', content: nameSystemPrompt },
         { role: 'user', content: truncatedUserContent }
       ]
       clampedTokens = NAME_MAX_OUTPUT_TOKENS
@@ -222,8 +241,6 @@ export const POST: RequestHandler = async (event) => {
           : DEFAULT_SETTINGS.generalRules
       const safeAgentName =
         typeof agentName === 'string' ? agentName.trim().slice(0, 50) : undefined
-      const safeLanguage =
-        typeof language === 'string' ? language.trim().slice(0, 20) : undefined
 
       const otherSpeaker = targetSpeaker === 'agent1' ? 'agent2' : 'agent1'
       const chatMessages: ChatMessage[] = []

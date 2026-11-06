@@ -63,8 +63,6 @@ export interface TranslationSchema {
     cardTitle: string
     defaultAgent1: string
     defaultAgent2: string
-    nameLabel: string
-    namePlaceholder: string
     descriptionLabel: string
     descriptionPlaceholder: string
   }

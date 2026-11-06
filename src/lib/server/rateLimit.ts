@@ -5,8 +5,12 @@ import type { DailyQuota } from '@/types/chat'
 import {
   DAILY_MESSAGE_LIMIT,
   DAILY_TITLE_LIMIT,
+  DAILY_NAME_LIMIT,
+  DAILY_AVATAR_LIMIT,
   DAILY_GUEST_IP_LIMIT,
-  DAILY_TITLE_IP_LIMIT
+  DAILY_TITLE_IP_LIMIT,
+  DAILY_NAME_IP_LIMIT,
+  DAILY_AVATAR_IP_LIMIT
 } from '@/lib/config/limits'
 import { getAdminPocketBase } from '@/lib/server/pbAdmin'
 import { deriveServerKey } from '@/lib/server/twoFactor'
@@ -551,6 +555,38 @@ export async function consumeTitleQuota(
     prefix: 'title',
     dailyLimit: DAILY_TITLE_LIMIT,
     ipLimit: DAILY_TITLE_IP_LIMIT
+  })
+  return result.allowed
+}
+
+/**
+ * Consumes 1 character name generation from a dedicated daily rate limit.
+ * Increments are serialized per key in memory to eliminate TOCTOU race conditions.
+ */
+export async function consumeNameQuota(
+  pb: PocketBase | undefined,
+  identifier: RateLimitIdentifier
+): Promise<boolean> {
+  const result = await consumeScopedQuota(pb, identifier, {
+    prefix: 'name',
+    dailyLimit: DAILY_NAME_LIMIT,
+    ipLimit: DAILY_NAME_IP_LIMIT
+  })
+  return result.allowed
+}
+
+/**
+ * Consumes 1 avatar generation request from a dedicated daily rate limit.
+ * Increments are serialized per key in memory to eliminate TOCTOU race conditions.
+ */
+export async function consumeAvatarQuota(
+  pb: PocketBase | undefined,
+  identifier: RateLimitIdentifier
+): Promise<boolean> {
+  const result = await consumeScopedQuota(pb, identifier, {
+    prefix: 'avatar',
+    dailyLimit: DAILY_AVATAR_LIMIT,
+    ipLimit: DAILY_AVATAR_IP_LIMIT
   })
   return result.allowed
 }

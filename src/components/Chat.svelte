@@ -399,14 +399,17 @@
       messages = []
       totalTokensUsed = 0
 
+      const reqPrompt1 = !agent1Avatar && systemPrompt1.trim() ? systemPrompt1.trim() : undefined
+      const reqPrompt2 = !agent2Avatar && systemPrompt2.trim() ? systemPrompt2.trim() : undefined
+
       const avatarPromise =
-        systemPrompt1.trim() && systemPrompt2.trim()
+        reqPrompt1 || reqPrompt2
           ? fetch('/api/avatar', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                prompt1: systemPrompt1.trim(),
-                prompt2: systemPrompt2.trim(),
+                ...(reqPrompt1 ? { prompt1: reqPrompt1 } : {}),
+                ...(reqPrompt2 ? { prompt2: reqPrompt2 } : {}),
               }),
             })
               .then(async (res) => (res.ok ? res.json() : null))
@@ -446,10 +449,12 @@
       agent1Name = resolvedNames[0]
       agent2Name = resolvedNames[1]
 
-      if (avatarData?.avatar1) agent1Avatar = await resizeAvatar(avatarData.avatar1)
-      if (avatarData?.avatar2) agent2Avatar = await resizeAvatar(avatarData.avatar2)
-      agent1Avatar = await resizeAvatar(agent1Avatar)
-      agent2Avatar = await resizeAvatar(agent2Avatar)
+      const [resized1, resized2] = await Promise.all([
+        resizeAvatar(avatarData?.avatar1 || agent1Avatar),
+        resizeAvatar(avatarData?.avatar2 || agent2Avatar),
+      ])
+      agent1Avatar = resized1
+      agent2Avatar = resized2
 
       const firstMessage: ChatMessage = {
         id: crypto.randomUUID(),

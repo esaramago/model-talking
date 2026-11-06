@@ -1,6 +1,5 @@
 <script lang="ts">
   import Grid from '@/components/ui/Grid.svelte'
-  import MessageCard from '@/components/MessageCard.svelte'
   import {
     SCENARIO_THEMES,
     PLACEHOLDER_INTERVAL_MS,
@@ -45,12 +44,13 @@
   let placeholderIndex = $state(0)
 
   const activePlaceholders = $derived(getAgentPlaceholders(i18n.currentLanguage))
+  const activeErrors = $derived([randomErrorMessage, errorMessage].filter(Boolean))
 
   $effect(() => {
-    if (readonly || !activePlaceholders) return
+    if (readonly || !activePlaceholders || !activePlaceholders.agent1.length) return
 
     const interval = setInterval(() => {
-      placeholderIndex = (placeholderIndex + 1) % 10
+      placeholderIndex = (placeholderIndex + 1) % activePlaceholders.agent1.length
     }, PLACEHOLDER_INTERVAL_MS)
 
     return () => clearInterval(interval)
@@ -80,6 +80,7 @@
         }
         systemPrompt1 = target.value
         agent1Name = ''
+        agent1Avatar = ''
       }
     },
     {
@@ -97,6 +98,7 @@
         }
         systemPrompt2 = target.value
         agent2Name = ''
+        agent2Avatar = ''
       }
     }
   ])
@@ -130,7 +132,7 @@
                   value={config.value}
                   oninput={config.oninput}
                   placeholder={config.placeholder}
-                  disabled={isGeneratingRandom}
+                  disabled={isRunning || isGeneratingRandom}
                 ></wa-textarea>
                 {#if config.id === 'agent1'}
                   <wa-textarea
@@ -139,7 +141,7 @@
                     placeholder={t('chat.topicPlaceholder')}
                     rows="1"
                     oninput={handleTopicInput}
-                    disabled={isGeneratingRandom}
+                    disabled={isRunning || isGeneratingRandom}
                   ></wa-textarea>
                 {/if}
               {/if}
@@ -152,7 +154,7 @@
 
         <Grid justify="space-between">
           <wa-dropdown>
-            <wa-button appearance="plain" slot="trigger" size="small" with-caret disabled={isRunning || isGeneratingRandom} loading={isRunning || isGeneratingRandom}>
+            <wa-button appearance="plain" slot="trigger" size="small" with-caret disabled={isRunning || isGeneratingRandom} loading={isGeneratingRandom || undefined}>
               {t('chat.randomTopic')}
               <wa-icon slot="start" name="shuffle"></wa-icon>
             </wa-button>
@@ -177,6 +179,7 @@
               tabindex="0"
               variant="brand"
               disabled={isRunning || isGeneratingRandom}
+              loading={isRunning || undefined}
               onclick={onstart}
             >
               <wa-icon slot="start" name="paper-plane" variant="solid"></wa-icon>
@@ -185,25 +188,15 @@
           </Grid>
         </Grid>
       
-        {#if randomErrorMessage}
+        {#each activeErrors as error, index (index)}
           <wa-callout variant="danger">
             <wa-icon slot="start" name="triangle-exclamation" variant="solid"></wa-icon>
             <Grid direction="column" gap="xs">
               <strong>{t('chat.error')}</strong>
-              <p>{randomErrorMessage}</p>
+              <p>{error}</p>
             </Grid>
           </wa-callout>
-        {/if}
-      
-        {#if errorMessage}
-          <wa-callout variant="danger">
-            <wa-icon slot="start" name="triangle-exclamation" variant="solid"></wa-icon>
-            <Grid direction="column" gap="xs">
-              <strong>{t('chat.error')}</strong>
-              <p>{errorMessage}</p>
-            </Grid>
-          </wa-callout>
-        {/if}
+        {/each}
       
       {/if}
     </Grid>
@@ -228,25 +221,10 @@ wa-textarea {
     resize: none;
   }
 }
-:global(.chat-item) wa-textarea {
-  &::part(textarea) {
-    field-sizing: content;
-    resize: none;
-  }
-  &::part(base) {
-    border-radius: var(--wa-border-radius-s) var(--wa-border-radius-xl) var(--wa-border-radius-xl);
-    background-color: var(--wa-color-secondary-30);
-    @media (prefers-color-scheme: light) {
-      background-color: var(--wa-color-secondary-80);
-    }
-  }
-}
 .random-button {
   @media (max-width: 600px) {
     font-size: var(--wa-font-size-s);
   }
-}
-.random-button {
   @media (max-width: 500px) {
     font-size: var(--wa-font-size-xs);
   }

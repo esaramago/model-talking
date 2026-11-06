@@ -57,9 +57,6 @@ export const AGENT_2_PLACEHOLDERS_EN = [
   'Social philosopher: champion of distributive justice and community solidarity.'
 ]
 
-export const AGENT_1_PLACEHOLDERS = AGENT_1_PLACEHOLDERS_PT
-export const AGENT_2_PLACEHOLDERS = AGENT_2_PLACEHOLDERS_PT
-
 export function getAgentPlaceholders(language?: string): {
   agent1: string[]
   agent2: string[]
