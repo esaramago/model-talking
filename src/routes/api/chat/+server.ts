@@ -112,7 +112,22 @@ export const POST: RequestHandler = async (event) => {
     let clampedTokens: number
     let effectiveTemperature: number
 
-    if (isTitle) {
+    if (isTitle || isName) {
+      const lastUserMessage = [...messages].reverse().find((m) => m && (m.role === 'user' || m.speaker))
+      const rawUserContent =
+        typeof lastUserMessage?.content === 'string'
+          ? lastUserMessage.content.trim()
+          : Array.isArray(lastUserMessage?.content)
+            ? lastUserMessage.content.map((p: any) => p?.text || '').join('').trim()
+            : ''
+
+      if (!rawUserContent) {
+        return json(
+          { error: isTitle ? 'Title prompt is required.' : 'Character description is required.' },
+          { status: 400 }
+        )
+      }
+
       currentQuota = await getQuota(locals.pb, identifier)
       if (!identifier.isAdmin && currentQuota.remaining <= 0) {
         return json(
@@ -124,83 +139,32 @@ export const POST: RequestHandler = async (event) => {
         )
       }
 
-      const titleAllowed = await consumeTitleQuota(locals.pb, identifier)
-      if (!titleAllowed) {
+      const auxAllowed = isTitle
+        ? await consumeTitleQuota(locals.pb, identifier)
+        : await consumeNameQuota(locals.pb, identifier)
+      if (!auxAllowed) {
         return json(
           {
-            error: 'Daily title generation limit reached. Your limit will reset at 00:00 UTC.',
+            error: isTitle
+              ? 'Daily title generation limit reached. Your limit will reset at 00:00 UTC.'
+              : 'Daily name generation limit reached. Your limit will reset at 00:00 UTC.',
             quota: currentQuota
           },
           { status: 429 }
         )
       }
 
-      const lastUserMessage = [...messages].reverse().find((m) => m && (m.role === 'user' || m.speaker))
-      const rawUserContent =
-        typeof lastUserMessage?.content === 'string'
-          ? lastUserMessage.content.trim()
-          : Array.isArray(lastUserMessage?.content)
-            ? lastUserMessage.content.map((p: any) => p?.text || '').join('').trim()
-            : ''
-
-      if (!rawUserContent) {
-        return json({ error: 'Title prompt is required.' }, { status: 400 })
-      }
-
-      const truncatedUserContent = rawUserContent.slice(0, TITLE_MAX_INPUT_CHARS)
+      const maxInputChars = isTitle ? TITLE_MAX_INPUT_CHARS : NAME_MAX_INPUT_CHARS
+      const truncatedUserContent = rawUserContent.slice(0, maxInputChars)
+      const auxSystemPrompt = isTitle
+        ? TITLE_SYSTEM_PROMPT
+        : [NAME_SYSTEM_PROMPT, getLanguageInstruction(safeLanguage)].filter(Boolean).join('\n\n')
 
       effectiveMessages = [
-        { role: 'system', content: TITLE_SYSTEM_PROMPT },
+        { role: 'system', content: auxSystemPrompt },
         { role: 'user', content: truncatedUserContent }
       ]
-      clampedTokens = TITLE_MAX_OUTPUT_TOKENS
-      effectiveTemperature = 0.5
-    } else if (isName) {
-      currentQuota = await getQuota(locals.pb, identifier)
-      if (!identifier.isAdmin && currentQuota.remaining <= 0) {
-        return json(
-          {
-            error: `Daily credit limit reached (${DAILY_MESSAGE_LIMIT}/${DAILY_MESSAGE_LIMIT}). Your credits will reset at 00:00 UTC.`,
-            quota: currentQuota
-          },
-          { status: 429 }
-        )
-      }
-
-      const nameAllowed = await consumeNameQuota(locals.pb, identifier)
-      if (!nameAllowed) {
-        return json(
-          {
-            error: 'Daily name generation limit reached. Your limit will reset at 00:00 UTC.',
-            quota: currentQuota
-          },
-          { status: 429 }
-        )
-      }
-
-      const lastUserMessage = [...messages].reverse().find((m) => m && (m.role === 'user' || m.speaker))
-      const rawUserContent =
-        typeof lastUserMessage?.content === 'string'
-          ? lastUserMessage.content.trim()
-          : Array.isArray(lastUserMessage?.content)
-            ? lastUserMessage.content.map((p: any) => p?.text || '').join('').trim()
-            : ''
-
-      if (!rawUserContent) {
-        return json({ error: 'Character description is required.' }, { status: 400 })
-      }
-
-      const truncatedUserContent = rawUserContent.slice(0, NAME_MAX_INPUT_CHARS)
-      const languageInstruction = getLanguageInstruction(safeLanguage)
-      const nameSystemPrompt = [NAME_SYSTEM_PROMPT, languageInstruction]
-        .filter(Boolean)
-        .join('\n\n')
-
-      effectiveMessages = [
-        { role: 'system', content: nameSystemPrompt },
-        { role: 'user', content: truncatedUserContent }
-      ]
-      clampedTokens = NAME_MAX_OUTPUT_TOKENS
+      clampedTokens = isTitle ? TITLE_MAX_OUTPUT_TOKENS : NAME_MAX_OUTPUT_TOKENS
       effectiveTemperature = 0.5
     } else {
       // Reject any client-injected system or developer role messages

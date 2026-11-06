@@ -100,9 +100,9 @@
     initialTopic = talk.initialTopic || ''
     messages = talk.messages || []
     const firstAgent1 = messages.find((m) => m.speaker === 'agent1' && m.avatar)
-    if (firstAgent1?.avatar) agent1Avatar = firstAgent1.avatar
+    agent1Avatar = firstAgent1?.avatar || ''
     const firstAgent2 = messages.find((m) => m.speaker === 'agent2' && m.avatar)
-    if (firstAgent2?.avatar) agent2Avatar = firstAgent2.avatar
+    agent2Avatar = firstAgent2?.avatar || ''
     if (talk.model) model = talk.model
     if (talk.agent1Name) agent1Name = talk.agent1Name
     if (talk.agent2Name) agent2Name = talk.agent2Name
@@ -131,6 +131,8 @@
   function resetNewChat() {
     if (isRunning) return
     resetSessionCounters()
+    agent1Avatar = ''
+    agent2Avatar = ''
     const loaded = loadSettings(user?.id, user)
     maxChars = loaded.maxChars
     if (!restoreDraft()) {
@@ -139,8 +141,6 @@
       agent2Name = ''
       systemPrompt1 = ''
       systemPrompt2 = ''
-      agent1Avatar = ''
-      agent2Avatar = ''
     }
   }
 
@@ -477,6 +477,7 @@
 
       const turnSuccess = await executeTurn()
       if (!turnSuccess) {
+        messages = []
         isRunning = false
         return
       }

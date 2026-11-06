@@ -6,6 +6,9 @@ import {
   resolveRateLimitIdentifier
 } from '@/lib/server/rateLimit'
 
+const ALLOWED_IMAGE_MIME_TYPES = new Set(['image/webp', 'image/png', 'image/jpeg'])
+const MAX_AVATAR_BYTES = 5 * 1024 * 1024
+
 interface AvatarRequestBody {
   prompt1?: string
   prompt2?: string
@@ -60,11 +63,25 @@ export const POST: RequestHandler = async (event) => {
         if (!item) return null
 
         if (item.b64_json) {
-          const mediaType = item.media_type || 'image/webp'
+          const mediaType = ALLOWED_IMAGE_MIME_TYPES.has(item.media_type)
+            ? item.media_type
+            : 'image/webp'
           return `data:${mediaType};base64,${item.b64_json}`
         }
-        if (item.url) {
-          return item.url
+        if (typeof item.url === 'string') {
+          const parsedUrl = new URL(item.url)
+          if (parsedUrl.protocol !== 'https:') return null
+
+          const imgResponse = await fetch(parsedUrl.toString())
+          if (!imgResponse.ok) return null
+
+          const rawType = imgResponse.headers.get('content-type')?.split(';')[0]?.trim() || ''
+          const mediaType = ALLOWED_IMAGE_MIME_TYPES.has(rawType) ? rawType : 'image/webp'
+          const arrayBuffer = await imgResponse.arrayBuffer()
+          if (arrayBuffer.byteLength > MAX_AVATAR_BYTES) return null
+
+          const base64 = Buffer.from(arrayBuffer).toString('base64')
+          return `data:${mediaType};base64,${base64}`
         }
         return null
       } catch (err) {

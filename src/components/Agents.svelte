@@ -56,47 +56,45 @@
     return () => clearInterval(interval)
   })
 
-  function handleTopicInput(e: Event) {
+  function clampInput(e: Event, maxLength = 200): string {
     const target = e.currentTarget as HTMLTextAreaElement
-    if (target.value.length > 200) {
-      target.value = target.value.slice(0, 200)
+    if (target.value.length > maxLength) {
+      target.value = target.value.slice(0, maxLength)
     }
-    initialTopic = target.value
+    return target.value
+  }
+
+  function handleTopicInput(e: Event) {
+    initialTopic = clampInput(e)
   }
 
   const configs = $derived([
     {
       id: 'agent1' as const,
-      name: agent1Name,
+      name: agent1Name.trim() || t('agents.defaultAgent1'),
       value: systemPrompt1,
       avatar: agent1Avatar,
-      placeholder: activePlaceholders
-        ? activePlaceholders.agent1[placeholderIndex]
-        : t('agents.descriptionPlaceholder'),
+      placeholder:
+        activePlaceholders && activePlaceholders.agent1.length
+          ? activePlaceholders.agent1[placeholderIndex % activePlaceholders.agent1.length]
+          : t('agents.descriptionPlaceholder'),
       oninput: (e: Event) => {
-        const target = e.currentTarget as HTMLTextAreaElement
-        if (target.value.length > 200) {
-          target.value = target.value.slice(0, 200)
-        }
-        systemPrompt1 = target.value
+        systemPrompt1 = clampInput(e)
         agent1Name = ''
         agent1Avatar = ''
       }
     },
     {
       id: 'agent2' as const,
-      name: agent2Name,
+      name: agent2Name.trim() || t('agents.defaultAgent2'),
       value: systemPrompt2,
       avatar: agent2Avatar,
-      placeholder: activePlaceholders
-        ? activePlaceholders.agent2[placeholderIndex]
-        : t('agents.descriptionPlaceholder'),
+      placeholder:
+        activePlaceholders && activePlaceholders.agent2.length
+          ? activePlaceholders.agent2[placeholderIndex % activePlaceholders.agent2.length]
+          : t('agents.descriptionPlaceholder'),
       oninput: (e: Event) => {
-        const target = e.currentTarget as HTMLTextAreaElement
-        if (target.value.length > 200) {
-          target.value = target.value.slice(0, 200)
-        }
-        systemPrompt2 = target.value
+        systemPrompt2 = clampInput(e)
         agent2Name = ''
         agent2Avatar = ''
       }
@@ -117,7 +115,7 @@
             <Grid direction="column" gap="s">
               {#if readonly}
                 <div class="avatar">
-                  <wa-avatar image={config.avatar}></wa-avatar>
+                  <wa-avatar image={config.avatar || undefined}></wa-avatar>
                   <Grid direction="column" gap="xs">
                     <strong>{config.name}</strong>
                     <p class="u-text-small">{config.value}</p>
