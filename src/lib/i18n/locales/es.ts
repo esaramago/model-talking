@@ -39,6 +39,7 @@ export const es: TranslationSchema = {
     error: 'Error',
     topicPlaceholder: '¿Cómo empieza la conversación?',
     fillOrChooseTheme: 'Rellena los campos a continuación o elige un tema',
+    randomTopic: 'Tema aleatorio',
     themePhilosophy: 'Filosofía',
     themeHistory: 'Historia',
     themeScifi: 'Ciencia Ficción',
@@ -59,15 +60,13 @@ export const es: TranslationSchema = {
     tokens: '{count} tokens'
   },
   agents: {
-    cardTitle: 'Describe al Agente {number}',
-    changeAvatar: 'Cambiar avatar del Agente {number}',
+    cardTitle: 'Agente {number}',
     defaultAgent1: 'Agente 1',
     defaultAgent2: 'Agente 2',
     nameLabel: 'Nombre del personaje {number}',
     namePlaceholder: '¿Cómo me llamo?',
     descriptionLabel: 'Describe al personaje {number}',
-    descriptionPlaceholder: 'Descríbeme',
-    selectAvatar: 'Elegir avatar'
+    descriptionPlaceholder: 'Descríbeme'
   },
   settings: {
     title: 'Ajustes',
@@ -194,7 +193,7 @@ export const es: TranslationSchema = {
     step1Title: '1. Define los agentes',
     step1Text: 'Elige el nombre, el avatar y describe la personalidad o el punto de vista de cada uno de los dos agentes.',
     step2Title: '2. Inicia el tema',
-    step2Text: 'Escribe el primer mensaje para comenzar la conversación o usa el botón Aleatorio para cargar un escenario listo.',
+    step2Text: 'Escribe el primer mensaje para comenzar la conversación o usa el botón Tema aleatorio para cargar un escenario listo.',
     step3Title: '3. Sigue el diálogo',
     step3Text: 'Avanza la conversación turno a turno y observa cómo ambos agentes intercambian argumentos en tiempo real.',
     featuresTitle: 'Funciones y personalización',

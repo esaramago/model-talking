@@ -214,6 +214,7 @@ export interface ChatTurnPayload {
   maxTokens?: number
   temperature?: number
   isTitle?: boolean
+  isName?: boolean
 }
 
 export async function requestModelTurn(payload: ChatTurnPayload): Promise<ChatResponse> {
@@ -268,9 +269,47 @@ export async function generateTalkTitle(promptText: string, model?: string): Pro
   }
 }
 
+export async function generateAgentName(
+  description: string,
+  fallbackName: string,
+  language?: string,
+  model?: string
+): Promise<string> {
+  const trimmedDescription = description.trim()
+  if (!trimmedDescription) return fallbackName
+
+  try {
+    const res = await requestModelTurn({
+      model: model || MODEL,
+      messages: [
+        {
+          role: 'user',
+          content: trimmedDescription
+        }
+      ],
+      language,
+      maxTokens: 40,
+      temperature: 0.5,
+      isName: true
+    })
+
+    let name = res.content.trim()
+    name = name.replace(/^(nome|name|character|personagem)\s*:\s*/i, '')
+    name = name.replace(/^["'`«»\s]+|["'`«»\s]+$/g, '')
+    name = name.split('\n')[0].trim()
+
+    if (name.length > 35) {
+      name = name.slice(0, 35).trim()
+    }
+
+    return name || fallbackName
+  } catch (err) {
+    console.warn('Failed to generate agent name via AI, falling back:', err)
+    return fallbackName
+  }
+}
+
 export interface RandomScenarioResult {
-  agent1Name: string
-  agent2Name: string
   systemPrompt1: string
   systemPrompt2: string
   initialTopic: string

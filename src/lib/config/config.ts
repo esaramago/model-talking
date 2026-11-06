@@ -1,10 +1,14 @@
 import type { AgentDraft, ChatSettings, LanguageOption } from '@/types/chat'
 import { MESSAGE_MAX_CHARS_DEFAULT } from './limits'
 
+export const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions'
+export const OPENROUTER_IMAGE_API_URL = 'https://openrouter.ai/api/v1/images'
+
 // MODELS
 // z-ai/glm-5.3-flash (https://openrouter.ai/z-ai/glm-5.3-flash)
 // mistralai/mistral-nemo (https://openrouter.ai/mistralai/mistral-nemo)
 export const MODEL = 'z-ai/glm-5.3-flash'
+export const AVATAR_MODEL = 'recraft/recraft-v4.1-flash'
 
 export const SUPPORTED_LANGUAGES: LanguageOption[] = [
   { value: 'pt-PT', label: 'Português' },
@@ -32,4 +36,3 @@ export const DEFAULT_AGENT_DRAFT: AgentDraft = {
   systemPrompt2: ''
 }
 
-export const AVAILABLE_PERSONAS = ['1', '2', '3', '4', '5', '6', '7', '8', '9']

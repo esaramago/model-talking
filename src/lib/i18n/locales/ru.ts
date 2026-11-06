@@ -39,6 +39,7 @@ export const ru: TranslationSchema = {
     error: 'Ошибка',
     topicPlaceholder: 'С чего начнется разговор?',
     fillOrChooseTheme: 'Заполните поля ниже или выберите тему',
+    randomTopic: 'Случайная тема',
     themePhilosophy: 'Философия',
     themeHistory: 'История',
     themeScifi: 'Фантастика',
@@ -59,15 +60,13 @@ export const ru: TranslationSchema = {
     tokens: '{count} токенов'
   },
   agents: {
-    cardTitle: 'Опишите Агента {number}',
-    changeAvatar: 'Изменить аватар Агента {number}',
+    cardTitle: 'Агент {number}',
     defaultAgent1: 'Агент 1',
     defaultAgent2: 'Агент 2',
     nameLabel: 'Имя персонажа {number}',
     namePlaceholder: 'Как меня зовут?',
     descriptionLabel: 'Опишите персонажа {number}',
-    descriptionPlaceholder: 'Опишите меня',
-    selectAvatar: 'Выбрать аватар'
+    descriptionPlaceholder: 'Опишите меня'
   },
   settings: {
     title: 'Настройки',
@@ -194,7 +193,7 @@ export const ru: TranslationSchema = {
     step1Title: '1. Настройте агентов',
     step1Text: 'Выберите имя, аватар и опишите характер или взгляды каждого из двух агентов.',
     step2Title: '2. Задайте тему',
-    step2Text: 'Напишите первое сообщение, чтобы начать беседу, или нажмите «Случайно», чтобы загрузить готовый сценарий.',
+    step2Text: 'Напишите первое сообщение, чтобы начать беседу, или нажмите «Случайная тема», чтобы загрузить готовый сценарий.',
     step3Title: '3. Следите за диалогом',
     step3Text: 'Продвигайте беседу шаг за шагом и наблюдайте, как агенты обмениваются аргументами в реальном времени.',
     featuresTitle: 'Возможности и настройка',

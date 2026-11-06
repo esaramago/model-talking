@@ -27,6 +27,11 @@ const TITLE_SYSTEM_PROMPT =
 const TITLE_MAX_OUTPUT_TOKENS = 50
 const TITLE_MAX_INPUT_CHARS = 500
 
+const NAME_SYSTEM_PROMPT =
+  'You are a character naming assistant. Based on the character description, generate a concise, fitting character name (maximum 35 characters). Output ONLY the character name itself, without quotes, prefixes, punctuation, or any extra explanation.'
+const NAME_MAX_OUTPUT_TOKENS = 40
+const NAME_MAX_INPUT_CHARS = 500
+
 interface ChatRequestBody {
   model?: string
   messages: Array<Record<string, unknown>>
@@ -39,6 +44,7 @@ interface ChatRequestBody {
   maxTokens?: number
   temperature?: number
   isTitle?: boolean
+  isName?: boolean
 }
 
 export const GET: RequestHandler = async (event) => {
@@ -77,7 +83,8 @@ export const POST: RequestHandler = async (event) => {
       maxChars,
       maxTokens,
       temperature = 0.7,
-      isTitle = false
+      isTitle = false,
+      isName = false
     } = body
 
     const resolvedApiKey = getOpenRouterApiKey()
@@ -143,6 +150,38 @@ export const POST: RequestHandler = async (event) => {
         { role: 'user', content: truncatedUserContent }
       ]
       clampedTokens = TITLE_MAX_OUTPUT_TOKENS
+      effectiveTemperature = 0.5
+    } else if (isName) {
+      currentQuota = await getQuota(locals.pb, identifier)
+      if (!identifier.isAdmin && currentQuota.remaining <= 0) {
+        return json(
+          {
+            error: `Daily credit limit reached (${DAILY_MESSAGE_LIMIT}/${DAILY_MESSAGE_LIMIT}). Your credits will reset at 00:00 UTC.`,
+            quota: currentQuota
+          },
+          { status: 429 }
+        )
+      }
+
+      const lastUserMessage = [...messages].reverse().find((m) => m && (m.role === 'user' || m.speaker))
+      const rawUserContent =
+        typeof lastUserMessage?.content === 'string'
+          ? lastUserMessage.content.trim()
+          : Array.isArray(lastUserMessage?.content)
+            ? lastUserMessage.content.map((p: any) => p?.text || '').join('').trim()
+            : ''
+
+      if (!rawUserContent) {
+        return json({ error: 'Character description is required.' }, { status: 400 })
+      }
+
+      const truncatedUserContent = rawUserContent.slice(0, NAME_MAX_INPUT_CHARS)
+
+      effectiveMessages = [
+        { role: 'system', content: NAME_SYSTEM_PROMPT },
+        { role: 'user', content: truncatedUserContent }
+      ]
+      clampedTokens = NAME_MAX_OUTPUT_TOKENS
       effectiveTemperature = 0.5
     } else {
       // Reject any client-injected system or developer role messages
@@ -264,7 +303,7 @@ export const POST: RequestHandler = async (event) => {
       effectiveTemperature = Math.max(0, Math.min(Number(temperature) || 0.7, 2))
     }
 
-    if (!isTitle) {
+    if (!isTitle && !isName) {
       const quotaResult = await consumeQuota(locals.pb, identifier)
       currentQuota = quotaResult.quota
       if (!quotaResult.allowed) {

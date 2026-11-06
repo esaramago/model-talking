@@ -39,6 +39,7 @@ export const ar: TranslationSchema = {
     error: 'خطأ',
     topicPlaceholder: 'كيف تبدأ المحادثة؟',
     fillOrChooseTheme: 'املأ الحقول أدناه أو اختر موضوعاً',
+    randomTopic: 'موضوع عشوائي',
     themePhilosophy: 'فلسفة',
     themeHistory: 'تاريخ',
     themeScifi: 'خيال علمي',
@@ -59,15 +60,13 @@ export const ar: TranslationSchema = {
     tokens: '{count} توكن'
   },
   agents: {
-    cardTitle: 'صف الوكيل {number}',
-    changeAvatar: 'تغيير الصورة الرمزية للوكيل {number}',
+    cardTitle: 'الوكيل {number}',
     defaultAgent1: 'الوكيل 1',
     defaultAgent2: 'الوكيل 2',
     nameLabel: 'اسم الشخصية {number}',
     namePlaceholder: 'ما هو اسمي؟',
     descriptionLabel: 'وصف الشخصية {number}',
-    descriptionPlaceholder: 'صفني',
-    selectAvatar: 'اختر الصورة الرمزية'
+    descriptionPlaceholder: 'صفني'
   },
   settings: {
     title: 'الإعدادات',
@@ -194,7 +193,7 @@ export const ar: TranslationSchema = {
     step1Title: '1. حدد الوكلاء',
     step1Text: 'اختر اسماً وصورة رمزية، وصف شخصية أو وجهة نظر كل من الوكيلين.',
     step2Title: '2. ابدأ الموضوع',
-    step2Text: 'اكتب الرسالة الأولى لبدء المحادثة أو استخدم زر عشوائي لتحميل سيناريو جاهز.',
+    step2Text: 'اكتب الرسالة الأولى لبدء المحادثة أو استخدم زر موضوع عشوائي لتحميل سيناريو جاهز.',
     step3Title: '3. تابع الحوار',
     step3Text: 'تقدم بالمحادثة خطوة بخطوة وشاهد كيف يتبادل الوكيلان الحجج في الوقت الفعلي.',
     featuresTitle: 'الميزات والتخصيص',

@@ -43,8 +43,6 @@ function resolveLanguageName(code?: string): string {
 }
 
 interface ParsedScenario {
-  agent1Name: string
-  agent2Name: string
   systemPrompt1: string
   systemPrompt2: string
   initialTopic: string
@@ -89,7 +87,7 @@ function parseScenarioContent(raw: string): ParsedScenario {
     parsed = JSON.parse(clean)
   } catch {
     // If strict JSON.parse fails, attempt key-by-key regex extraction
-    const fields = ['agent1Name', 'agent2Name', 'systemPrompt1', 'systemPrompt2', 'initialTopic']
+    const fields = ['systemPrompt1', 'systemPrompt2', 'initialTopic']
     const extracted: Record<string, string> = {}
 
     for (let i = 0; i < fields.length; i++) {
@@ -104,30 +102,12 @@ function parseScenarioContent(raw: string): ParsedScenario {
       }
     }
 
-    if (extracted.agent1Name || extracted.initialTopic) {
+    if (extracted.systemPrompt1 || extracted.initialTopic) {
       parsed = extracted
     }
   }
 
   // Support alternative key aliases if model used them
-  const agent1Name =
-    typeof parsed?.agent1Name === 'string'
-      ? parsed.agent1Name
-      : typeof parsed?.agent_1_name === 'string'
-        ? parsed.agent_1_name
-        : typeof parsed?.character1Name === 'string'
-          ? parsed.character1Name
-          : ''
-
-  const agent2Name =
-    typeof parsed?.agent2Name === 'string'
-      ? parsed.agent2Name
-      : typeof parsed?.agent_2_name === 'string'
-        ? parsed.agent_2_name
-        : typeof parsed?.character2Name === 'string'
-          ? parsed.character2Name
-          : ''
-
   const systemPrompt1 =
     typeof parsed?.systemPrompt1 === 'string'
       ? parsed.systemPrompt1
@@ -156,8 +136,6 @@ function parseScenarioContent(raw: string): ParsedScenario {
           : ''
 
   return {
-    agent1Name: truncateSafely(agent1Name, 40),
-    agent2Name: truncateSafely(agent2Name, 40),
     systemPrompt1: truncateSafely(systemPrompt1, 200),
     systemPrompt2: truncateSafely(systemPrompt2, 200),
     initialTopic: truncateSafely(initialTopic, 200)
@@ -224,13 +202,11 @@ export const POST: RequestHandler = async (event) => {
           schema: {
             type: 'object',
             properties: {
-              agent1Name: { type: 'string', description: 'Name of character 1 (max 35 characters)' },
-              agent2Name: { type: 'string', description: 'Name of character 2 (max 35 characters)' },
               systemPrompt1: { type: 'string', description: 'Concise definition, role, tone, and stance for character 1 (between 100 and 170 characters, complete sentence ending with punctuation)' },
               systemPrompt2: { type: 'string', description: 'Concise definition, role, tone, and stance for character 2 (between 100 and 170 characters, complete sentence ending with punctuation)' },
               initialTopic: { type: 'string', description: 'The opening statement or provocative question from character 1 to start the conversation (between 100 and 170 characters, complete sentence ending with punctuation)' }
             },
-            required: ['agent1Name', 'agent2Name', 'systemPrompt1', 'systemPrompt2', 'initialTopic'],
+            required: ['systemPrompt1', 'systemPrompt2', 'initialTopic'],
             additionalProperties: false
           }
         }
@@ -268,7 +244,7 @@ export const POST: RequestHandler = async (event) => {
         const rawContent: string = choice?.message?.content ?? ''
 
         const candidate = parseScenarioContent(rawContent)
-        if (candidate.agent1Name && candidate.agent2Name && candidate.initialTopic) {
+        if (candidate.systemPrompt1 && candidate.systemPrompt2 && candidate.initialTopic) {
           scenario = candidate
           break
         } else {
