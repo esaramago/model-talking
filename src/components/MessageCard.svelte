@@ -26,7 +26,7 @@
   const avatar = $derived(
     message?.avatar ||
       customAvatar ||
-      (currentSpeaker === 'agent1' ? '/img/personas/1.svg' : '/img/personas/2.svg')
+      undefined
   )
 </script>
 
@@ -60,16 +60,16 @@
   }
   wa-card {
     border-radius: var(--wa-border-radius-s) var(--wa-border-radius-xl) var(--wa-border-radius-xl);
-    background-color: var(--wa-color-secondary-30);
-    @media (prefers-color-scheme: light) {
-      background-color: var(--wa-color-secondary-80);
-    }
+    background-color: var(--wa-color-surface-lowered);
   }
   .chat-item--reversed {
     align-self: end;
     wa-card {
       border-radius: var(--wa-border-radius-xl) var(--wa-border-radius-s) var(--wa-border-radius-xl);
-      background-color: var(--wa-color-surface-lowered);
+      background-color: var(--wa-color-secondary-30);
+      @media (prefers-color-scheme: light) {
+        background-color: var(--wa-color-secondary-80);
+      }
     }
   }
   wa-avatar {

@@ -39,6 +39,7 @@ export const fr: TranslationSchema = {
     error: 'Erreur',
     topicPlaceholder: 'Comment commence la conversation ?',
     fillOrChooseTheme: 'Remplissez les champs ci-dessous ou choisissez un thème',
+    randomTopic: 'Thème aléatoire',
     themePhilosophy: 'Philosophie',
     themeHistory: 'Histoire',
     themeScifi: 'Science-Fiction',
@@ -59,15 +60,11 @@ export const fr: TranslationSchema = {
     tokens: '{count} tokens'
   },
   agents: {
-    cardTitle: 'Décrivez l’Agent {number}',
-    changeAvatar: 'Changer l’avatar de l’Agent {number}',
+    cardTitle: 'Agent {number}',
     defaultAgent1: 'Agent 1',
     defaultAgent2: 'Agent 2',
-    nameLabel: 'Nom du personnage {number}',
-    namePlaceholder: 'Comment je m’appelle ?',
     descriptionLabel: 'Décrivez le personnage {number}',
-    descriptionPlaceholder: 'Décrivez-moi',
-    selectAvatar: 'Choisir un avatar'
+    descriptionPlaceholder: 'Décrivez-moi'
   },
   settings: {
     title: 'Paramètres',
@@ -192,14 +189,14 @@ export const fr: TranslationSchema = {
     whatItIsText2: 'Chaque agent adopte sa propre personnalité, défend son point de vue avec conviction et garde un ton cordial tout au long de l’échange.',
     howItWorksTitle: 'Comment ça marche',
     step1Title: '1. Définissez les agents',
-    step1Text: 'Choisissez un nom, un avatar et décrivez la personnalité ou le point de vue de chacun des deux agents.',
+    step1Text: 'Décrivez la personnalité ou le point de vue de chacun des deux agents ; leurs noms et avatars sont générés automatiquement par l’IA.',
     step2Title: '2. Lancez le sujet',
-    step2Text: 'Rédigez le premier message pour démarrer la discussion ou cliquez sur Aléatoire pour charger un scénario prêt à l’emploi.',
+    step2Text: 'Rédigez le premier message pour démarrer la discussion ou cliquez sur Thème aléatoire pour charger un scénario prêt à l’emploi.',
     step3Title: '3. Suivez le dialogue',
     step3Text: 'Faites avancer la conversation tour par tour et observez les deux agents échanger leurs arguments en temps réel.',
     featuresTitle: 'Fonctionnalités et personnalisation',
     featurePersonasTitle: 'Personnages sur mesure',
-    featurePersonasText: 'Personnalisez librement l’identité, le style d’expression et l’avatar de chaque participant.',
+    featurePersonasText: 'Personnalisez librement la personnalité et le style d’expression de chaque participant, avec des noms et avatars générés automatiquement par l’IA.',
     featureRandomTitle: 'Scénarios aléatoires',
     featureRandomText: 'En manque d’inspiration ? Générez des duos de personnages et des sujets préconfigurés en un seul clic.',
     featureSettingsTitle: 'Règles et limites',

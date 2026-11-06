@@ -3,8 +3,12 @@ export const MAX_INPUT_TOKENS = 8192
 
 export const DAILY_MESSAGE_LIMIT = 30
 export const DAILY_TITLE_LIMIT = 35
+export const DAILY_NAME_LIMIT = 70
+export const DAILY_AVATAR_LIMIT = 35
 export const DAILY_GUEST_IP_LIMIT = 100
 export const DAILY_TITLE_IP_LIMIT = 125
+export const DAILY_NAME_IP_LIMIT = 250
+export const DAILY_AVATAR_IP_LIMIT = 125
 
 export const GENERAL_RULES_MAX_CHARS = 150
 

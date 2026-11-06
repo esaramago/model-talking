@@ -39,6 +39,7 @@ export const ar: TranslationSchema = {
     error: 'خطأ',
     topicPlaceholder: 'كيف تبدأ المحادثة؟',
     fillOrChooseTheme: 'املأ الحقول أدناه أو اختر موضوعاً',
+    randomTopic: 'موضوع عشوائي',
     themePhilosophy: 'فلسفة',
     themeHistory: 'تاريخ',
     themeScifi: 'خيال علمي',
@@ -59,15 +60,11 @@ export const ar: TranslationSchema = {
     tokens: '{count} توكن'
   },
   agents: {
-    cardTitle: 'صف الوكيل {number}',
-    changeAvatar: 'تغيير الصورة الرمزية للوكيل {number}',
+    cardTitle: 'الوكيل {number}',
     defaultAgent1: 'الوكيل 1',
     defaultAgent2: 'الوكيل 2',
-    nameLabel: 'اسم الشخصية {number}',
-    namePlaceholder: 'ما هو اسمي؟',
     descriptionLabel: 'وصف الشخصية {number}',
-    descriptionPlaceholder: 'صفني',
-    selectAvatar: 'اختر الصورة الرمزية'
+    descriptionPlaceholder: 'صفني'
   },
   settings: {
     title: 'الإعدادات',
@@ -192,14 +189,14 @@ export const ar: TranslationSchema = {
     whatItIsText2: 'يتبنى كل وكيل شخصيته الخاصة، ويدافع عن وجهة نظره بقناعة تامة مع الحفاظ على أسلوب ودي طوال الحوار.',
     howItWorksTitle: 'كيف يعمل',
     step1Title: '1. حدد الوكلاء',
-    step1Text: 'اختر اسماً وصورة رمزية، وصف شخصية أو وجهة نظر كل من الوكيلين.',
+    step1Text: 'صف شخصية أو وجهة نظر كل من الوكيلين؛ يتم إنشاء الأسماء والصور الرمزية تلقائياً بواسطة الذكاء الاصطناعي.',
     step2Title: '2. ابدأ الموضوع',
-    step2Text: 'اكتب الرسالة الأولى لبدء المحادثة أو استخدم زر عشوائي لتحميل سيناريو جاهز.',
+    step2Text: 'اكتب الرسالة الأولى لبدء المحادثة أو استخدم زر موضوع عشوائي لتحميل سيناريو جاهز.',
     step3Title: '3. تابع الحوار',
     step3Text: 'تقدم بالمحادثة خطوة بخطوة وشاهد كيف يتبادل الوكيلان الحجج في الوقت الفعلي.',
     featuresTitle: 'الميزات والتخصيص',
     featurePersonasTitle: 'شخصيات مخصصة',
-    featurePersonasText: 'خصص بحرية هوية وأسلوب حديث والصورة الرمزية لكل مشارك.',
+    featurePersonasText: 'خصص بحرية شخصية وأسلوب حديث كل مشارك، مع إنشاء الأسماء والصور الرمزية تلقائياً بواسطة الذكاء الاصطناعي.',
     featureRandomTitle: 'سيناريوهات عشوائية',
     featureRandomText: 'تحتاج إلى إلهام؟ أنشئ أزواجاً من الشخصيات ومواضيع نقاش معدة مسبقاً بنقرة واحدة.',
     featureSettingsTitle: 'القواعد والحدود',

@@ -11,6 +11,7 @@ import {
 } from '@/lib/config'
 import { getOpenRouterApiKey, requestOpenRouterCompletion } from '@/lib/server/openrouter'
 import {
+  consumeNameQuota,
   consumeQuota,
   consumeTitleQuota,
   getQuota,
@@ -19,13 +20,18 @@ import {
   type QuotaInfo,
   type RateLimitIdentifier
 } from '@/lib/server/rateLimit'
-import { buildMessagesForModel, type ApiChatMessage } from '@/lib/chat'
+import { buildMessagesForModel, getLanguageInstruction, type ApiChatMessage } from '@/lib/chat'
 import type { ChatMessage } from '@/types/chat'
 
 const TITLE_SYSTEM_PROMPT =
   'És um gerador de títulos concisos para conversas. O título DEVE ter no máximo 30 caracteres.'
 const TITLE_MAX_OUTPUT_TOKENS = 50
 const TITLE_MAX_INPUT_CHARS = 500
+
+const NAME_SYSTEM_PROMPT =
+  'You are a character naming assistant. Based on the character description, generate a concise, fitting character name (maximum 35 characters). Output ONLY the character name itself, without quotes, prefixes, punctuation, or any extra explanation.'
+const NAME_MAX_OUTPUT_TOKENS = 40
+const NAME_MAX_INPUT_CHARS = 500
 
 interface ChatRequestBody {
   model?: string
@@ -39,6 +45,7 @@ interface ChatRequestBody {
   maxTokens?: number
   temperature?: number
   isTitle?: boolean
+  isName?: boolean
 }
 
 export const GET: RequestHandler = async (event) => {
@@ -77,8 +84,12 @@ export const POST: RequestHandler = async (event) => {
       maxChars,
       maxTokens,
       temperature = 0.7,
-      isTitle = false
+      isTitle = false,
+      isName = false
     } = body
+
+    const safeLanguage =
+      typeof language === 'string' ? language.trim().slice(0, 20) : undefined
 
     const resolvedApiKey = getOpenRouterApiKey()
 
@@ -101,7 +112,22 @@ export const POST: RequestHandler = async (event) => {
     let clampedTokens: number
     let effectiveTemperature: number
 
-    if (isTitle) {
+    if (isTitle || isName) {
+      const lastUserMessage = [...messages].reverse().find((m) => m && (m.role === 'user' || m.speaker))
+      const rawUserContent =
+        typeof lastUserMessage?.content === 'string'
+          ? lastUserMessage.content.trim()
+          : Array.isArray(lastUserMessage?.content)
+            ? lastUserMessage.content.map((p: any) => p?.text || '').join('').trim()
+            : ''
+
+      if (!rawUserContent) {
+        return json(
+          { error: isTitle ? 'Title prompt is required.' : 'Character description is required.' },
+          { status: 400 }
+        )
+      }
+
       currentQuota = await getQuota(locals.pb, identifier)
       if (!identifier.isAdmin && currentQuota.remaining <= 0) {
         return json(
@@ -113,36 +139,32 @@ export const POST: RequestHandler = async (event) => {
         )
       }
 
-      const titleAllowed = await consumeTitleQuota(locals.pb, identifier)
-      if (!titleAllowed) {
+      const auxAllowed = isTitle
+        ? await consumeTitleQuota(locals.pb, identifier)
+        : await consumeNameQuota(locals.pb, identifier)
+      if (!auxAllowed) {
         return json(
           {
-            error: 'Daily title generation limit reached. Your limit will reset at 00:00 UTC.',
+            error: isTitle
+              ? 'Daily title generation limit reached. Your limit will reset at 00:00 UTC.'
+              : 'Daily name generation limit reached. Your limit will reset at 00:00 UTC.',
             quota: currentQuota
           },
           { status: 429 }
         )
       }
 
-      const lastUserMessage = [...messages].reverse().find((m) => m && (m.role === 'user' || m.speaker))
-      const rawUserContent =
-        typeof lastUserMessage?.content === 'string'
-          ? lastUserMessage.content.trim()
-          : Array.isArray(lastUserMessage?.content)
-            ? lastUserMessage.content.map((p: any) => p?.text || '').join('').trim()
-            : ''
-
-      if (!rawUserContent) {
-        return json({ error: 'Title prompt is required.' }, { status: 400 })
-      }
-
-      const truncatedUserContent = rawUserContent.slice(0, TITLE_MAX_INPUT_CHARS)
+      const maxInputChars = isTitle ? TITLE_MAX_INPUT_CHARS : NAME_MAX_INPUT_CHARS
+      const truncatedUserContent = rawUserContent.slice(0, maxInputChars)
+      const auxSystemPrompt = isTitle
+        ? TITLE_SYSTEM_PROMPT
+        : [NAME_SYSTEM_PROMPT, getLanguageInstruction(safeLanguage)].filter(Boolean).join('\n\n')
 
       effectiveMessages = [
-        { role: 'system', content: TITLE_SYSTEM_PROMPT },
+        { role: 'system', content: auxSystemPrompt },
         { role: 'user', content: truncatedUserContent }
       ]
-      clampedTokens = TITLE_MAX_OUTPUT_TOKENS
+      clampedTokens = isTitle ? TITLE_MAX_OUTPUT_TOKENS : NAME_MAX_OUTPUT_TOKENS
       effectiveTemperature = 0.5
     } else {
       // Reject any client-injected system or developer role messages
@@ -183,8 +205,6 @@ export const POST: RequestHandler = async (event) => {
           : DEFAULT_SETTINGS.generalRules
       const safeAgentName =
         typeof agentName === 'string' ? agentName.trim().slice(0, 50) : undefined
-      const safeLanguage =
-        typeof language === 'string' ? language.trim().slice(0, 20) : undefined
 
       const otherSpeaker = targetSpeaker === 'agent1' ? 'agent2' : 'agent1'
       const chatMessages: ChatMessage[] = []
@@ -264,7 +284,7 @@ export const POST: RequestHandler = async (event) => {
       effectiveTemperature = Math.max(0, Math.min(Number(temperature) || 0.7, 2))
     }
 
-    if (!isTitle) {
+    if (!isTitle && !isName) {
       const quotaResult = await consumeQuota(locals.pb, identifier)
       currentQuota = quotaResult.quota
       if (!quotaResult.allowed) {

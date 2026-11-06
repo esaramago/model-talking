@@ -39,6 +39,7 @@ export const tr: TranslationSchema = {
     error: 'Hata',
     topicPlaceholder: 'Sohbet nasıl başlasın?',
     fillOrChooseTheme: 'Aşağıdaki alanları doldurun veya bir tema seçin',
+    randomTopic: 'Rastgele tema',
     themePhilosophy: 'Felsefe',
     themeHistory: 'Tarih',
     themeScifi: 'Bilim Kurgu',
@@ -59,15 +60,11 @@ export const tr: TranslationSchema = {
     tokens: '{count} token'
   },
   agents: {
-    cardTitle: 'Ajan {number} tanımlayın',
-    changeAvatar: 'Ajan {number} avatarını değiştir',
+    cardTitle: 'Ajan {number}',
     defaultAgent1: 'Ajan 1',
     defaultAgent2: 'Ajan 2',
-    nameLabel: 'Karakter adı {number}',
-    namePlaceholder: 'Benim adım ne?',
     descriptionLabel: 'Karakteri tanımla {number}',
-    descriptionPlaceholder: 'Beni tanımla',
-    selectAvatar: 'Avatar seç'
+    descriptionPlaceholder: 'Beni tanımla'
   },
   settings: {
     title: 'Ayarlar',
@@ -192,14 +189,14 @@ export const tr: TranslationSchema = {
     whatItIsText2: 'Her ajan kendi kişiliğini benimser, bakış açısını kararlılıkla savunur ve diyalog boyunca nazik bir üslup korur.',
     howItWorksTitle: 'Nasıl Çalışır',
     step1Title: '1. Ajanları Tanımlayın',
-    step1Text: 'İki ajanın her biri için bir isim ve avatar seçin, kişiliklerini veya bakış açılarını açıklayın.',
+    step1Text: 'İki ajanın her birinin kişiliğini veya bakış açısını açıklayın; isimleri ve avatarları yapay zeka tarafından otomatik olarak oluşturulur.',
     step2Title: '2. Konuyu Başlatın',
-    step2Text: 'Sohbeti başlatmak için ilk mesajı yazın veya hazır bir senaryo yüklemek için Rastgele düğmesini kullanın.',
+    step2Text: 'Sohbeti başlatmak için ilk mesajı yazın veya hazır bir senaryo yüklemek için Rastgele tema düğmesini kullanın.',
     step3Title: '3. Diyaloğu İzleyin',
     step3Text: 'Sohbeti adım adım ilerletin ve iki ajanın gerçek zamanlı olarak argüman alışverişinde bulunmasını izleyin.',
     featuresTitle: 'Özellikler ve Özelleştirme',
     featurePersonasTitle: 'Özel Karakterler',
-    featurePersonasText: 'Her katılımcının kimliğini, konuşma tarzını ve avatarını özgürce özelleştirin.',
+    featurePersonasText: 'Her katılımcının kişiliğini ve konuşma tarzını özgürce özelleştirin; isimler ve avatarlar yapay zeka tarafından otomatik olarak oluşturulur.',
     featureRandomTitle: 'Rastgele Senaryolar',
     featureRandomText: 'İlhama mı ihtiyacınız var? Tek bir tıklamayla önceden yapılandırılmış karakter çiftleri ve tartışma konuları oluşturun.',
     featureSettingsTitle: 'Kurallar ve Sınırlar',

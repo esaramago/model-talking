@@ -21,6 +21,7 @@ h4,
 }
 h5,
 [data-appearance="h5"] {
+  font-weight: var(--wa-font-weight-semibold);
   font-size: var(--wa-font-size-s);
   color: var(--wa-color-text-quiet)
 }

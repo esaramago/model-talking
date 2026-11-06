@@ -39,6 +39,7 @@ export interface TranslationSchema {
     error: string
     topicPlaceholder: string
     fillOrChooseTheme: string
+    randomTopic: string
     themePhilosophy: string
     themeHistory: string
     themeScifi: string
@@ -60,14 +61,10 @@ export interface TranslationSchema {
   }
   agents: {
     cardTitle: string
-    changeAvatar: string
     defaultAgent1: string
     defaultAgent2: string
-    nameLabel: string
-    namePlaceholder: string
     descriptionLabel: string
     descriptionPlaceholder: string
-    selectAvatar: string
   }
   settings: {
     title: string

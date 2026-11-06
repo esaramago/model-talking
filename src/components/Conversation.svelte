@@ -6,16 +6,23 @@
 
   let {
     messages = [],
-    activeThinkingSpeaker = null
+    activeThinkingSpeaker = null,
+    agent1Avatar = '',
+    agent2Avatar = ''
   }: {
     messages: ChatMessage[]
     activeThinkingSpeaker?: string | null
+    agent1Avatar?: string
+    agent2Avatar?: string
   } = $props()
 </script>
 
 <Grid direction="column" gap="l">
   {#each messages as msg (msg.id)}
-    <MessageCard message={msg} />
+    <MessageCard
+      message={msg}
+      avatar={msg.avatar || (msg.speaker === 'agent1' ? agent1Avatar : agent2Avatar)}
+    />
   {/each}
 
   {#if activeThinkingSpeaker}

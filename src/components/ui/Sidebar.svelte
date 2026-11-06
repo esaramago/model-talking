@@ -84,12 +84,12 @@ aside {
   justify-content: space-between;
   gap: var(--wa-space-xl);
   width: 28rem;
+  height: 100vh;
   padding: var(--wa-space-m) var(--wa-space-s);
   background-color: var(--wa-color-surface-lowered);
   overflow: auto;
   @media (max-width: 1024px) {
     position: fixed;
-    height: 100%;
     z-index: 2;
     transform: translateX(-100%);
     transition: transform .4s;

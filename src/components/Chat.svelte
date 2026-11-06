@@ -4,7 +4,6 @@
   import { page } from '$app/state'
   import Grid from '@/components/ui/Grid.svelte'
   import Conversation from '@/components/Conversation.svelte'
-  import MessageCard from '@/components/MessageCard.svelte'
   import Agents from '@/components/Agents.svelte'
   import Confirmation from '@/components/Confirmation.svelte'
   import { stats } from '@/lib/state/stats.svelte'
@@ -13,6 +12,7 @@
   import {
     requestModelTurn,
     generateTalkTitle,
+    generateAgentName,
     generateRandomScenario,
   } from '@/lib/chat'
   import {
@@ -20,7 +20,6 @@
     DEFAULT_SETTINGS,
     MAX_OUTPUT_TOKENS,
     MODEL,
-    SCENARIO_THEMES,
     type ScenarioTheme,
   } from '@/lib/config'
   import {
@@ -29,7 +28,7 @@
     loadSettings,
     saveAgentDraft,
   } from '@/lib/storage'
-  import { getRandomPersonaPair } from '@/lib/personas'
+  import { resizeAvatar, sanitizeMessagesForStorage } from '@/lib/avatar'
   import { trackUmamiEvent } from '@/lib/umami'
   import { i18n, t } from '@/lib/i18n/index.svelte'
   import type { ChatMessage, TalkRecord } from '@/types/chat'
@@ -48,8 +47,8 @@
   let model = $state(MODEL)
   let agent1Name = $state(DEFAULT_AGENT_DRAFT.agent1Name)
   let agent2Name = $state(DEFAULT_AGENT_DRAFT.agent2Name)
-  let agent1Avatar = $state('/img/personas/1.svg')
-  let agent2Avatar = $state('/img/personas/2.svg')
+  let agent1Avatar = $state('')
+  let agent2Avatar = $state('')
   let systemPrompt1 = $state(DEFAULT_AGENT_DRAFT.systemPrompt1)
   let systemPrompt2 = $state(DEFAULT_AGENT_DRAFT.systemPrompt2)
   let generalRules = $state(DEFAULT_SETTINGS.generalRules)
@@ -101,9 +100,9 @@
     initialTopic = talk.initialTopic || ''
     messages = talk.messages || []
     const firstAgent1 = messages.find((m) => m.speaker === 'agent1' && m.avatar)
-    if (firstAgent1?.avatar) agent1Avatar = firstAgent1.avatar
+    agent1Avatar = firstAgent1?.avatar || ''
     const firstAgent2 = messages.find((m) => m.speaker === 'agent2' && m.avatar)
-    if (firstAgent2?.avatar) agent2Avatar = firstAgent2.avatar
+    agent2Avatar = firstAgent2?.avatar || ''
     if (talk.model) model = talk.model
     if (talk.agent1Name) agent1Name = talk.agent1Name
     if (talk.agent2Name) agent2Name = talk.agent2Name
@@ -132,6 +131,8 @@
   function resetNewChat() {
     if (isRunning) return
     resetSessionCounters()
+    agent1Avatar = ''
+    agent2Avatar = ''
     const loaded = loadSettings(user?.id, user)
     maxChars = loaded.maxChars
     if (!restoreDraft()) {
@@ -140,8 +141,6 @@
       agent2Name = ''
       systemPrompt1 = ''
       systemPrompt2 = ''
-      agent1Avatar = '/img/personas/1.svg'
-      agent2Avatar = '/img/personas/2.svg'
     }
   }
 
@@ -259,14 +258,6 @@
     stats.model = model || MODEL
   })
 
-  function handleTopicInput(e: Event) {
-    const target = e.currentTarget as HTMLTextAreaElement
-    if (target.value.length > 200) {
-      target.value = target.value.slice(0, 200)
-    }
-    initialTopic = target.value
-  }
-
   function getSpeakerName(speaker: 'agent1' | 'agent2'): string {
     return speaker === 'agent1'
       ? agent1Name.trim() || t('agents.defaultAgent1')
@@ -286,15 +277,13 @@
         stats.setQuota(result.quota)
       }
 
-      agent1Name = result.agent1Name
-      agent2Name = result.agent2Name
       systemPrompt1 = result.systemPrompt1
       systemPrompt2 = result.systemPrompt2
       initialTopic = result.initialTopic
-
-      const [randomAvatar1, randomAvatar2] = getRandomPersonaPair()
-      agent1Avatar = randomAvatar1
-      agent2Avatar = randomAvatar2
+      agent1Name = ''
+      agent2Name = ''
+      agent1Avatar = ''
+      agent2Avatar = ''
     } catch (err: unknown) {
       const errorWithQuota = err as { quota?: Parameters<typeof stats.setQuota>[0]; message?: string }
       if (errorWithQuota?.quota) {
@@ -348,6 +337,9 @@
 
       totalTokensUsed += tTokens
 
+      const isFirstTurnForSpeaker = !messages.some(
+        (m) => m.speaker === targetSpeaker && m.avatar
+      )
       const newMessage: ChatMessage = {
         id: crypto.randomUUID(),
         speaker: targetSpeaker,
@@ -358,7 +350,9 @@
         promptTokens: pTokens,
         completionTokens: cTokens,
         totalTokens: tTokens,
-        avatar: targetSpeaker === 'agent1' ? agent1Avatar : agent2Avatar,
+        avatar: isFirstTurnForSpeaker
+          ? (targetSpeaker === 'agent1' ? agent1Avatar : agent2Avatar)
+          : undefined,
         timestamp: Date.now(),
       }
 
@@ -369,7 +363,7 @@
           const updated = await pb
             .collection('talks')
             .update<TalkRecord>(currentTalkId, {
-              messages,
+              messages: sanitizeMessagesForStorage(messages),
               totalTokens: totalTokensUsed,
             })
           talksState.addOrUpdate(updated)
@@ -405,6 +399,63 @@
       messages = []
       totalTokensUsed = 0
 
+      const reqPrompt1 = !agent1Avatar && systemPrompt1.trim() ? systemPrompt1.trim() : undefined
+      const reqPrompt2 = !agent2Avatar && systemPrompt2.trim() ? systemPrompt2.trim() : undefined
+
+      const avatarPromise =
+        reqPrompt1 || reqPrompt2
+          ? fetch('/api/avatar', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                ...(reqPrompt1 ? { prompt1: reqPrompt1 } : {}),
+                ...(reqPrompt2 ? { prompt2: reqPrompt2 } : {}),
+              }),
+            })
+              .then(async (res) => (res.ok ? res.json() : null))
+              .catch((err) => {
+                console.error('Failed to generate agent avatars on start:', err)
+                return null
+              })
+          : Promise.resolve(null)
+
+      const namesPromise =
+        !agent1Name.trim() || !agent2Name.trim()
+          ? Promise.all([
+              agent1Name.trim()
+                ? Promise.resolve(agent1Name.trim())
+                : generateAgentName(
+                    systemPrompt1,
+                    t('agents.defaultAgent1'),
+                    language,
+                    model || MODEL,
+                  ),
+              agent2Name.trim()
+                ? Promise.resolve(agent2Name.trim())
+                : generateAgentName(
+                    systemPrompt2,
+                    t('agents.defaultAgent2'),
+                    language,
+                    model || MODEL,
+                  ),
+            ])
+          : Promise.resolve([agent1Name.trim(), agent2Name.trim()])
+
+      const [resolvedNames, avatarData] = await Promise.all([
+        namesPromise,
+        avatarPromise,
+      ])
+
+      agent1Name = resolvedNames[0]
+      agent2Name = resolvedNames[1]
+
+      const [resized1, resized2] = await Promise.all([
+        resizeAvatar(avatarData?.avatar1 || agent1Avatar),
+        resizeAvatar(avatarData?.avatar2 || agent2Avatar),
+      ])
+      agent1Avatar = resized1
+      agent2Avatar = resized2
+
       const firstMessage: ChatMessage = {
         id: crypto.randomUUID(),
         speaker: 'agent1',
@@ -426,6 +477,7 @@
 
       const turnSuccess = await executeTurn()
       if (!turnSuccess) {
+        messages = []
         isRunning = false
         return
       }
@@ -437,7 +489,7 @@
           const newTalk = await pb.collection('talks').create<TalkRecord>({
             title: talkTitle,
             initialTopic: initialTopic.trim(),
-            messages,
+            messages: sanitizeMessagesForStorage(messages),
             agent1Name,
             agent2Name,
             systemPrompt1,
@@ -476,53 +528,40 @@
   }
 </script>
 
-{#if !conversationStarted}
-  <Grid direction="column" justify="center">
-    <h3 data-appearance="h4" class="u-text-center">{t('chat.fillOrChooseTheme')}</h3>
-    <Grid justify="center" wrap={true} gap="xs">
-      {#each SCENARIO_THEMES as theme (theme.id)}
-        <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-        <wa-button
-          class="random-button"
-          role="button"
-          tabindex="0"
-          variant="neutral"
-          appearance="outlined"
-          disabled={isRunning || isGeneratingRandom}
-          loading={generatingTheme === theme.id || undefined}
-          onclick={() => handleRandomClick(theme.id)}
-        >
-          <wa-icon slot="start" name={theme.icon} variant="solid"></wa-icon>
-          {t(theme.labelKey)}
-        </wa-button>
-      {/each}
-    </Grid>
-  </Grid>
-{/if}
-
-{#if randomErrorMessage}
-  <wa-callout variant="danger">
-    <wa-icon slot="start" name="triangle-exclamation" variant="solid"></wa-icon>
-    <Grid direction="column" gap="xs">
-      <strong>{t('chat.error')}</strong>
-      <p>{randomErrorMessage}</p>
-    </Grid>
-  </wa-callout>
-{/if}
-
 <Agents
-  readonly={!!messages.length}
+  readonly={conversationStarted}
   bind:agent1Name
   bind:agent2Name
   bind:agent1Avatar
   bind:agent2Avatar
   bind:systemPrompt1
   bind:systemPrompt2
+  bind:initialTopic
+  {isRunning}
+  {generatingTheme}
+  {randomErrorMessage}
+  {errorMessage}
+  onrandom={handleRandomClick}
+  onstart={sendMessage}
 />
 
 {#if conversationStarted}
+  <Conversation
+    {messages}
+    {activeThinkingSpeaker}
+    {agent1Avatar}
+    {agent2Avatar}
+  />
 
-  <Conversation {messages} {activeThinkingSpeaker} />
+  {#if errorMessage}
+    <wa-callout variant="danger">
+      <wa-icon slot="start" name="triangle-exclamation" variant="solid"></wa-icon>
+      <Grid direction="column" gap="xs">
+        <strong>{t('chat.error')}</strong>
+        <p>{errorMessage}</p>
+      </Grid>
+    </wa-callout>
+  {/if}
 
   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
   <Grid wrap={true} align="center" justify="end" gap="s">
@@ -561,45 +600,6 @@
       {t('chat.sendMessage')}
     </wa-button>
   </Grid>
-{:else}
-  <MessageCard
-    speaker="agent1"
-    speakerName={getSpeakerName('agent1')}
-    avatar={agent1Avatar}
-  >
-    <wa-textarea
-      maxlength="200"
-      value={initialTopic}
-      placeholder={t('chat.topicPlaceholder')}
-      rows="1"
-      oninput={handleTopicInput}
-    ></wa-textarea>
-  </MessageCard>
-
-  {#if errorMessage}
-    <wa-callout variant="danger">
-      <wa-icon slot="start" name="triangle-exclamation" variant="solid"
-      ></wa-icon>
-      <Grid direction="column" gap="xs">
-        <strong>{t('chat.error')}</strong>
-        <p>{errorMessage}</p>
-      </Grid>
-    </wa-callout>
-  {/if}
-
-  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-  <Grid wrap={true} justify="end">
-    <wa-button
-      role="button"
-      tabindex="0"
-      variant="brand"
-      disabled={isRunning}
-      onclick={sendMessage}
-    >
-      <wa-icon slot="start" name="paper-plane" variant="solid"></wa-icon>
-      {t('chat.start')}
-    </wa-button>
-  </Grid>
 {/if}
 
 <Confirmation
@@ -619,30 +619,3 @@
   cancelText={t('chat.newChatCancelButton')}
   onconfirm={handleNewChat}
 />
-
-<style>
-wa-textarea {
-  &::part(textarea) {
-    padding: var(--wa-space-l) var(--wa-space-xl);
-    field-sizing: content;
-    resize: none;
-  }
-  &::part(base) {
-    border-radius: var(--wa-border-radius-s) var(--wa-border-radius-xl) var(--wa-border-radius-xl);
-    background-color: var(--wa-color-secondary-30);
-    @media (prefers-color-scheme: light) {
-      background-color: var(--wa-color-secondary-80);
-    }
-  }
-}
-.random-button {
-  @media (max-width: 600px) {
-    font-size: var(--wa-font-size-s);
-  }
-}
-.random-button {
-  @media (max-width: 500px) {
-    font-size: var(--wa-font-size-xs);
-  }
-}
-</style>
