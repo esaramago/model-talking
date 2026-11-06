@@ -1,6 +1,6 @@
 h1,
 [data-appearance="h1"] {
-  font-size: clamp(var(--wa-font-size-2xl), 5vw, var(--wa-font-size-3xl));
+  font-size: clamp(var(--wa-font-size-xl), 5vw, var(--wa-font-size-3xl));
   line-height: 1.1;
 }
 h2,
@@ -15,7 +15,7 @@ h3,
 }
 h4,
 [data-appearance="h4"] {
-  font-size: var(--wa-font-size-m);
+  font-size: clamp(var(--wa-font-size-s), 3vw, var(--wa-font-size-m));
   font-weight: var(--wa-font-weight-semibold);
   color: var(--wa-color-text-quiet)
 }

@@ -483,6 +483,7 @@
       {#each SCENARIO_THEMES as theme (theme.id)}
         <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
         <wa-button
+          class="random-button"
           role="button"
           tabindex="0"
           variant="neutral"
@@ -620,18 +621,28 @@
 />
 
 <style>
-  wa-textarea {
-    &::part(textarea) {
-      padding: var(--wa-space-l) var(--wa-space-xl);
-      field-sizing: content;
-      resize: none;
-    }
-    &::part(base) {
-      border-radius: var(--wa-border-radius-s) var(--wa-border-radius-xl) var(--wa-border-radius-xl);
-      background-color: var(--wa-color-secondary-30);
-      @media (prefers-color-scheme: light) {
-        background-color: var(--wa-color-secondary-80);
-      }
+wa-textarea {
+  &::part(textarea) {
+    padding: var(--wa-space-l) var(--wa-space-xl);
+    field-sizing: content;
+    resize: none;
+  }
+  &::part(base) {
+    border-radius: var(--wa-border-radius-s) var(--wa-border-radius-xl) var(--wa-border-radius-xl);
+    background-color: var(--wa-color-secondary-30);
+    @media (prefers-color-scheme: light) {
+      background-color: var(--wa-color-secondary-80);
     }
   }
+}
+.random-button {
+  @media (max-width: 600px) {
+    font-size: var(--wa-font-size-s);
+  }
+}
+.random-button {
+  @media (max-width: 500px) {
+    font-size: var(--wa-font-size-xs);
+  }
+}
 </style>

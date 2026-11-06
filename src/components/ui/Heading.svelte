@@ -23,6 +23,6 @@
   text-align: center;
 }
 p {
-  font-size: clamp(var(--wa-font-size-m), 4vw, var(--wa-font-size-l));
+  font-size: clamp(var(--wa-font-size-s), 3vw, var(--wa-font-size-l));
 }
 </style>
